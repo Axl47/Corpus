@@ -25,3 +25,7 @@ export async function updateDatabaseSchema(id: string, newSchema: any[]) {
   await db.update(databases).set({ schema: newSchema, updatedAt: new Date() }).where(eq(databases.id, id));
   revalidatePath(`/db/${id}`);
 }
+
+export async function updateDatabaseViews(id: string, views: any[]) {
+  await db.update(databases).set({ views, updatedAt: new Date() }).where(eq(databases.id, id));
+}

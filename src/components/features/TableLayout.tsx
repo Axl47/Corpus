@@ -1,33 +1,73 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { updateDatabaseSchema } from '@/lib/actions/database';
-import { GripHorizontal, Type, List, Hash, AlignLeft } from 'lucide-react';
+import { useState } from 'react';
+import { GripHorizontal, Type, List, Hash, AlignLeft, Calendar, Clock, Tags } from 'lucide-react';
 
 function getPropertyIcon(type: string) {
   switch (type) {
-    case 'text':
-      return <Type size={11} className="text-neutral-600" />;
-    case 'select':
-      return <List size={11} className="text-neutral-600" />;
-    case 'number':
-      return <Hash size={11} className="text-neutral-600" />;
-    default:
-      return <AlignLeft size={11} className="text-neutral-600" />;
+    case 'text':         return <Type size={11} className="text-neutral-600" />;
+    case 'select':       return <List size={11} className="text-neutral-600" />;
+    case 'multi_select': return <Tags size={11} className="text-neutral-600" />;
+    case 'number':       return <Hash size={11} className="text-neutral-600" />;
+    case 'date':         return <Calendar size={11} className="text-neutral-600" />;
+    case 'datetime':     return <Clock size={11} className="text-neutral-600" />;
+    default:             return <AlignLeft size={11} className="text-neutral-600" />;
   }
 }
 
-export default function TableLayout({ database, pages }: { database: any, pages: any[] }) {
-  const router = useRouter();
+function formatDate(val: string) {
+  if (!val) return '';
+  const d = new Date(val);
+  return isNaN(d.getTime())
+    ? val
+    : d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
-  const [localSchema, setLocalSchema] = useState<any[]>(database.schema || []);
+function formatDatetime(val: string) {
+  if (!val) return '';
+  const d = new Date(val);
+  return isNaN(d.getTime())
+    ? val
+    : d.toLocaleString('en-US', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+}
+
+function getVisibleColumns(schema: any[], columnOrder: string[], hiddenColumns: string[]): any[] {
+  const hiddenSet = new Set(hiddenColumns ?? []);
+  const visible = schema.filter((c) => !hiddenSet.has(c.id));
+  if (!columnOrder || columnOrder.length === 0) return visible;
+
+  const orderIndex = new Map(columnOrder.map((id, i) => [id, i]));
+  return [...visible].sort((a, b) => {
+    const ai = orderIndex.has(a.id) ? orderIndex.get(a.id)! : Infinity;
+    const bi = orderIndex.has(b.id) ? orderIndex.get(b.id)! : Infinity;
+    return ai - bi;
+  });
+}
+
+export default function TableLayout({
+  database,
+  pages,
+  columnOrder,
+  hiddenColumns,
+  onColumnOrderChange,
+}: {
+  database: any;
+  pages: any[];
+  columnOrder: string[];
+  hiddenColumns: string[];
+  onColumnOrderChange: (order: string[]) => void;
+}) {
+  const router = useRouter();
+  const schema: any[] = database.schema ?? [];
+
+  const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
+
   const [draggedColId, setDraggedColId] = useState<string | null>(null);
   const [dragOverColId, setDragOverColId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLocalSchema(database.schema || []);
-  }, [database.schema]);
 
   const handleDragStart = (e: React.DragEvent, colId: string) => {
     setDraggedColId(colId);
@@ -36,15 +76,14 @@ export default function TableLayout({ database, pages }: { database: any, pages:
 
   const handleDragOver = (e: React.DragEvent, colId: string) => {
     e.preventDefault();
-    if (draggedColId === colId) return;
-    setDragOverColId(colId);
+    if (draggedColId !== colId) setDragOverColId(colId);
   };
 
   const handleDragLeave = (colId: string) => {
     if (dragOverColId === colId) setDragOverColId(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, targetColId: string) => {
+  const handleDrop = (e: React.DragEvent, targetColId: string) => {
     e.preventDefault();
     if (!draggedColId || draggedColId === targetColId) {
       setDraggedColId(null);
@@ -52,19 +91,14 @@ export default function TableLayout({ database, pages }: { database: any, pages:
       return;
     }
 
-    const draggedIndex = localSchema.findIndex(c => c.id === draggedColId);
-    const targetIndex = localSchema.findIndex(c => c.id === targetColId);
+    const fromIdx = visibleCols.findIndex((c) => c.id === draggedColId);
+    const toIdx = visibleCols.findIndex((c) => c.id === targetColId);
 
-    if (draggedIndex !== -1 && targetIndex !== -1) {
-      const newSchema = [...localSchema];
-      const [draggedItem] = newSchema.splice(draggedIndex, 1);
-      newSchema.splice(targetIndex, 0, draggedItem);
-      setLocalSchema(newSchema);
-      try {
-        await updateDatabaseSchema(database.id, newSchema);
-      } catch {
-        setLocalSchema(database.schema || []);
-      }
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const newOrder = visibleCols.map((c) => c.id);
+      const [moved] = newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, moved);
+      onColumnOrderChange(newOrder);
     }
 
     setDraggedColId(null);
@@ -81,12 +115,11 @@ export default function TableLayout({ database, pages }: { database: any, pages:
       <table className="w-full text-left text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
         <thead className="border-b border-neutral-800/60 sticky top-0 z-10">
           <tr>
-            {localSchema.map((col, idx) => {
+            {visibleCols.map((col, idx) => {
               const isOver = dragOverColId === col.id;
               const isDraggingThis = draggedColId === col.id;
               const isFirst = idx === 0;
-              const isLast = idx === localSchema.length - 1;
-
+              const isLast = idx === visibleCols.length - 1;
               return (
                 <th
                   key={col.id}
@@ -122,8 +155,11 @@ export default function TableLayout({ database, pages }: { database: any, pages:
         <tbody>
           {pages.length === 0 ? (
             <tr>
-              <td colSpan={localSchema.length} className="py-16 text-center text-neutral-600 text-sm">
-                Henüz sayfa yok. "New" ile başla.
+              <td
+                colSpan={visibleCols.length}
+                className="py-16 text-center text-neutral-600 text-sm"
+              >
+                No pages yet. Use "New" to get started.
               </td>
             </tr>
           ) : (
@@ -133,10 +169,10 @@ export default function TableLayout({ database, pages }: { database: any, pages:
                 onClick={() => router.push(`/db/${database.id}/${page.id}`)}
                 className="border-b border-neutral-800/40 hover:bg-neutral-800/20 cursor-pointer transition-colors group"
               >
-                {localSchema.map((col, idx) => {
+                {visibleCols.map((col, idx) => {
                   const val = page.properties[col.id];
                   const isFirst = idx === 0;
-                  const isLast = idx === localSchema.length - 1;
+                  const isLast = idx === visibleCols.length - 1;
                   return (
                     <td
                       key={col.id}
@@ -150,6 +186,27 @@ export default function TableLayout({ database, pages }: { database: any, pages:
                       ) : col.type === 'select' ? (
                         <span className={`text-xs ${val ? 'text-neutral-400' : 'text-neutral-700'}`}>
                           {val || '—'}
+                        </span>
+                      ) : col.type === 'multi_select' ? (
+                        <span className="flex flex-wrap gap-1">
+                          {Array.isArray(val) && val.length > 0 ? (
+                            val.map((opt: string) => (
+                              <span
+                                key={opt}
+                                className="text-xs bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded border border-neutral-700/50"
+                              >
+                                {opt}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-neutral-700">—</span>
+                          )}
+                        </span>
+                      ) : col.type === 'date' ? (
+                        <span className="text-xs text-neutral-400">{val ? formatDate(val) : '—'}</span>
+                      ) : col.type === 'datetime' ? (
+                        <span className="text-xs text-neutral-400">
+                          {val ? formatDatetime(val) : '—'}
                         </span>
                       ) : (
                         <span className="text-neutral-500">{val || ''}</span>

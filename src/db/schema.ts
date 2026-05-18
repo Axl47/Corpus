@@ -32,6 +32,7 @@ export const databases = sqliteTable('databases', {
   name:   text('name').notNull(),
   itemId: text('item_id').references(() => workspaceItems.id, { onDelete: 'set null' }),
   schema: text('schema', { mode: 'json' }).notNull().$type<any[]>(),
+  views: text('views', { mode: 'json' }).$type<any[]>(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
