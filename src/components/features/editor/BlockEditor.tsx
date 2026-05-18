@@ -33,7 +33,7 @@ export default function BlockEditor({ initialContent, onChange, placeholder }: P
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      Markdown.configure({ transformPastedText: true }),
+      Markdown,
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') return 'Heading...';
