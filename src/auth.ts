@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { users, accounts, sessions, verificationTokens, workspaces, workspaceMembers } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { authConfig } from './auth.config';
+import { createSeedWorkspace } from '@/lib/seed';
 
 // ── Type augmentation ─────────────────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
+
+      // Seed default workspace with tasks database and welcome page
+      await createSeedWorkspace(user.id);
 
       // Count total users; if this is the first one, promote to admin and claim orphaned workspaces
       const allUsers = await db.select({ id: users.id }).from(users);

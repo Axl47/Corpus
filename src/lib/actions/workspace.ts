@@ -95,7 +95,7 @@ export async function getWorkspaces() {
   const user = await getCurrentUser();
 
   if (user.role === 'admin') {
-    return db.select().from(workspaces).orderBy(asc(workspaces.createdAt));
+    return db.select().from(workspaces).orderBy(asc(workspaces.sortOrder), asc(workspaces.createdAt));
   }
 
   // Regular user: only workspaces they're a member of
@@ -111,7 +111,7 @@ export async function getWorkspaces() {
     .select()
     .from(workspaces)
     .where(inArray(workspaces.id, ids))
-    .orderBy(asc(workspaces.createdAt));
+    .orderBy(asc(workspaces.sortOrder), asc(workspaces.createdAt));
 }
 
 export async function createWorkspace(name: string) {
@@ -422,3 +422,51 @@ export async function duplicateWorkspaceItem(itemId: string) {
     return { type: 'database' as const, dbId: newDbId };
   }
 }
+
+export async function updateWorkspacesOrder(workspaceIds: string[]) {
+  const user = await getCurrentUser();
+  for (let i = 0; i < workspaceIds.length; i++) {
+    const wsId = workspaceIds[i];
+    if (user.role !== 'admin') {
+      const [member] = await db
+        .select()
+        .from(workspaceMembers)
+        .where(and(eq(workspaceMembers.workspaceId, wsId), eq(workspaceMembers.userId, user.id)))
+        .limit(1);
+      if (!member) continue;
+    }
+    await db.update(workspaces).set({ sortOrder: i }).where(eq(workspaces.id, wsId));
+  }
+  revalidatePath('/');
+}
+
+export async function updateWorkspaceItemsOrder(itemIds: string[]) {
+  for (let i = 0; i < itemIds.length; i++) {
+    const itemId = itemIds[i];
+    const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
+    if (item[0]) {
+      await assertWorkspaceAccess(item[0].workspaceId);
+      await db.update(workspaceItems).set({ sortOrder: i }).where(eq(workspaceItems.id, itemId));
+    }
+  }
+  revalidatePath('/');
+}
+
+export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspaceId: string, itemIdsOrder: string[]) {
+  const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
+  if (!item[0]) throw new Error('Item not found');
+  
+  await assertWorkspaceAccess(item[0].workspaceId);
+  await assertWorkspaceAccess(targetWorkspaceId);
+
+  await db.update(workspaceItems).set({ workspaceId: targetWorkspaceId }).where(eq(workspaceItems.id, itemId));
+
+  for (let i = 0; i < itemIdsOrder.length; i++) {
+    const id = itemIdsOrder[i];
+    await db.update(workspaceItems).set({ sortOrder: i }).where(eq(workspaceItems.id, id));
+  }
+
+  revalidatePath('/');
+}
+
+

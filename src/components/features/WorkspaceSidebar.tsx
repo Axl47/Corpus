@@ -25,6 +25,9 @@ import {
   updateWorkspaceItemTitle,
   deleteWorkspaceItem,
   duplicateWorkspaceItem,
+  updateWorkspacesOrder,
+  updateWorkspaceItemsOrder,
+  moveWorkspaceItemToWorkspace,
 } from '@/lib/actions/workspace';
 import { logout } from '@/lib/actions/auth';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
@@ -59,6 +62,7 @@ export default function WorkspaceSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const [isSaving, startSaveTransition] = useTransition();
 
   // Tree creation and editing states
   const [templatePickerWorkspaceId, setTemplatePickerWorkspaceId] = useState<string | null>(null);
@@ -121,9 +125,336 @@ export default function WorkspaceSidebar({
     }));
   };
 
-  // Group items by workspaceId
-  const itemsByWorkspace = workspaces.reduce((acc, w) => {
-    acc[w.id] = items.filter(item => item.workspaceId === w.id);
+  // Local state for optimistic UI during drag and drop
+  const [localWorkspaces, setLocalWorkspaces] = useState<WorkspaceType[]>(workspaces);
+  const [localItems, setLocalItems] = useState<WorkspaceItemRow[]>(items);
+
+  // Sync props to local state only when structural changes happen (like additions, deletions) or when not in transition
+  useEffect(() => {
+    if (isPending) return;
+    
+    const wsIds = workspaces.map(w => w.id).join(',');
+    setLocalWorkspaces(prev => {
+      const localWsIds = prev.map(w => w.id).join(',');
+      if (wsIds !== localWsIds) {
+        return workspaces;
+      }
+      
+      let changed = false;
+      const updated = prev.map(local => {
+        const matching = workspaces.find(w => w.id === local.id);
+        if (matching) {
+          if (local.name !== matching.name) {
+            changed = true;
+            return {
+              ...local,
+              name: matching.name
+            };
+          }
+        }
+        return local;
+      });
+      return changed ? updated : prev;
+    });
+  }, [workspaces, isPending]);
+
+  useEffect(() => {
+    if (isPending) return;
+    
+    const itemIds = items.map(i => i.id).join(',');
+    setLocalItems(prev => {
+      const localItemIds = prev.map(i => i.id).join(',');
+      if (itemIds !== localItemIds) {
+        return items;
+      }
+      
+      let changed = false;
+      const updated = prev.map(local => {
+        const matching = items.find(i => i.id === local.id);
+        if (matching) {
+          if (
+            local.title !== matching.title ||
+            local.icon !== matching.icon ||
+            local.iconColor !== matching.iconColor ||
+            local.workspaceId !== matching.workspaceId
+          ) {
+            changed = true;
+            return {
+              ...local,
+              title: matching.title,
+              icon: matching.icon,
+              iconColor: matching.iconColor,
+              workspaceId: matching.workspaceId
+            };
+          }
+        }
+        return local;
+      });
+      return changed ? updated : prev;
+    });
+  }, [items, isPending]);
+
+  // Drag and drop states for workspaces
+  const [draggedWorkspaceId, setDraggedWorkspaceId] = useState<string | null>(null);
+  const [dragOverWorkspaceId, setDragOverWorkspaceId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after'>('before');
+
+  const handleWorkspaceDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedWorkspaceId(id);
+  };
+
+  const handleWorkspaceDragOver = (e: React.DragEvent, id: string) => {
+    if (!draggedWorkspaceId || draggedWorkspaceId === id) return;
+    
+    e.preventDefault();
+    setDragOverWorkspaceId(id);
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    if (relativeY > rect.height / 2) {
+      setDropPosition('after');
+    } else {
+      setDropPosition('before');
+    }
+  };
+
+  const handleWorkspaceDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    setDragOverWorkspaceId(null);
+    if (!draggedWorkspaceId || draggedWorkspaceId === targetId) return;
+
+    const sourceIndex = localWorkspaces.findIndex(w => w.id === draggedWorkspaceId);
+    const targetIndex = localWorkspaces.findIndex(w => w.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const reordered = [...localWorkspaces];
+    const [dragged] = reordered.splice(sourceIndex, 1);
+    
+    let newTargetIndex = reordered.findIndex(w => w.id === targetId);
+    if (dropPosition === 'after') {
+      newTargetIndex += 1;
+    }
+
+    reordered.splice(newTargetIndex, 0, dragged);
+
+    // Check if the order actually changed!
+    const orderChanged = reordered.some((w, idx) => w.id !== localWorkspaces[idx].id);
+    if (!orderChanged) {
+      setDraggedWorkspaceId(null);
+      return;
+    }
+
+    // Optimistic UI update
+    setLocalWorkspaces(reordered);
+    setDraggedWorkspaceId(null);
+
+    // Persist to DB
+    startSaveTransition(async () => {
+      await updateWorkspacesOrder(reordered.map(w => w.id));
+      router.refresh();
+    });
+  };
+
+  const handleWorkspaceDragEnd = () => {
+    setDraggedWorkspaceId(null);
+    setDragOverWorkspaceId(null);
+  };
+
+  // Drag and drop states for workspace items
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [itemDropPosition, setItemDropPosition] = useState<'before' | 'after'>('before');
+  const [dragOverWorkspaceForItemId, setDragOverWorkspaceForItemId] = useState<string | null>(null);
+
+  const handleItemDragStart = (e: React.DragEvent, id: string) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItemId(id);
+  };
+
+  const handleItemDragOver = (e: React.DragEvent, id: string, workspaceId: string) => {
+    if (!draggedItemId || draggedItemId === id) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDragOverItemId(id);
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    if (relativeY > rect.height / 2) {
+      setItemDropPosition('after');
+    } else {
+      setItemDropPosition('before');
+    }
+  };
+
+  const handleItemDrop = async (e: React.DragEvent, targetId: string, workspaceId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverItemId(null);
+    if (!draggedItemId || draggedItemId === targetId) return;
+
+    const draggedItem = localItems.find(i => i.id === draggedItemId);
+    const targetItem = localItems.find(i => i.id === targetId);
+    if (!draggedItem || !targetItem) return;
+
+    const sourceWorkspaceId = draggedItem.workspaceId;
+    const targetWorkspaceId = workspaceId;
+
+    if (sourceWorkspaceId === targetWorkspaceId) {
+      // Same workspace reordering
+      const wsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
+      const sourceIndex = wsItems.findIndex(i => i.id === draggedItemId);
+      if (sourceIndex === -1) return;
+
+      const reorderedWsItems = [...wsItems];
+      const [dragged] = reorderedWsItems.splice(sourceIndex, 1);
+      
+      let newTargetIndex = reorderedWsItems.findIndex(i => i.id === targetId);
+      if (itemDropPosition === 'after') {
+        newTargetIndex += 1;
+      }
+      
+      reorderedWsItems.splice(newTargetIndex, 0, dragged);
+
+      // Check if order actually changed
+      const orderChanged = reorderedWsItems.some((item, idx) => item.id !== wsItems[idx].id);
+      if (!orderChanged) {
+        setDraggedItemId(null);
+        return;
+      }
+
+      const newItems = [
+        ...localItems.filter(item => item.workspaceId !== targetWorkspaceId),
+        ...reorderedWsItems
+      ];
+
+      setLocalItems(newItems);
+      setDraggedItemId(null);
+
+      startSaveTransition(async () => {
+        await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
+        router.refresh();
+      });
+    } else {
+      // Cross-workspace moving and reordering!
+      const sourceWsItems = localItems.filter(i => i.workspaceId === sourceWorkspaceId && i.id !== draggedItemId);
+      const targetWsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
+      
+      const updatedDraggedItem = { ...draggedItem, workspaceId: targetWorkspaceId };
+      const reorderedTargetWsItems = [...targetWsItems];
+      
+      let newTargetIndex = reorderedTargetWsItems.findIndex(i => i.id === targetId);
+      if (itemDropPosition === 'after') {
+        newTargetIndex += 1;
+      }
+      
+      reorderedTargetWsItems.splice(newTargetIndex, 0, updatedDraggedItem);
+
+      const cleanItems = [
+        ...localItems.filter(i => i.workspaceId !== sourceWorkspaceId && i.workspaceId !== targetWorkspaceId),
+        ...sourceWsItems,
+        ...reorderedTargetWsItems
+      ];
+
+      setLocalItems(cleanItems);
+      setDraggedItemId(null);
+
+      startSaveTransition(async () => {
+        await moveWorkspaceItemToWorkspace(draggedItemId, targetWorkspaceId, reorderedTargetWsItems.map(i => i.id));
+        router.refresh();
+      });
+    }
+  };
+
+  const handleItemDragEnd = () => {
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+    setDragOverWorkspaceForItemId(null);
+  };
+
+  // Cross-workspace root node drop support
+  const handleWorkspaceItemDragOverRoot = (e: React.DragEvent, workspaceId: string) => {
+    if (draggedItemId) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverWorkspaceForItemId(workspaceId);
+    }
+  };
+
+  const handleWorkspaceItemDragLeaveRoot = () => {
+    setDragOverWorkspaceForItemId(null);
+  };
+
+  const handleWorkspaceItemDropOnRoot = async (e: React.DragEvent, targetWorkspaceId: string) => {
+    if (!draggedItemId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverWorkspaceForItemId(null);
+
+    const draggedItem = localItems.find(i => i.id === draggedItemId);
+    if (!draggedItem) return;
+
+    const sourceWorkspaceId = draggedItem.workspaceId;
+    
+    if (sourceWorkspaceId === targetWorkspaceId) {
+      // Same workspace: move to end
+      const wsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
+      const sourceIndex = wsItems.findIndex(i => i.id === draggedItemId);
+      if (sourceIndex === -1) return;
+
+      const reorderedWsItems = [...wsItems];
+      const [dragged] = reorderedWsItems.splice(sourceIndex, 1);
+      reorderedWsItems.push(dragged);
+
+      // Check if order actually changed
+      const orderChanged = reorderedWsItems.some((item, idx) => item.id !== wsItems[idx].id);
+      if (!orderChanged) {
+        setDraggedItemId(null);
+        return;
+      }
+
+      const newItems = [
+        ...localItems.filter(item => item.workspaceId !== targetWorkspaceId),
+        ...reorderedWsItems
+      ];
+
+      setLocalItems(newItems);
+      setDraggedItemId(null);
+
+      startSaveTransition(async () => {
+        await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
+        router.refresh();
+      });
+    } else {
+      // Move to target workspace at the end of the list
+      const sourceWsItems = localItems.filter(i => i.workspaceId === sourceWorkspaceId && i.id !== draggedItemId);
+      const targetWsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
+
+      const updatedDraggedItem = { ...draggedItem, workspaceId: targetWorkspaceId };
+      const reorderedTargetWsItems = [...targetWsItems, updatedDraggedItem];
+
+      const cleanItems = [
+        ...localItems.filter(i => i.workspaceId !== sourceWorkspaceId && i.workspaceId !== targetWorkspaceId),
+        ...sourceWsItems,
+        ...reorderedTargetWsItems
+      ];
+
+      setLocalItems(cleanItems);
+      setDraggedItemId(null);
+
+      startSaveTransition(async () => {
+        await moveWorkspaceItemToWorkspace(draggedItemId, targetWorkspaceId, reorderedTargetWsItems.map(i => i.id));
+        router.refresh();
+      });
+    }
+  };
+
+  // Group items by workspaceId using localItems and localWorkspaces
+  const itemsByWorkspace = localWorkspaces.reduce((acc, w) => {
+    acc[w.id] = localItems.filter(item => item.workspaceId === w.id);
     return acc;
   }, {} as Record<string, WorkspaceItemRow[]>);
 
@@ -220,27 +551,60 @@ export default function WorkspaceSidebar({
       {/* Brand Header */}
       <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
         <Link href="/" className="font-semibold flex items-center gap-2.5 text-white hover:text-neutral-300 transition-colors">
-          <img src="/logo-square-dark.png" alt="Remna Logo" className="w-5 h-5 object-contain rounded-md shrink-0 shadow-sm" />
+          <img src="/logo-square-dark.png" alt="Remna Logo" className={`w-5 h-5 object-contain rounded-md shrink-0 shadow-sm ${isSaving ? 'animate-pulse' : ''}`} />
           <span className="font-bold tracking-tight text-white">Remna</span>
         </Link>
+        {isSaving && (
+          <div className="flex items-center gap-1.5 text-[11px] text-blue-400 font-medium bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">
+            <div className="w-2 h-2 rounded-full border border-blue-400 border-t-transparent animate-spin shrink-0" />
+            <span>Saving...</span>
+          </div>
+        )}
       </div>
 
       {/* Tree view list */}
       <div className="flex-1 overflow-y-auto px-2 py-4 space-y-4">
-        {workspaces.map((w) => {
+        {localWorkspaces.map((w) => {
           const isExpanded = expandedWorkspaces[w.id] !== false;
           const workspaceChildren = itemsByWorkspace[w.id] || [];
           const isCurrentActive = w.id === activeWorkspace.id;
 
+          const isWorkspaceDragged = draggedWorkspaceId === w.id;
+          const isWorkspaceDragOver = dragOverWorkspaceId === w.id;
+
           return (
-            <div key={w.id} className="space-y-1.5">
+            <div
+              key={w.id}
+              className={`space-y-1.5 transition-all duration-200 relative ${
+                isWorkspaceDragged ? 'opacity-30 animate-pulse' : ''
+              }`}
+              draggable
+              onDragStart={(e) => handleWorkspaceDragStart(e, w.id)}
+              onDragOver={(e) => handleWorkspaceDragOver(e, w.id)}
+              onDragEnd={handleWorkspaceDragEnd}
+              onDrop={(e) => handleWorkspaceDrop(e, w.id)}
+            >
+              {isWorkspaceDragOver && (
+                <div className={`absolute left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10 shadow-[0_1px_3px_rgba(0,0,0,0.4)] ${
+                  dropPosition === 'after' ? '-bottom-1' : '-top-1'
+                }`}>
+                  <div className="absolute -left-1 -top-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_6px_#445c95]" />
+                </div>
+              )}
               {/* Workspace Root Node */}
               <div
                 onClick={() => handleSwitchWorkspace(w.id)}
-                className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all group/root cursor-pointer ${
+                onDragOver={(e) => handleWorkspaceItemDragOverRoot(e, w.id)}
+                onDragLeave={handleWorkspaceItemDragLeaveRoot}
+                onDrop={(e) => handleWorkspaceItemDropOnRoot(e, w.id)}
+                className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all group/root cursor-grab active:cursor-grabbing ${
                   isCurrentActive
                     ? 'bg-neutral-850 text-white font-medium shadow-sm'
                     : 'text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
+                } ${
+                  dragOverWorkspaceForItemId === w.id
+                    ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400 scale-[1.02]'
+                    : ''
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -294,15 +658,33 @@ export default function WorkspaceSidebar({
                   {workspaceChildren.map((item) => {
                     const isLoading = loadingItem?.id === item.id;
                     const isDeleting = isLoading && loadingItem?.action === 'delete';
+                    
+                    const isItemDragged = draggedItemId === item.id;
+                    const isItemDragOver = dragOverItemId === item.id;
+
                     return (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-all duration-200 group/item ${
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-all duration-200 group/item cursor-grab active:cursor-grabbing relative ${
                         isActive(item)
                           ? 'bg-neutral-850 text-white font-medium'
                           : 'text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
-                      } ${isLoading ? 'opacity-40 pointer-events-none' : ''}`}
+                      } ${isLoading ? 'opacity-40 pointer-events-none' : ''} ${
+                        isItemDragged ? 'opacity-30 animate-pulse' : ''
+                      }`}
+                      draggable
+                      onDragStart={(e) => handleItemDragStart(e, item.id)}
+                      onDragOver={(e) => handleItemDragOver(e, item.id, w.id)}
+                      onDragEnd={handleItemDragEnd}
+                      onDrop={(e) => handleItemDrop(e, item.id, w.id)}
                     >
+                      {isItemDragOver && (
+                        <div className={`absolute left-6 right-0 h-0.5 bg-blue-500 rounded-full z-10 shadow-[0_1px_3px_rgba(0,0,0,0.4)] ${
+                          itemDropPosition === 'after' ? '-bottom-0.5' : '-top-0.5'
+                        }`}>
+                          <div className="absolute -left-1 -top-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_6px_#445c95]" />
+                        </div>
+                      )}
                       {/* Icon picker trigger */}
                       <div className="relative shrink-0 select-none">
                         <button

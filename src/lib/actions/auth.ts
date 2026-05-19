@@ -8,6 +8,7 @@ import { users, workspaceMembers, workspaces } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createSeedWorkspace } from '@/lib/seed';
 
 export async function logout() {
   await signOut({ redirectTo: '/login' });
@@ -33,6 +34,9 @@ export async function registerUser(_prevState: unknown, formData: FormData) {
   const id = crypto.randomUUID();
 
   await db.insert(users).values({ id, name: name || null, email, passwordHash });
+
+  // Seed default workspace with tasks database and welcome page
+  await createSeedWorkspace(id);
 
   // Promote to admin and claim orphaned workspaces if this is the first user
   const allUsers = await db.select({ id: users.id }).from(users);
