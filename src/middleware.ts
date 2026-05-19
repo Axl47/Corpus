@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 
 // Use only the edge-compatible config (no DB adapter) in middleware
-export const { auth: middleware } = NextAuth(authConfig);
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: [
