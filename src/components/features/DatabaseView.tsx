@@ -74,14 +74,59 @@ function applyFilters(pages: any[], filters: ViewFilter[], schema: any[]): any[]
       const raw = page.properties[f.columnId];
       const str =
         raw == null ? '' : Array.isArray(raw) ? raw.join(' ') : String(raw);
+
+      if (f.operator === 'is_empty') {
+        return !raw || str === '' || (Array.isArray(raw) && !raw.length);
+      }
+      if (f.operator === 'is_not_empty') {
+        return !!raw && str !== '' && (!Array.isArray(raw) || raw.length > 0);
+      }
+
+      let targetValues: string[] = [];
+      if (f.value) {
+        if (f.value.startsWith('[') && f.value.endsWith(']')) {
+          try {
+            targetValues = JSON.parse(f.value);
+          } catch (e) {
+            targetValues = [f.value];
+          }
+        } else {
+          targetValues = [f.value];
+        }
+      }
+
+      if (targetValues.length === 0) {
+        // Empty filters should usually not filter out everything, but for select lists we want it to match nothing
+        return false;
+      }
+
       switch (f.operator) {
-        case 'equals':       return str === f.value;
-        case 'not_equals':   return str !== f.value;
-        case 'contains':     return str.toLowerCase().includes(f.value.toLowerCase());
-        case 'not_contains': return !str.toLowerCase().includes(f.value.toLowerCase());
-        case 'is_empty':     return !raw || str === '' || (Array.isArray(raw) && !raw.length);
-        case 'is_not_empty': return !!raw && str !== '' && (!Array.isArray(raw) || raw.length > 0);
-        default:             return true;
+        case 'equals': {
+          if (Array.isArray(raw)) {
+            return raw.some(v => targetValues.includes(String(v)));
+          }
+          return targetValues.includes(String(raw));
+        }
+        case 'not_equals': {
+          if (Array.isArray(raw)) {
+            return !raw.some(v => targetValues.includes(String(v)));
+          }
+          return !targetValues.includes(String(raw));
+        }
+        case 'contains': {
+          if (Array.isArray(raw)) {
+            return raw.some(v => targetValues.some(tv => String(v).toLowerCase().includes(tv.toLowerCase())));
+          }
+          return targetValues.some(tv => String(raw).toLowerCase().includes(tv.toLowerCase()));
+        }
+        case 'not_contains': {
+          if (Array.isArray(raw)) {
+            return !raw.some(v => targetValues.some(tv => String(v).toLowerCase().includes(tv.toLowerCase())));
+          }
+          return !targetValues.some(tv => String(raw).toLowerCase().includes(tv.toLowerCase()));
+        }
+        default:
+          return true;
       }
     })
   );
@@ -432,6 +477,9 @@ export default function DatabaseView({
   const handleColumnOrderChange = (columnOrder: string[]) =>
     mutateConfig((cfg) => ({ ...cfg, columnOrder }));
 
+  const handleColumnWidthsChange = (columnWidths: Record<string, number>) =>
+    mutateConfig((cfg) => ({ ...cfg, columnWidths }));
+
   const handleGroupByChange = (groupByCol: string) =>
     mutateConfig((cfg) => ({ ...cfg, groupByCol }));
 
@@ -473,6 +521,9 @@ export default function DatabaseView({
 
   const handleCardColorColChange = (cardColorCol: string) =>
     mutateConfig((cfg) => ({ ...cfg, cardColorCol: cardColorCol || undefined }));
+
+  const handleRowColorColChange = (rowColorCol: string) =>
+    mutateConfig((cfg) => ({ ...cfg, rowColorCol: rowColorCol || undefined }));
 
   const handleGroupColBgChange = (groupColBg: boolean) =>
     mutateConfig((cfg) => ({ ...cfg, groupColBg }));
@@ -624,6 +675,9 @@ export default function DatabaseView({
               pages={processedPages}
               columnOrder={tableConfig.columnOrder}
               hiddenColumns={tableConfig.hiddenColumns}
+              columnWidths={tableConfig.columnWidths ?? {}}
+              onColumnWidthsChange={handleColumnWidthsChange}
+              rowColorCol={tableConfig.rowColorCol}
               onColumnOrderChange={handleColumnOrderChange}
               onRowClick={handlePageClick}
               onRowReorder={handleRowReorder}
@@ -730,6 +784,8 @@ export default function DatabaseView({
               onFirstDayOfWeekChange={handleFirstDayOfWeekChange}
               cardColorCol={kanbanConfig?.cardColorCol ?? calendarConfig?.cardColorCol}
               onCardColorColChange={handleCardColorColChange}
+              rowColorCol={(config as TableViewConfig).rowColorCol}
+              onRowColorColChange={handleRowColorColChange}
               groupColBg={kanbanConfig?.groupColBg ?? false}
               onGroupColBgChange={handleGroupColBgChange}
               defaultPageIcon={config.defaultPageIcon}

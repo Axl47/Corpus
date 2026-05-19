@@ -25,6 +25,8 @@ export interface TableViewConfig {
   type: 'table';
   columnOrder: string[];   // visible column IDs in order; [] = use schema order
   hiddenColumns: string[];
+  columnWidths?: Record<string, number>;
+  rowColorCol?: string;    // property ID of a select/multi_select column that drives the row's background tint color
   filters: ViewFilter[];
   sorts: ViewSort[];
   openBehavior?: OpenBehavior;

@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { getOptionColorByValue, formatDateValue } from '@/lib/types/properties';
+import { useRef, useState, useEffect } from 'react';
+import { getOptionColorByValue, formatDateValue, normalizeOption, type SelectOption } from '@/lib/types/properties';
 import InlineCellEditor from './InlineCellEditor';
-import { GripHorizontal, GripVertical, Settings, Trash2, Type, List, Hash, AlignLeft, Calendar, Clock, Tags, Plus, Copy, EyeOff, ArrowUp, ArrowDown, Filter, X } from 'lucide-react';
+import { GripHorizontal, GripVertical, Settings, Trash2, Type, List, Hash, AlignLeft, Calendar, Clock, Tags, Plus, Copy, EyeOff, ArrowUp, ArrowDown, Filter, X, RotateCcw } from 'lucide-react';
 import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
@@ -43,6 +43,9 @@ export default function TableLayout({
   pages,
   columnOrder,
   hiddenColumns,
+  columnWidths = {},
+  onColumnWidthsChange,
+  rowColorCol,
   onColumnOrderChange,
   onRowClick,
   onRowReorder,
@@ -63,6 +66,9 @@ export default function TableLayout({
   pages: any[];
   columnOrder: string[];
   hiddenColumns: string[];
+  columnWidths?: Record<string, number>;
+  onColumnWidthsChange?: (widths: Record<string, number>) => void;
+  rowColorCol?: string;
   onColumnOrderChange: (order: string[]) => void;
   onRowClick: (pageId: string) => void;
   onRowReorder: (orderedIds: string[]) => void;
@@ -82,6 +88,66 @@ export default function TableLayout({
   const schema: any[] = database.schema ?? [];
   const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
   const router = useRouter();
+
+  const [localWidths, setLocalWidths] = useState<Record<string, number>>(() => columnWidths ?? {});
+
+  useEffect(() => {
+    setLocalWidths(columnWidths ?? {});
+  }, [columnWidths]);
+
+  const hasAnyCustomWidth = Object.keys(localWidths).length > 0;
+  const totalCalculatedWidth = visibleCols.reduce((sum, col) => {
+    return sum + (localWidths[col.id] ?? (col.id === 'title' ? 180 : 100));
+  }, 0);
+
+  const handleResizeStart = (e: React.MouseEvent, colId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const thElement = (e.currentTarget as HTMLElement).closest('th');
+    const startX = e.clientX;
+    const startWidth = thElement
+      ? thElement.getBoundingClientRect().width
+      : (localWidths[colId] ?? (colId === 'title' ? 180 : 100));
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const minWidth = colId === 'title' ? 180 : 100;
+      const newWidth = Math.max(minWidth, startWidth + deltaX);
+      setLocalWidths((prev) => ({
+        ...prev,
+        [colId]: newWidth,
+      }));
+    };
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+
+      setLocalWidths((currentWidths) => {
+        const deltaX = upEvent.clientX - startX;
+        const minWidth = colId === 'title' ? 180 : 100;
+        const newWidth = Math.max(minWidth, startWidth + deltaX);
+        const updatedWidths = {
+          ...currentWidths,
+          [colId]: newWidth,
+        };
+        onColumnWidthsChange?.(updatedWidths);
+        return updatedWidths;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResetColWidth = (colId: string) => {
+    const updatedWidths = { ...localWidths };
+    delete updatedWidths[colId];
+    setLocalWidths(updatedWidths);
+    onColumnWidthsChange?.(updatedWidths);
+    closeHeaderMenu();
+  };
 
   const [editingCell, setEditingCell] = useState<{ pageId: string; colId: string } | null>(null);
   const [activeIconPickerPageId, setActiveIconPickerPageId] = useState<string | null>(null);
@@ -124,6 +190,31 @@ export default function TableLayout({
   const closeHeaderMenu = () => {
     setActiveHeaderMenuColId(null);
     setHeaderMenuPos(null);
+  };
+
+  // Toggle columns menu state (for the "+" button at the end of headers)
+  const [toggleMenuOpen, setToggleMenuOpen] = useState(false);
+  const [toggleMenuPos, setToggleMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  const handleToggleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (toggleMenuOpen) {
+      closeToggleMenu();
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const menuWidth = 180;
+      let x = rect.left;
+      if (typeof window !== 'undefined' && x + menuWidth > window.innerWidth) {
+        x = Math.max(8, window.innerWidth - menuWidth - 8);
+      }
+      setToggleMenuPos({ x, y: rect.bottom + 4 });
+      setToggleMenuOpen(true);
+    }
+  };
+
+  const closeToggleMenu = () => {
+    setToggleMenuOpen(false);
+    setToggleMenuPos(null);
   };
 
   const handleSortCol = (colId: string, direction: 'asc' | 'desc') => {
@@ -326,8 +417,26 @@ export default function TableLayout({
 
   return (
     <>
-      <div className="flex-1 overflow-x-auto">
-        <table className="w-full text-left text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
+      <div className="flex-1 overflow-x-auto relative">
+        {/* Floating Toggle Columns Button */}
+        <div className="absolute right-2 top-1 z-20">
+          <button
+            onClick={handleToggleMenuClick}
+            className="w-7 h-7 flex items-center justify-center text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40 rounded transition-colors cursor-pointer"
+            title="Toggle Columns"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+
+        <table
+          className="text-left text-sm border-collapse"
+          style={{
+            tableLayout: 'fixed',
+            width: hasAnyCustomWidth ? totalCalculatedWidth : '100%',
+            minWidth: '100%'
+          }}
+        >
           <thead className="border-b border-neutral-800/60 sticky top-0 z-10">
             <tr>
               {visibleCols.map((col, idx) => {
@@ -343,7 +452,11 @@ export default function TableLayout({
                     onDragLeave={() => handleColDragLeave(col.id)}
                     onDrop={(e) => handleColDrop(e, col.id)}
                     onDragEnd={handleColDragEnd}
-                    className={`group py-2 px-3 font-medium whitespace-nowrap cursor-grab active:cursor-grabbing transition-colors w-48
+                    style={{
+                      width: localWidths[col.id],
+                      minWidth: col.id === 'title' ? 180 : 100
+                    }}
+                    className={`group py-2 px-3 font-medium whitespace-nowrap cursor-grab active:cursor-grabbing transition-colors relative
                       ${!isLast ? 'border-r border-neutral-800/40' : ''}
                       ${isOver ? 'border-l-2 border-l-blue-500/60' : ''}
                       ${isDraggingThis ? 'opacity-25' : ''}
@@ -359,11 +472,21 @@ export default function TableLayout({
                         <span className="truncate text-neutral-600 group-hover:text-neutral-400 text-xs uppercase tracking-wider transition-colors">
                           {col.name}
                         </span>
+                        {(filters ?? []).some((f) => f.columnId === col.id) && (
+                          <Filter size={10} className="text-blue-500 shrink-0" />
+                        )}
                       </div>
                       <div className="opacity-0 group-hover:opacity-40 text-neutral-600 cursor-grab transition-opacity pl-1">
                         <GripHorizontal size={11} />
                       </div>
                     </div>
+                    {/* Resize handle */}
+                    <div
+                      onMouseDown={(e) => handleResizeStart(e, col.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-0 bottom-0 w-1.5 hover:bg-blue-500/40 active:bg-blue-500 cursor-col-resize z-20 transition-colors"
+                      title="Drag to resize"
+                    />
                   </th>
                 );
               })}
@@ -380,6 +503,22 @@ export default function TableLayout({
             ) : (
               pages.map((page) => {
                 const isRowEditing = editingCell?.pageId === page.id;
+                const colorColSchema = rowColorCol ? schema.find((c) => c.id === rowColorCol) : null;
+                const rowBgColor = colorColSchema ? (() => {
+                  const val = page.properties[rowColorCol as string];
+                  if (!val) return null;
+                  const opts = colorColSchema.options ?? [];
+                  if (colorColSchema.type === 'select') {
+                    return getOptionColorByValue(opts, val).groupBg;
+                  }
+                  if (colorColSchema.type === 'multi_select') {
+                    if (Array.isArray(val) && val.length > 0) {
+                      return getOptionColorByValue(opts, val[0]).groupBg;
+                    }
+                  }
+                  return null;
+                })() : null;
+
                 return (
                 <tr
                   key={page.id}
@@ -394,8 +533,9 @@ export default function TableLayout({
                   onDragOver={(e) => handleRowDragOver(e, page.id)}
                   onDragLeave={() => handleRowDragLeave(page.id)}
                   onDrop={(e) => handleRowDrop(e, page.id)}
+                  style={{ backgroundColor: rowBgColor || undefined }}
                   className={[
-                    'hover:bg-neutral-800/20 cursor-pointer transition-colors',
+                    'hover:bg-neutral-800/20 cursor-pointer transition-colors group',
                     isRowEditing ? 'relative z-20' : '',
                     draggedRowId === page.id ? 'opacity-25' : '',
                     dragOverRowId === page.id && dropPosition === 'before'
@@ -418,7 +558,7 @@ export default function TableLayout({
                       <td
                         key={col.id}
                         onClick={handleCellClick}
-                        className={`py-2 px-3 whitespace-nowrap overflow-visible relative text-ellipsis
+                        className={`py-2 px-3 whitespace-nowrap overflow-visible relative text-ellipsis group-hover:bg-neutral-800/10 transition-colors
                           ${isEditing ? 'z-30' : ''}
                           ${!isLast ? 'border-r border-neutral-800/40' : ''}
                         `}
@@ -660,6 +800,19 @@ export default function TableLayout({
               </div>
             )}
 
+            {/* Reset Width section */}
+            {activeHeaderMenuColId && localWidths[activeHeaderMenuColId] !== undefined && (
+              <div className="px-1 py-1 border-b border-neutral-800/40">
+                <button
+                  onClick={() => handleResetColWidth(activeHeaderMenuColId)}
+                  className="w-full px-2 py-1 text-xs flex items-center gap-2 text-neutral-300 hover:bg-neutral-800 transition-colors rounded"
+                >
+                  <RotateCcw size={13} className="text-neutral-500" />
+                  Reset Width
+                </button>
+              </div>
+            )}
+
             {/* Filter section */}
             <div className="px-3 py-2 border-b border-neutral-800/40 flex flex-col gap-1.5">
               <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold flex items-center justify-between">
@@ -690,15 +843,65 @@ export default function TableLayout({
                           <X size={12} />
                         </button>
                       </div>
-                      {opDef?.needsValue && (
-                        <input
-                          type="text"
-                          value={activeFilter.value}
-                          onChange={(e) => handleUpdateFilter(activeFilter.id, { value: e.target.value })}
-                          placeholder="Filter value…"
-                          className="bg-neutral-950 border border-neutral-800 text-neutral-300 text-xs py-1 px-2 rounded outline-none w-full focus:border-neutral-700 font-sans"
-                        />
-                      )}
+                      {opDef?.needsValue && (() => {
+                        const colSchema = schema.find((c) => c.id === activeHeaderMenuColId);
+                        if (colSchema && (colSchema.type === 'select' || colSchema.type === 'multi_select')) {
+                          let selectedList: string[] = [];
+                          if (activeFilter.value) {
+                            if (activeFilter.value.startsWith('[') && activeFilter.value.endsWith(']')) {
+                              try { selectedList = JSON.parse(activeFilter.value); } catch (e) { selectedList = [activeFilter.value]; }
+                            } else {
+                              selectedList = [activeFilter.value];
+                            }
+                          }
+
+                          const toggleOption = (optVal: string) => {
+                            let next: string[];
+                            if (selectedList.includes(optVal)) {
+                              next = selectedList.filter(v => v !== optVal);
+                            } else {
+                              next = [...selectedList, optVal];
+                            }
+                            handleUpdateFilter(activeFilter.id, { value: JSON.stringify(next) });
+                          };
+
+                          return (
+                            <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-950/40 p-2 rounded max-h-36 overflow-y-auto">
+                              <span className="text-[10px] text-neutral-500 font-semibold mb-1">Select Options:</span>
+                              {(colSchema.options || []).map((rawOpt: string | SelectOption) => {
+                                const opt = normalizeOption(rawOpt);
+                                const isChecked = selectedList.includes(opt.value);
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    onClick={() => toggleOption(opt.value)}
+                                    className="flex items-center gap-2 text-left text-xs text-neutral-300 hover:bg-neutral-800/40 px-1.5 py-1 rounded cursor-pointer transition-colors"
+                                  >
+                                    <span className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 rounded-sm transition-colors ${
+                                      isChecked ? 'bg-blue-500 border-blue-500' : 'border-neutral-700'
+                                    }`}>
+                                      {isChecked && <span className="text-[9px] font-bold text-white leading-none">✓</span>}
+                                    </span>
+                                    <span className="truncate">{opt.value}</span>
+                                  </button>
+                                );
+                              })}
+                              {(colSchema.options || []).length === 0 && (
+                                  <span className="text-[10px] text-neutral-600 italic">No options defined</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return (
+                          <input
+                            type="text"
+                            value={activeFilter.value}
+                            onChange={(e) => handleUpdateFilter(activeFilter.id, { value: e.target.value })}
+                            placeholder="Filter value…"
+                            className="bg-neutral-950 border border-neutral-800 text-neutral-300 text-xs py-1 px-2 rounded outline-none w-full focus:border-neutral-700 font-sans"
+                          />
+                        );
+                      })()}
                     </div>
                   );
                 } else {
@@ -715,12 +918,26 @@ export default function TableLayout({
               })()}
             </div>
 
-            {/* Toggle Columns Visibility section */}
-            <div className="px-1 pt-1">
+
+
+          </div>
+        </>
+      )}
+
+      {/* Toggle Columns Popover */}
+      {toggleMenuOpen && toggleMenuPos && (
+        <>
+          <div className="fixed inset-0 z-40 cursor-default bg-transparent" onClick={closeToggleMenu} />
+          <div
+            className="fixed z-50 bg-neutral-900 border border-neutral-800 shadow-2xl py-1.5 w-48 rounded overflow-hidden text-left"
+            style={{ left: toggleMenuPos.x, top: toggleMenuPos.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-1 py-1">
               <div className="px-2 py-1 text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">
                 Toggle Columns
               </div>
-              <div className="max-h-36 overflow-y-auto flex flex-col gap-0.5 mt-0.5">
+              <div className="max-h-56 overflow-y-auto flex flex-col gap-0.5 mt-0.5">
                 {schema.map((c) => {
                   const isHidden = hiddenColumns.includes(c.id);
                   const isTitleCol = c.id === 'title';
@@ -729,7 +946,7 @@ export default function TableLayout({
                       key={c.id}
                       onClick={() => !isTitleCol && onToggleHideColumn(c.id)}
                       disabled={isTitleCol}
-                      className={`w-full px-2 py-1 text-xs flex items-center justify-between text-neutral-300 hover:bg-neutral-800 transition-colors rounded ${
+                      className={`w-full px-2 py-1.5 text-xs flex items-center justify-between text-neutral-300 hover:bg-neutral-800 transition-colors rounded ${
                         isTitleCol ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                       }`}
                     >
@@ -747,7 +964,6 @@ export default function TableLayout({
                 })}
               </div>
             </div>
-
           </div>
         </>
       )}

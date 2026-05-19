@@ -65,6 +65,8 @@ interface DatabasePropertiesSidebarProps {
   onFirstDayOfWeekChange?: (day: 'sunday' | 'monday') => void;
   cardColorCol?: string;
   onCardColorColChange?: (colId: string) => void;
+  rowColorCol?: string;
+  onRowColorColChange?: (colId: string) => void;
   groupColBg?: boolean;
   onGroupColBgChange?: (enabled: boolean) => void;
   defaultPageIcon?: string;
@@ -136,6 +138,8 @@ export default function DatabasePropertiesSidebar({
   onFirstDayOfWeekChange,
   cardColorCol,
   onCardColorColChange,
+  rowColorCol,
+  onRowColorColChange,
   groupColBg = false,
   onGroupColBgChange,
   defaultPageIcon,
@@ -579,6 +583,27 @@ export default function DatabasePropertiesSidebar({
               )}
             </div>
 
+            {/* Table: Row color */}
+            {activeView.config.type === 'table' && (
+              <div className="px-4 py-3">
+                <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Row color</span>
+                {colorColumns.length > 0 ? (
+                  <select
+                    value={rowColorCol ?? ''}
+                    onChange={(e) => onRowColorColChange?.(e.target.value)}
+                    className={`${selectCls} w-full text-xs py-1.5 px-2`}
+                  >
+                    <option value="">None</option>
+                    {colorColumns.map((col: any) => (
+                      <option key={col.id} value={col.id}>{col.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs text-amber-500/80">Add a Select or Multi-Select property to enable row coloring</span>
+                )}
+              </div>
+            )}
+
             {/* Kanban: Group by */}
             {activeView.config.type === 'kanban' && (
               <div className="px-4 py-3">
@@ -917,15 +942,61 @@ export default function DatabasePropertiesSidebar({
                             <X size={12} />
                           </button>
                         </div>
-                        {opDef?.needsValue && (
-                          <input
-                            type="text"
-                            value={filter.value}
-                            onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
-                            placeholder="Value…"
-                            className={`${selectCls} w-full focus:border-neutral-700`}
-                          />
-                        )}
+                        {opDef?.needsValue && (() => {
+                          const colSchema = schema.find((c) => c.id === filter.columnId);
+                          if (colSchema && (colSchema.type === 'select' || colSchema.type === 'multi_select')) {
+                            let selectedList: string[] = [];
+                            if (filter.value) {
+                              if (filter.value.startsWith('[') && filter.value.endsWith(']')) {
+                                try { selectedList = JSON.parse(filter.value); } catch (e) { selectedList = [filter.value]; }
+                              } else {
+                                selectedList = [filter.value];
+                              }
+                            }
+
+                            const toggleOption = (optVal: string) => {
+                              let next: string[];
+                              if (selectedList.includes(optVal)) {
+                                next = selectedList.filter(v => v !== optVal);
+                              } else {
+                                next = [...selectedList, optVal];
+                              }
+                              updateFilter(filter.id, { value: JSON.stringify(next) });
+                            };
+
+                            return (
+                              <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-950/40 p-2 rounded max-h-36 overflow-y-auto">
+                                <span className="text-[10px] text-neutral-500 font-semibold mb-1">Select Options:</span>
+                                {(colSchema.options || []).map((rawOpt: string | SelectOption) => {
+                                  const opt = normalizeOption(rawOpt);
+                                  const isChecked = selectedList.includes(opt.value);
+                                  return (
+                                    <button
+                                      key={opt.value}
+                                      onClick={() => toggleOption(opt.value)}
+                                      className="flex items-center gap-2 text-left text-xs text-neutral-300 hover:bg-neutral-800/40 px-1.5 py-1 rounded cursor-pointer transition-colors"
+                                    >
+                                      <Checkbox checked={isChecked} />
+                                      <span className="truncate">{opt.value}</span>
+                                    </button>
+                                  );
+                                })}
+                                {(colSchema.options || []).length === 0 && (
+                                  <span className="text-[10px] text-neutral-600 italic">No options defined</span>
+                                )}
+                              </div>
+                            );
+                          }
+                          return (
+                            <input
+                              type="text"
+                              value={filter.value}
+                              onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
+                              placeholder="Value…"
+                              className={`${selectCls} w-full focus:border-neutral-700`}
+                            />
+                          );
+                        })()}
                       </div>
                     );
                   })}

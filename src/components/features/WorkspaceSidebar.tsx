@@ -2,41 +2,43 @@
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  FileText, 
-  Database, 
-  Plus, 
-  X, 
-  ChevronDown, 
+import {
+  Plus,
+  X,
+  ChevronDown,
   ChevronRight,
-  Check, 
-  Trash, 
-  Edit3, 
-  Briefcase
+  Check,
+  Trash,
+  Edit3,
+  Briefcase,
+  MoreHorizontal,
+  Copy,
 } from 'lucide-react';
 import PageIcon from './PageIcon';
-import { 
-  createStandalonePage, 
-  createWorkspaceDatabase, 
-  createWorkspace, 
-  deleteWorkspace, 
-  renameWorkspace, 
+import {
+  createWorkspace,
+  deleteWorkspace,
+  renameWorkspace,
   switchWorkspace,
-  updateWorkspaceItemIcon
+  updateWorkspaceItemIcon,
+  updateWorkspaceItemTitle,
+  deleteWorkspaceItem,
+  duplicateWorkspaceItem,
 } from '@/lib/actions/workspace';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
 import IconPicker from './IconPicker';
+import TemplatePickerModal from './TemplatePickerModal';
 
 type WorkspaceType = {
   id: string;
   name: string;
 };
 
-export default function WorkspaceSidebar({ 
+export default function WorkspaceSidebar({
   items,
   workspaces,
   activeWorkspace,
-}: { 
+}: {
   items: WorkspaceItemRow[];
   workspaces: WorkspaceType[];
   activeWorkspace: WorkspaceType;
@@ -44,14 +46,42 @@ export default function WorkspaceSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  
+
   // Tree creation and editing states
-  const [creatingType, setCreatingType] = useState<'page' | 'database' | 'choose' | null>(null);
+  const [templatePickerWorkspaceId, setTemplatePickerWorkspaceId] = useState<string | null>(null);
   const [activeIconPickerId, setActiveIconPickerId] = useState<string | null>(null);
-  const [creatingInWorkspaceId, setCreatingInWorkspaceId] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Item context menu
+  const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Item loading state (delete / duplicate)
+  const [loadingItem, setLoadingItem] = useState<{ id: string; action: 'delete' | 'duplicate' } | null>(null);
+
+  // Inline rename
+  const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
+  const [renamingTitle, setRenamingTitle] = useState('');
+  const renamingInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!openMenuItemId) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) {
+        setOpenMenuItemId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [openMenuItemId]);
+
+  useEffect(() => {
+    if (renamingItemId) {
+      renamingInputRef.current?.focus();
+      renamingInputRef.current?.select();
+    }
+  }, [renamingItemId]);
 
   const handleSidebarIconSelect = async (itemId: string, newIcon: string | null, newColor: string | null) => {
     await updateWorkspaceItemIcon(itemId, newIcon, newColor);
@@ -71,12 +101,6 @@ export default function WorkspaceSidebar({
     }, {} as Record<string, boolean>);
   });
 
-  useEffect(() => {
-    if (creatingType && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [creatingType, creatingInWorkspaceId]);
-
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedWorkspaces(prev => ({
@@ -90,39 +114,6 @@ export default function WorkspaceSidebar({
     acc[w.id] = items.filter(item => item.workspaceId === w.id);
     return acc;
   }, {} as Record<string, WorkspaceItemRow[]>);
-
-  // Handlers for item creation
-  const handleCreateItem = (workspaceId: string) => {
-    const title = newTitle.trim();
-    if (!title || !creatingType) return;
-
-    startTransition(async () => {
-      // Automatically switch workspace cookie to target workspace
-      if (workspaceId !== activeWorkspace.id) {
-        await switchWorkspace(workspaceId);
-      }
-
-      if (creatingType === 'page') {
-        const { itemId } = await createStandalonePage(workspaceId, title);
-        router.push(`/page/${itemId}`);
-      } else {
-        const { dbId } = await createWorkspaceDatabase(workspaceId, title);
-        router.push(`/db/${dbId}`);
-      }
-      setCreatingType(null);
-      setCreatingInWorkspaceId(null);
-      setNewTitle('');
-    });
-  };
-
-  const handleKeyDownItem = (e: React.KeyboardEvent, workspaceId: string) => {
-    if (e.key === 'Enter') handleCreateItem(workspaceId);
-    if (e.key === 'Escape') {
-      setCreatingType(null);
-      setCreatingInWorkspaceId(null);
-      setNewTitle('');
-    }
-  };
 
   // Switch Workspace Handler
   const handleSwitchWorkspace = (id: string) => {
@@ -141,7 +132,6 @@ export default function WorkspaceSidebar({
       const { id } = await createWorkspace(name);
       setIsCreatingWorkspace(false);
       setNewWorkspaceName('');
-      // Make sure the new workspace is expanded
       setExpandedWorkspaces(prev => ({ ...prev, [id]: true }));
       router.push('/');
     });
@@ -178,6 +168,50 @@ export default function WorkspaceSidebar({
     }
   };
 
+  const handleRenameItem = (item: WorkspaceItemRow) => {
+    const title = renamingTitle.trim();
+    if (!title || title === item.title) {
+      setRenamingItemId(null);
+      return;
+    }
+    startTransition(async () => {
+      await updateWorkspaceItemTitle(item.id, title);
+      setRenamingItemId(null);
+      router.refresh();
+    });
+  };
+
+  const handleDuplicateItem = (item: WorkspaceItemRow) => {
+    setOpenMenuItemId(null);
+    setLoadingItem({ id: item.id, action: 'duplicate' });
+    startTransition(async () => {
+      const result = await duplicateWorkspaceItem(item.id);
+      if (result?.type === 'page') router.push(`/page/${result.itemId}`);
+      else if (result?.type === 'database') router.push(`/db/${result.dbId}`);
+    });
+  };
+
+  const handleDeleteItem = (item: WorkspaceItemRow) => {
+    setOpenMenuItemId(null);
+    setLoadingItem({ id: item.id, action: 'delete' });
+    startTransition(async () => {
+      await deleteWorkspaceItem(item.id);
+      const href = item.type === 'database' && item.databaseId
+        ? `/db/${item.databaseId}`
+        : `/page/${item.id}`;
+      if (pathname.startsWith(href)) router.push('/');
+      else router.refresh();
+    });
+  };
+
+  const openMenuFor = (e: React.MouseEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuAnchor({ x: rect.left, y: rect.bottom + 4 });
+    setOpenMenuItemId(prev => (prev === itemId ? null : itemId));
+  };
+
   const isActive = (item: WorkspaceItemRow) => {
     if (item.type === 'database' && item.databaseId) {
       return pathname.startsWith(`/db/${item.databaseId}`);
@@ -189,6 +223,8 @@ export default function WorkspaceSidebar({
     if (item.type === 'database' && item.databaseId) return `/db/${item.databaseId}`;
     return `/page/${item.id}`;
   };
+
+  const activeMenuItem = openMenuItemId ? items.find(i => i.id === openMenuItemId) : null;
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden h-full">
@@ -210,17 +246,17 @@ export default function WorkspaceSidebar({
           return (
             <div key={w.id} className="space-y-1.5">
               {/* Workspace Root Node */}
-              <div 
+              <div
                 onClick={() => handleSwitchWorkspace(w.id)}
                 className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-sm transition-all group/root cursor-pointer ${
-                  isCurrentActive 
+                  isCurrentActive
                     ? 'bg-neutral-850 text-white font-medium shadow-sm'
                     : 'text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   {/* Chevron Toggle */}
-                  <button 
+                  <button
                     onClick={(e) => toggleExpand(w.id, e)}
                     className="p-0.5 rounded hover:bg-neutral-700 text-neutral-500 hover:text-white transition-colors shrink-0"
                   >
@@ -229,7 +265,7 @@ export default function WorkspaceSidebar({
 
                   {/* Initials badge */}
                   <div className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm transition-colors ${
-                    isCurrentActive 
+                    isCurrentActive
                       ? 'bg-neutral-50 text-neutral-950'
                       : 'bg-neutral-700 group-hover/root:bg-neutral-600 text-neutral-200'
                   }`}>
@@ -272,8 +308,7 @@ export default function WorkspaceSidebar({
                   <div className="flex items-center gap-0.5 opacity-0 group-hover/root:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => {
-                        setCreatingInWorkspaceId(w.id);
-                        setCreatingType('choose');
+                        setTemplatePickerWorkspaceId(w.id);
                         setExpandedWorkspaces(prev => ({ ...prev, [w.id]: true }));
                       }}
                       className="p-1 rounded hover:bg-neutral-700 text-neutral-400 hover:text-white"
@@ -307,15 +342,19 @@ export default function WorkspaceSidebar({
               {/* Workspace Children Subtree */}
               {isExpanded && (
                 <div className="pl-6 space-y-0.5 border-l border-neutral-800 ml-3.5 my-1">
-                  {workspaceChildren.map((item) => (
+                  {workspaceChildren.map((item) => {
+                    const isLoading = loadingItem?.id === item.id;
+                    const isDeleting = isLoading && loadingItem?.action === 'delete';
+                    return (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors group/item ${
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-all duration-200 group/item ${
                         isActive(item)
                           ? 'bg-neutral-850 text-white font-medium'
                           : 'text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
-                      }`}
+                      } ${isLoading ? 'opacity-40 pointer-events-none' : ''}`}
                     >
+                      {/* Icon picker trigger */}
                       <div className="relative shrink-0 select-none">
                         <button
                           ref={(el) => { itemRefs.current[item.id] = el; }}
@@ -327,12 +366,12 @@ export default function WorkspaceSidebar({
                           className="hover:bg-neutral-800 p-0.5 rounded transition-colors flex items-center justify-center cursor-pointer"
                           title="Change icon"
                         >
-                          <PageIcon 
-                            icon={item.icon} 
-                            iconColor={item.iconColor} 
-                            size={16} 
-                            fallbackType={item.type} 
-                            className="shrink-0" 
+                          <PageIcon
+                            icon={item.icon}
+                            iconColor={item.iconColor}
+                            size={16}
+                            fallbackType={item.type}
+                            className="shrink-0"
                           />
                         </button>
                         {activeIconPickerId === item.id && (
@@ -345,90 +384,62 @@ export default function WorkspaceSidebar({
                           />
                         )}
                       </div>
-                      <Link
-                        href={hrefFor(item)}
-                        onClick={() => handleItemClick(item)}
-                        className="truncate flex-1 block py-0.5"
-                      >
-                        {item.title}
-                      </Link>
+
+                      {/* Title / rename input */}
+                      {renamingItemId === item.id ? (
+                        <input
+                          ref={renamingInputRef}
+                          type="text"
+                          value={renamingTitle}
+                          onChange={e => setRenamingTitle(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameItem(item);
+                            if (e.key === 'Escape') setRenamingItemId(null);
+                          }}
+                          onBlur={() => handleRenameItem(item)}
+                          onClick={e => e.stopPropagation()}
+                          className="flex-1 min-w-0 bg-neutral-800 border border-neutral-600 rounded px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500/60"
+                        />
+                      ) : (
+                        <Link
+                          href={hrefFor(item)}
+                          onClick={() => handleItemClick(item)}
+                          className="truncate flex-1 block py-0.5"
+                        >
+                          {item.title}
+                        </Link>
+                      )}
+
+                      {/* Three-dot menu trigger / loading spinner */}
+                      {renamingItemId !== item.id && (
+                        isLoading ? (
+                          <div className={`shrink-0 p-1 ${isDeleting ? 'text-red-400' : 'text-neutral-400'}`}>
+                            <div className={`w-3 h-3 rounded-full border-2 animate-spin shrink-0 ${
+                              isDeleting
+                                ? 'border-red-900/50 border-t-red-400'
+                                : 'border-neutral-800 border-t-neutral-500'
+                            }`} />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => openMenuFor(e, item.id)}
+                            className={`shrink-0 p-1 rounded transition-colors text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 ${
+                              openMenuItemId === item.id
+                                ? 'opacity-100'
+                                : 'opacity-0 group-hover/item:opacity-100'
+                            }`}
+                            title="More options"
+                          >
+                            <MoreHorizontal size={13} />
+                          </button>
+                        )
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
 
-                  {/* Inline creation input under specific workspace subtree */}
-                  {creatingInWorkspaceId === w.id && creatingType && (
-                    creatingType === 'choose' ? (
-                      <div className="px-2.5 py-2 bg-neutral-850/50 rounded-md border border-neutral-800 space-y-2 mr-2">
-                        <div className="text-[10px] text-neutral-500 font-medium px-0.5 uppercase tracking-wider flex items-center justify-between">
-                          <span>What would you like to create?</span>
-                          <button
-                            onClick={() => { setCreatingType(null); setCreatingInWorkspaceId(null); }}
-                            className="p-0.5 rounded text-neutral-500 hover:text-white transition-colors"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => setCreatingType('page')}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-xs text-white rounded border border-neutral-700 transition-colors font-medium text-left justify-start"
-                          >
-                            <FileText size={13} className="text-neutral-400" />
-                            <span>Page</span>
-                          </button>
-                          <button
-                            onClick={() => setCreatingType('database')}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-xs text-white rounded border border-neutral-700 transition-colors font-medium text-left justify-start"
-                          >
-                            <Database size={13} className="text-neutral-400" />
-                            <span>Database</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="px-2.5 py-1.5 bg-neutral-850/50 rounded-md border border-neutral-800 space-y-1.5 mr-2">
-                        <div className="text-[10px] text-neutral-500 font-medium px-0.5 uppercase tracking-wider">
-                          {creatingType === 'page' ? 'New Page' : 'New Database'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <input
-                            ref={inputRef}
-                            type="text"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            onKeyDown={(e) => handleKeyDownItem(e, w.id)}
-                            placeholder={creatingType === 'page' ? 'Page title...' : 'Database name...'}
-                            disabled={isPending}
-                            className="flex-1 bg-neutral-800 border border-neutral-700 rounded px-1.5 py-0.5 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500 min-w-0"
-                          />
-                          <button
-                            onClick={() => { setCreatingType(null); setCreatingInWorkspaceId(null); setNewTitle(''); }}
-                            className="p-1 text-neutral-500 hover:text-white shrink-0"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleCreateItem(w.id)}
-                            disabled={!newTitle.trim() || isPending}
-                            className="flex-1 text-[10px] bg-neutral-750 hover:bg-neutral-700 disabled:opacity-40 text-white rounded py-0.5 transition-colors font-medium"
-                          >
-                            {isPending ? '...' : 'Create'}
-                          </button>
-                          <button
-                            onClick={() => setCreatingType('choose')}
-                            className="text-[10px] text-neutral-400 hover:text-neutral-200 px-1 py-0.5 shrink-0 transition-colors"
-                          >
-                            Back
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  )}
-
-                  {/* Empty state item helper if workspace has no pages and is not creating */}
-                  {workspaceChildren.length === 0 && creatingInWorkspaceId !== w.id && (
+                  {/* Empty state */}
+                  {workspaceChildren.length === 0 && (
                     <div className="text-xs text-neutral-600 py-1.5 px-2.5 italic">
                       Empty workspace. Click + to add.
                     </div>
@@ -481,6 +492,54 @@ export default function WorkspaceSidebar({
           )}
         </div>
       </div>
+
+      {/* Item context menu (fixed, outside overflow container) */}
+      {activeMenuItem && menuAnchor && (
+        <div
+          ref={menuRef}
+          style={{ top: menuAnchor.y, left: menuAnchor.x }}
+          className="fixed z-200 bg-neutral-900 border border-neutral-800 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 min-w-40 animate-scale-in"
+        >
+          <button
+            onClick={() => {
+              setOpenMenuItemId(null);
+              setRenamingItemId(activeMenuItem.id);
+              setRenamingTitle(activeMenuItem.title);
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+          >
+            <Edit3 size={12} className="text-neutral-500" />
+            Rename
+          </button>
+          <button
+            onClick={() => handleDuplicateItem(activeMenuItem)}
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+          >
+            <Copy size={12} className="text-neutral-500" />
+            Duplicate
+          </button>
+          <div className="border-t border-neutral-800 my-1" />
+          <button
+            onClick={() => handleDeleteItem(activeMenuItem)}
+            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-400 hover:bg-neutral-800 hover:text-red-300 transition-colors"
+          >
+            <Trash size={12} />
+            Delete
+          </button>
+        </div>
+      )}
+
+      {templatePickerWorkspaceId && (
+        <TemplatePickerModal
+          workspaceId={templatePickerWorkspaceId}
+          activeWorkspaceId={activeWorkspace.id}
+          onClose={() => setTemplatePickerWorkspaceId(null)}
+          onCreated={(type, id) => {
+            setTemplatePickerWorkspaceId(null);
+            router.push(type === 'page' ? `/page/${id}` : `/db/${id}`);
+          }}
+        />
+      )}
     </div>
   );
 }

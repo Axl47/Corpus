@@ -1,9 +1,18 @@
 'use server';
 import { db } from '@/db';
-import { workspaces, workspaceItems, standalonePages, databases } from '@/db/schema';
+import { workspaces, workspaceItems, standalonePages, databases, pages } from '@/db/schema';
 import { eq, isNull, asc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import type { SchemaColumn } from '@/lib/templates';
+import type { DatabaseView } from '@/lib/types/views';
+
+export interface CreateDatabaseOptions {
+  schema?: SchemaColumn[];
+  views?: DatabaseView[];
+  icon?: string | null;
+  iconColor?: string | null;
+}
 
 export type WorkspaceItemRow = {
   id: string;
@@ -122,7 +131,12 @@ export async function getAllWorkspaceItems(): Promise<WorkspaceItemRow[]> {
   }));
 }
 
-export async function createStandalonePage(workspaceId: string, title: string, parentId?: string) {
+export async function createStandalonePage(
+  workspaceId: string,
+  title: string,
+  parentId?: string,
+  options?: { initialContent?: string; icon?: string | null; iconColor?: string | null },
+) {
   const itemId = crypto.randomUUID();
   const pageId = crypto.randomUUID();
 
@@ -133,19 +147,25 @@ export async function createStandalonePage(workspaceId: string, title: string, p
     title: title || 'Untitled',
     parentId: parentId ?? null,
     sortOrder: 0,
+    icon: options?.icon ?? null,
+    iconColor: options?.iconColor ?? null,
   });
 
   await db.insert(standalonePages).values({
     id: pageId,
     itemId,
-    content: '',
+    content: options?.initialContent ?? '',
   });
 
   revalidatePath('/');
   return { itemId, pageId };
 }
 
-export async function createWorkspaceDatabase(workspaceId: string, name: string) {
+export async function createWorkspaceDatabase(
+  workspaceId: string,
+  name: string,
+  options?: CreateDatabaseOptions,
+) {
   const itemId = crypto.randomUUID();
   const dbId = crypto.randomUUID();
 
@@ -155,16 +175,19 @@ export async function createWorkspaceDatabase(workspaceId: string, name: string)
     type: 'database',
     title: name,
     sortOrder: 0,
+    icon: options?.icon ?? null,
+    iconColor: options?.iconColor ?? null,
   });
 
   await db.insert(databases).values({
     id: dbId,
     name,
     itemId,
-    schema: [
+    schema: options?.schema ?? [
       { id: 'title', name: 'Title', type: 'text' },
       { id: 'status', name: 'Status', type: 'select', options: ['To Do', 'In Progress', 'Done'] },
     ],
+    views: options?.views ?? null,
   });
 
   revalidatePath('/');
@@ -207,4 +230,75 @@ export async function updateWorkspaceItemIcon(itemId: string, icon: string | nul
     .where(eq(workspaceItems.id, itemId));
 
   revalidatePath('/');
+}
+
+export async function deleteWorkspaceItem(itemId: string) {
+  const item = await db.select().from(workspaceItems).where(eq(workspaceItems.id, itemId));
+  if (!item[0]) return;
+
+  if (item[0].type === 'database') {
+    // Delete the database record first (CASCADE removes its pages).
+    // databases.itemId uses SET NULL so we must delete explicitly.
+    await db.delete(databases).where(eq(databases.itemId, itemId));
+  }
+
+  await db.delete(workspaceItems).where(eq(workspaceItems.id, itemId));
+  revalidatePath('/');
+}
+
+export async function duplicateWorkspaceItem(itemId: string) {
+  const item = await db.select().from(workspaceItems).where(eq(workspaceItems.id, itemId));
+  if (!item[0]) return null;
+
+  const newItemId = crypto.randomUUID();
+  await db.insert(workspaceItems).values({
+    id: newItemId,
+    workspaceId: item[0].workspaceId,
+    type: item[0].type,
+    title: `${item[0].title} (Copy)`,
+    parentId: item[0].parentId,
+    sortOrder: item[0].sortOrder + 1,
+    icon: item[0].icon,
+    iconColor: item[0].iconColor,
+  });
+
+  if (item[0].type === 'page') {
+    const sp = await db.select().from(standalonePages).where(eq(standalonePages.itemId, itemId));
+    await db.insert(standalonePages).values({
+      id: crypto.randomUUID(),
+      itemId: newItemId,
+      content: sp[0]?.content ?? '',
+    });
+    revalidatePath('/');
+    return { type: 'page' as const, itemId: newItemId };
+  } else {
+    const dbRow = await db.select().from(databases).where(eq(databases.itemId, itemId));
+    if (!dbRow[0]) { revalidatePath('/'); return null; }
+
+    const newDbId = crypto.randomUUID();
+    await db.insert(databases).values({
+      id: newDbId,
+      name: `${dbRow[0].name} (Copy)`,
+      itemId: newItemId,
+      schema: dbRow[0].schema,
+      views: dbRow[0].views,
+    });
+
+    const existingPages = await db.select().from(pages).where(eq(pages.databaseId, dbRow[0].id));
+    for (const p of existingPages) {
+      await db.insert(pages).values({
+        id: crypto.randomUUID(),
+        databaseId: newDbId,
+        title: p.title,
+        content: p.content,
+        properties: p.properties,
+        sortOrder: p.sortOrder,
+        icon: p.icon,
+        iconColor: p.iconColor,
+      });
+    }
+
+    revalidatePath('/');
+    return { type: 'database' as const, dbId: newDbId };
+  }
 }
