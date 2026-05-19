@@ -98,7 +98,7 @@ export default function WorkspaceSettingsModal({
     setRenameSuccess('');
 
     startRenameTransition(async () => {
-      const res = await renameWorkspace(workspaceId, trimmed);
+      const res = await renameWorkspace(workspaceId, trimmed) as { success?: boolean; error?: string };
       if (res && 'error' in res) {
         setRenameError(res.error || 'Failed to rename workspace');
       } else {
