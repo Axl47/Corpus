@@ -89,8 +89,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async createUser({ user }) {
       if (!user.id) return;
 
+      // DrizzleAdapter uses CURRENT_TIMESTAMP SQL default which stores as text; fix to integer timestamp
+      await db.update(users).set({ createdAt: new Date() }).where(eq(users.id, user.id));
+
       // Seed default workspace with tasks database and welcome page
-      await createSeedWorkspace(user.id);
+      await createSeedWorkspace(user.id, user.name);
 
       // Count total users; if this is the first one, promote to admin and claim orphaned workspaces
       const allUsers = await db.select({ id: users.id }).from(users);
@@ -110,6 +113,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             workspaceId: ws.id,
             userId: user.id,
             role: 'owner',
+            createdAt: new Date(),
           });
         }
       }

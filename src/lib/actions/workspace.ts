@@ -1,7 +1,7 @@
 'use server';
 import { db } from '@/db';
 import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, users } from '@/db/schema';
-import { eq, isNull, asc, and, inArray } from 'drizzle-orm';
+import { eq, isNull, asc, and, inArray, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -66,19 +66,13 @@ export async function getActiveWorkspaceId(): Promise<string | null> {
   let workspaceId = cookieStore.get('remna_workspace_id')?.value;
 
   if (workspaceId) {
-    // Verify user still has access to the stored workspace
-    const isAdmin = user.role === 'admin';
-    if (isAdmin) {
-      const ws = await db.select({ id: workspaces.id }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
-      if (ws[0]) return workspaceId;
-    } else {
-      const [member] = await db
-        .select({ id: workspaceMembers.id })
-        .from(workspaceMembers)
-        .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, user.id)))
-        .limit(1);
-      if (member) return workspaceId;
-    }
+    // Verify user is a member of the stored workspace
+    const [member] = await db
+      .select({ id: workspaceMembers.id })
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, user.id)))
+      .limit(1);
+    if (member) return workspaceId;
   }
 
   // Fall back to first accessible workspace
@@ -93,11 +87,7 @@ export async function getActiveWorkspaceId(): Promise<string | null> {
 export async function getWorkspaces() {
   const user = await getCurrentUser();
 
-  if (user.role === 'admin') {
-    return db.select().from(workspaces).orderBy(asc(workspaces.sortOrder), asc(workspaces.createdAt));
-  }
-
-  // Regular user: only workspaces they're a member of
+  // Always filter by membership — admins see all workspaces only via the admin panel
   const memberships = await db
     .select({ workspaceId: workspaceMembers.workspaceId })
     .from(workspaceMembers)
@@ -120,6 +110,7 @@ export async function createWorkspace(name: string) {
   await db.insert(workspaces).values({
     id,
     name: name.trim() || 'Untitled Workspace',
+    createdAt: new Date(),
   });
 
   // Creator becomes owner
@@ -127,6 +118,7 @@ export async function createWorkspace(name: string) {
     workspaceId: id,
     userId: user.id,
     role: 'owner',
+    createdAt: new Date(),
   });
 
   const cookieStore = await cookies();
@@ -468,4 +460,53 @@ export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspa
   revalidatePath('/');
 }
 
+export async function getAdminWorkspacesOverview() {
+  const user = await getCurrentUser();
+  if (user.role !== 'admin') throw new Error('Admin access required');
 
+  const allWorkspaces = await db
+    .select()
+    .from(workspaces)
+    .orderBy(asc(workspaces.sortOrder), asc(workspaces.createdAt));
+
+  const memberRows = await db
+    .select({
+      workspaceId: workspaceMembers.workspaceId,
+      role: workspaceMembers.role,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(workspaceMembers)
+    .innerJoin(users, eq(workspaceMembers.userId, users.id));
+
+  const itemCountRows = await db
+    .select({
+      workspaceId: workspaceItems.workspaceId,
+      count: sql<number>`cast(count(*) as int)`,
+    })
+    .from(workspaceItems)
+    .groupBy(workspaceItems.workspaceId);
+
+  const itemCountMap = new Map(itemCountRows.map((r) => [r.workspaceId, r.count]));
+
+  return allWorkspaces.map((ws) => {
+    const members = memberRows.filter((m) => m.workspaceId === ws.id);
+    const owner = members.find((m) => m.role === 'owner');
+    return {
+      ...ws,
+      memberCount: members.length,
+      itemCount: itemCountMap.get(ws.id) ?? 0,
+      ownerName: owner?.userName ?? null,
+      ownerEmail: owner?.userEmail ?? null,
+    };
+  });
+}
+
+export async function adminDeleteWorkspace(workspaceId: string) {
+  const user = await getCurrentUser();
+  if (user.role !== 'admin') throw new Error('Admin access required');
+
+  await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
+  revalidatePath('/');
+  return { success: true };
+}

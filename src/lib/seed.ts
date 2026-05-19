@@ -1,13 +1,16 @@
 import { db } from '@/db';
 import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers } from '@/db/schema';
 
-export async function createSeedWorkspace(userId: string) {
+export async function createSeedWorkspace(userId: string, userName?: string | null) {
+  const workspaceName = userName ? `${userName} Workspace` : 'Personal Workspace';
+
   // 1. Create a workspace
   const workspaceId = crypto.randomUUID();
   await db.insert(workspaces).values({
     id: workspaceId,
-    name: 'Personal Workspace',
+    name: workspaceName,
     sortOrder: 0,
+    createdAt: new Date(),
   });
 
   // 2. Add the user as owner
@@ -16,6 +19,7 @@ export async function createSeedWorkspace(userId: string) {
     workspaceId,
     userId,
     role: 'owner',
+    createdAt: new Date(),
   });
 
   // 3. Create a "Getting Started" Standalone Page
@@ -25,7 +29,7 @@ export async function createSeedWorkspace(userId: string) {
     id: pageItemId,
     workspaceId,
     type: 'page',
-    title: '👋 Welcome to Remna',
+    title: 'Welcome to Remna',
     sortOrder: 0,
     icon: '👋',
     iconColor: 'default',
@@ -115,15 +119,15 @@ Have fun organizing your ideas! 💡
     id: dbItemId,
     workspaceId,
     type: 'database',
-    title: '✅ Tasks',
-    sortOrder: 1, // Second item
+    title: 'Tasks',
+    sortOrder: 1,
     icon: '✅',
     iconColor: 'default',
   });
 
   await db.insert(databases).values({
     id: dbId,
-    name: '✅ Tasks',
+    name: 'Tasks',
     itemId: dbItemId,
     schema,
     views,

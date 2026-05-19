@@ -16,6 +16,7 @@ import {
   LogOut,
   Shield,
   Settings,
+  Layers,
 } from 'lucide-react';
 import PageIcon from './PageIcon';
 import {
@@ -63,6 +64,7 @@ export default function WorkspaceSidebar({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [isSaving, startSaveTransition] = useTransition();
+  const [avatarError, setAvatarError] = useState(false);
 
   // Tree creation and editing states
   const [templatePickerWorkspaceId, setTemplatePickerWorkspaceId] = useState<string | null>(null);
@@ -617,12 +619,15 @@ export default function WorkspaceSidebar({
                   </button>
 
                   {/* Initials badge */}
-                  <div className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm transition-colors ${
-                    isCurrentActive
-                      ? 'bg-neutral-50 text-neutral-950'
-                      : 'bg-neutral-700 group-hover/root:bg-neutral-600 text-neutral-200'
-                  }`}>
-                    {w.name[0]?.toUpperCase() || 'W'}
+                  <div
+                    translate="no"
+                    className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm transition-colors notranslate ${
+                      isCurrentActive
+                        ? 'bg-neutral-50 text-neutral-950'
+                        : 'bg-neutral-700 group-hover/root:bg-neutral-600 text-neutral-200'
+                    }`}
+                  >
+                    {(w.name || 'W').trim().charAt(0).toUpperCase()}
                   </div>
 
                   <span className="truncate flex-1 font-medium">{w.name}</span>
@@ -889,19 +894,36 @@ export default function WorkspaceSidebar({
         />
       )}
 
+      {/* Admin panel link */}
+      {currentUser.role === 'admin' && (
+        <div className="shrink-0 border-t border-neutral-800">
+          <Link
+            href="/admin"
+            className={`flex items-center gap-2.5 px-3 py-2 text-xs hover:text-neutral-200 hover:bg-neutral-800/30 transition-colors ${pathname.startsWith('/admin') ? 'text-neutral-200 bg-neutral-800/40' : 'text-neutral-400'}`}
+          >
+            <Shield size={13} className="shrink-0" />
+            <span>Admin</span>
+          </Link>
+        </div>
+      )}
+
       {/* User panel */}
       <div className="shrink-0 border-t border-neutral-800 px-3 py-2.5 flex items-center gap-2.5 group/user">
         {/* Avatar */}
         <div className="shrink-0">
-          {currentUser.image ? (
+          {currentUser.image && currentUser.image !== '' && currentUser.image !== 'null' && !avatarError ? (
             <img
               src={currentUser.image}
               alt={currentUser.name ?? 'User'}
               className="w-7 h-7 rounded-full object-cover"
+              onError={() => setAvatarError(true)}
             />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-xs font-semibold text-neutral-200">
-              {(currentUser.name ?? currentUser.email ?? 'U')[0].toUpperCase()}
+            <div
+              translate="no"
+              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-xs font-semibold text-neutral-200 notranslate"
+            >
+              {(currentUser.name || currentUser.email || 'U').trim().charAt(0).toUpperCase()}
             </div>
           )}
         </div>

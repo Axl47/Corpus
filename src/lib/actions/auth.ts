@@ -4,8 +4,8 @@ import { AuthError } from 'next-auth';
 import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { users, workspaceMembers, workspaces } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { users, workspaceMembers, workspaces, accounts } from '@/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createSeedWorkspace } from '@/lib/seed';
@@ -33,10 +33,10 @@ export async function registerUser(_prevState: unknown, formData: FormData) {
   const passwordHash = await bcrypt.hash(password, 12);
   const id = crypto.randomUUID();
 
-  await db.insert(users).values({ id, name: name || null, email, passwordHash });
+  await db.insert(users).values({ id, name: name || null, email, passwordHash, createdAt: new Date() });
 
   // Seed default workspace with tasks database and welcome page
-  await createSeedWorkspace(id);
+  await createSeedWorkspace(id, name || email.split('@')[0]);
 
   // Promote to admin and claim orphaned workspaces if this is the first user
   const allUsers = await db.select({ id: users.id }).from(users);
@@ -49,7 +49,7 @@ export async function registerUser(_prevState: unknown, formData: FormData) {
         .from(workspaceMembers)
         .where(eq(workspaceMembers.workspaceId, ws.id));
       if (existing.length === 0) {
-        await db.insert(workspaceMembers).values({ workspaceId: ws.id, userId: id, role: 'owner' });
+        await db.insert(workspaceMembers).values({ workspaceId: ws.id, userId: id, role: 'owner', createdAt: new Date() });
       }
     }
   }
@@ -130,6 +130,7 @@ export async function inviteToWorkspace(
     workspaceId,
     userId: targetUser.id,
     role,
+    createdAt: new Date(),
   });
 
   revalidatePath('/');
@@ -192,7 +193,50 @@ export async function getAllUsers() {
   if (!session?.user?.id || session.user.role !== 'admin') {
     return { error: 'Admin access required' };
   }
-  return db.select({ id: users.id, name: users.name, email: users.email, image: users.image, role: users.role, createdAt: users.createdAt }).from(users);
+
+  const userRows = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    image: users.image,
+    role: users.role,
+    createdAt: users.createdAt,
+    hasPassword: sql<number>`case when ${users.passwordHash} is not null then 1 else 0 end`,
+  }).from(users);
+
+  const accountRows = await db.select({ userId: accounts.userId, provider: accounts.provider }).from(accounts);
+  const providerMap = new Map<string, string[]>();
+  for (const acc of accountRows) {
+    if (!providerMap.has(acc.userId)) providerMap.set(acc.userId, []);
+    providerMap.get(acc.userId)!.push(acc.provider);
+  }
+
+  return userRows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    image: u.image,
+    role: u.role,
+    createdAt: u.createdAt,
+    authType: providerMap.get(u.id)?.includes('google')
+      ? ('google' as const)
+      : u.hasPassword
+        ? ('email' as const)
+        : ('unknown' as const),
+  }));
+}
+
+export async function adminDeleteUser(userId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== 'admin') {
+    return { error: 'Admin access required' };
+  }
+  if (session.user.id === userId) {
+    return { error: 'You cannot delete your own account' };
+  }
+  await db.delete(users).where(eq(users.id, userId));
+  revalidatePath('/');
+  return { success: true };
 }
 
 export async function setUserRole(userId: string, role: 'user' | 'admin') {

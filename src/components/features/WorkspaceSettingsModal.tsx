@@ -61,6 +61,7 @@ export default function WorkspaceSettingsModal({
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [isInviting, startInviteTransition] = useTransition();
   const [actionPendingId, setActionPendingId] = useState<string | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   // Load members on mount or when switching to members tab
   const loadMembers = async () => {
@@ -390,15 +391,19 @@ export default function WorkspaceSettingsModal({
                         <div key={member.id} className="flex items-center justify-between p-3 gap-3">
                           {/* Left: User Avatar & Details */}
                           <div className="flex items-center gap-2.5 min-w-0">
-                            {member.image ? (
+                            {member.image && member.image !== '' && member.image !== 'null' && !brokenImages[member.id] ? (
                               <img
                                 src={member.image}
                                 alt={member.name || 'User'}
                                 className="w-7 h-7 rounded-full object-cover shrink-0"
+                                onError={() => setBrokenImages(prev => ({ ...prev, [member.id]: true }))}
                               />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-xs font-semibold text-neutral-200 shrink-0">
-                                {(member.name || member.email || 'U')[0].toUpperCase()}
+                              <div
+                                translate="no"
+                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-xs font-semibold text-neutral-200 shrink-0 notranslate"
+                              >
+                                {(member.name || member.email || 'U').trim().charAt(0).toUpperCase()}
                               </div>
                             )}
                             <div className="min-w-0">
