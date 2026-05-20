@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, Trash, Shield, UserPlus, Check, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { renameWorkspace, deleteWorkspace } from '@/lib/actions/workspace';
 import {
@@ -43,6 +44,7 @@ export default function WorkspaceSettingsModal({
   onRenamed,
   onDeleted,
 }: WorkspaceSettingsModalProps) {
+  const t = useTranslations('WorkspaceSettings');
   const [activeTab, setActiveTab] = useState<'general' | 'members'>('general');
   
   // General Tab state
@@ -92,7 +94,7 @@ export default function WorkspaceSettingsModal({
   const handleRename = () => {
     const trimmed = newName.trim();
     if (!trimmed) {
-      setRenameError('Workspace name cannot be empty');
+      setRenameError(t('nameRequired'));
       return;
     }
     setRenameError('');
@@ -103,7 +105,7 @@ export default function WorkspaceSettingsModal({
       if (res && 'error' in res) {
         setRenameError(res.error || 'Failed to rename workspace');
       } else {
-        setRenameSuccess('Workspace renamed successfully');
+        setRenameSuccess(t('renameSuccess'));
         onRenamed(trimmed);
       }
     });
@@ -111,7 +113,7 @@ export default function WorkspaceSettingsModal({
 
   // Handle workspace delete
   const handleDelete = () => {
-    if (!confirm('Are you sure you want to permanently delete this workspace and all its pages/databases? This action cannot be undone.')) {
+    if (!confirm(t('deleteConfirm'))) {
       return;
     }
 
@@ -131,7 +133,7 @@ export default function WorkspaceSettingsModal({
     e.preventDefault();
     const email = inviteEmail.trim().toLowerCase();
     if (!email) {
-      setInviteError('Please enter an email address');
+      setInviteError(t('emailRequired'));
       return;
     }
     setInviteError('');
@@ -142,7 +144,7 @@ export default function WorkspaceSettingsModal({
       if (res && 'error' in res) {
         setInviteError(res.error || 'Failed to invite user');
       } else {
-        setInviteSuccess(`Successfully invited ${email}`);
+        setInviteSuccess(t('inviteSuccess', { email }));
         setInviteEmail('');
         loadMembers(); // Refresh list
       }
@@ -168,7 +170,7 @@ export default function WorkspaceSettingsModal({
 
   // Handle transfer ownership
   const handleTransferOwnership = async (userId: string, userName: string | null) => {
-    if (!confirm(`Are you absolutely sure you want to transfer ownership of this workspace to ${userName || 'this user'}? You will be demoted to a regular member.`)) {
+    if (!confirm(t('transferConfirm', { name: userName || 'this user' }))) {
       return;
     }
     setActionPendingId(userId);
@@ -188,7 +190,7 @@ export default function WorkspaceSettingsModal({
 
   // Handle remove member
   const handleRemoveMember = async (userId: string, userName: string | null) => {
-    if (!confirm(`Are you sure you want to remove ${userName || 'this user'} from this workspace?`)) {
+    if (!confirm(t('removeConfirm', { name: userName || 'this user' }))) {
       return;
     }
     setActionPendingId(userId);
@@ -225,7 +227,7 @@ export default function WorkspaceSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800 bg-neutral-900/30 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-neutral-100">Workspace Settings</span>
+            <span className="text-sm font-semibold text-neutral-100">{t('title')}</span>
           </div>
           <button
             onClick={onClose}
@@ -245,7 +247,7 @@ export default function WorkspaceSettingsModal({
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            General
+            {t('tabGeneral')}
           </button>
           <button
             onClick={() => setActiveTab('members')}
@@ -255,7 +257,7 @@ export default function WorkspaceSettingsModal({
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            Members
+            {t('tabMembers')}
           </button>
         </div>
 
@@ -266,7 +268,7 @@ export default function WorkspaceSettingsModal({
               {/* Workspace Rename Section */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
-                  Workspace Name
+                  {t('workspaceName')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -282,7 +284,7 @@ export default function WorkspaceSettingsModal({
                       disabled={isRenaming || newName.trim() === workspaceName}
                       className="text-xs bg-blue-500 hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-md font-medium transition-colors flex items-center justify-center"
                     >
-                      {isRenaming ? 'Saving...' : 'Save'}
+                      {isRenaming ? t('saving') : t('save')}
                     </button>
                   )}
                 </div>
@@ -298,7 +300,7 @@ export default function WorkspaceSettingsModal({
                 )}
                 {!hasPrivilegedAccess && (
                   <p className="text-[11px] text-neutral-500 italic">
-                    Only the workspace owner or system admins can change settings.
+                    {t('ownerOnlyHint')}
                   </p>
                 )}
               </div>
@@ -307,17 +309,17 @@ export default function WorkspaceSettingsModal({
               {hasPrivilegedAccess && (
                 <div className="border border-red-500/20 bg-red-500/5 p-4 rounded-lg space-y-3">
                   <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider">
-                    Danger Zone
+                    {t('dangerZone')}
                   </h4>
                   <p className="text-xs text-neutral-400 leading-relaxed">
-                    Once you delete a workspace, all pages, database views, and configurations inside it will be permanently removed. This action cannot be undone.
+                    {t('deleteWarning')}
                   </p>
                   <button
                     onClick={handleDelete}
                     disabled={isDeleting}
                     className="text-xs bg-red-400 hover:bg-red-500 text-white font-semibold py-1.5 px-3 rounded-md transition-colors disabled:opacity-50"
                   >
-                    {isDeleting ? 'Deleting...' : 'Delete Workspace'}
+                    {isDeleting ? t('deleting') : t('deleteWorkspace')}
                   </button>
                 </div>
               )}
@@ -328,14 +330,14 @@ export default function WorkspaceSettingsModal({
               {hasPrivilegedAccess && (
                 <form onSubmit={handleInvite} className="space-y-2">
                   <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
-                    Invite New Member
+                    {t('inviteNewMember')}
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="user@example.com"
+                      placeholder={t('emailPlaceholder')}
                       disabled={isInviting}
                       className="flex-1 bg-neutral-900 border border-neutral-700 rounded-md text-neutral-100 placeholder-neutral-600 px-3 py-1.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50"
                     />
@@ -345,8 +347,8 @@ export default function WorkspaceSettingsModal({
                       disabled={isInviting}
                       className="bg-neutral-900 border border-neutral-700 rounded-md text-neutral-100 px-2 py-1.5 text-xs outline-none cursor-pointer focus:border-blue-500/60"
                     >
-                      <option value="member">Member</option>
-                      <option value="viewer">Viewer</option>
+                      <option value="member">{t('roleMember')}</option>
+                      <option value="viewer">{t('roleViewer')}</option>
                     </select>
                     <button
                       type="submit"
@@ -354,7 +356,7 @@ export default function WorkspaceSettingsModal({
                       className="text-xs bg-blue-500 hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1"
                     >
                       <UserPlus size={13} />
-                      {isInviting ? 'Inviting...' : 'Invite'}
+                      {isInviting ? t('inviting') : t('invite')}
                     </button>
                   </div>
                   {inviteError && (
@@ -373,7 +375,7 @@ export default function WorkspaceSettingsModal({
               {/* Members List */}
               <div className="space-y-3">
                 <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
-                  Workspace Members ({members.length})
+                  {t('membersCount', { count: members.length })}
                 </label>
 
                 {isLoadingMembers ? (
@@ -413,7 +415,7 @@ export default function WorkspaceSettingsModal({
                                 </span>
                                 {isMe && (
                                   <span className="text-[9px] font-semibold text-neutral-500 bg-neutral-800 px-1 py-0.5 rounded">
-                                    You
+                                    {t('you')}
                                   </span>
                                 )}
                               </div>
@@ -428,7 +430,7 @@ export default function WorkspaceSettingsModal({
                             {/* Role Badge / Control */}
                             {isOwner ? (
                               <span className="text-[9px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                                Owner
+                                {t('roleOwner')}
                               </span>
                             ) : isPending ? (
                               <div className="w-3.5 h-3.5 rounded-full border border-neutral-700 border-t-neutral-400 animate-spin shrink-0" />
@@ -438,8 +440,8 @@ export default function WorkspaceSettingsModal({
                                 onChange={(e) => handleRoleChange(member.id, e.target.value as 'member' | 'viewer')}
                                 className="bg-neutral-800 border border-neutral-700 rounded px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 outline-none cursor-pointer hover:border-neutral-600 focus:border-blue-500/60"
                               >
-                                <option value="member">Member</option>
-                                <option value="viewer">Viewer</option>
+                                <option value="member">{t('roleMember')}</option>
+                                <option value="viewer">{t('roleViewer')}</option>
                               </select>
                             ) : (
                               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
@@ -459,7 +461,7 @@ export default function WorkspaceSettingsModal({
                                   className="text-[10px] font-semibold text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-1.5 py-0.5 rounded border border-neutral-700 transition-colors"
                                   title="Transfer ownership of this workspace to this user"
                                 >
-                                  Make Owner
+                                  {t('makeOwner')}
                                 </button>
                                 <button
                                   onClick={() => handleRemoveMember(member.id, member.name || member.email)}

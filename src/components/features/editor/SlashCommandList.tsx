@@ -2,6 +2,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { CheckSquare, Heading1, Heading2, Heading3, List, ListOrdered, Minus, Quote, Code2, Table, FileText, Database } from 'lucide-react';
 import { createStandalonePage, createWorkspaceDatabase } from '@/lib/actions/workspace';
+import { useTranslations } from 'next-intl';
 
 export type SlashCommandItem = {
   id: string;
@@ -136,7 +137,36 @@ type Props = {
 
 const SlashCommandList = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent }) => boolean }, Props>(
   ({ items, command }, ref) => {
+    const t = useTranslations('Editor');
     const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const LABEL_KEYS: Record<string, string> = {
+      h1: t('slashHeading1'),
+      h2: t('slashHeading2'),
+      h3: t('slashHeading3'),
+      bullet: t('slashBulletList'),
+      ordered: t('slashNumberedList'),
+      task: t('slashTaskList'),
+      quote: t('slashQuote'),
+      code: t('slashCodeBlock'),
+      table: t('slashTable'),
+      'child-page': t('slashPage'),
+      'child-database': t('slashDatabase'),
+    };
+
+    const DESC_KEYS: Record<string, string> = {
+      h1: t('slashHeading1Desc'),
+      h2: t('slashHeading2Desc'),
+      h3: t('slashHeading3Desc'),
+      bullet: t('slashBulletListDesc'),
+      ordered: t('slashNumberedListDesc'),
+      task: t('slashTaskListDesc'),
+      quote: t('slashQuoteDesc'),
+      code: t('slashCodeBlockDesc'),
+      table: t('slashTableDesc'),
+      'child-page': t('slashPageDesc'),
+      'child-database': t('slashDatabaseDesc'),
+    };
 
     useEffect(() => setSelectedIndex(0), [items]);
 
@@ -172,7 +202,7 @@ const SlashCommandList = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent 
               {isFirstChild && <div className="border-t border-neutral-800 my-1" />}
               <button
                 onClick={() => command(item)}
-                title={item.description}
+                title={DESC_KEYS[item.id] ?? item.description}
                 className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors ${
                   index === selectedIndex
                     ? 'bg-neutral-800 text-neutral-100'
@@ -180,7 +210,7 @@ const SlashCommandList = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent 
                 }`}
               >
                 <span className="text-neutral-500 shrink-0">{item.icon}</span>
-                <span className="text-sm font-medium leading-none">{item.label}</span>
+                <span className="text-sm font-medium leading-none">{LABEL_KEYS[item.id] ?? item.label}</span>
               </button>
             </div>
           );

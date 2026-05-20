@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronRight as ChevronRightIcon, Trash2, Database,
 } from 'lucide-react';
 import { adminDeleteWorkspace } from '@/lib/actions/workspace';
+import { useTranslations, useLocale } from 'next-intl';
 
 type WorkspaceRow = {
   id: string;
@@ -31,10 +32,10 @@ function safeDate(val: Date | string | number | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function formatDate(val: Date | string | number | null | undefined) {
+function formatDate(val: Date | string | number | null | undefined, locale: string) {
   const d = safeDate(val);
   if (!d) return '—';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
 }
 
 function ItemIcon({ icon, type }: { icon: string | null; type: 'page' | 'database' }) {
@@ -54,6 +55,8 @@ export default function AdminWorkspacesTable({
   workspaces: WorkspaceRow[];
   items: WorkspaceItem[];
 }) {
+  const t = useTranslations('Admin');
+  const locale = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -95,18 +98,18 @@ export default function AdminWorkspacesTable({
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden">
       {total === 0 ? (
-        <div className="py-10 text-center text-xs text-neutral-600">No workspaces found.</div>
+        <div className="py-10 text-center text-xs text-neutral-600">{t('noWorkspaces')}</div>
       ) : (
         <>
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-900/60">
                 <th className="w-8 px-2" />
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">Owner</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">Members</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">Items</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">Created</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colName')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colOwner')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colMembers')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colItems')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colCreated')}</th>
                 <th className="w-24 px-4 py-2.5" />
               </tr>
             </thead>
@@ -146,7 +149,7 @@ export default function AdminWorkspacesTable({
                             {ws.ownerEmail && <p className="text-xs text-neutral-500">{ws.ownerEmail}</p>}
                           </div>
                         ) : (
-                          <span className="text-neutral-600 text-xs">No owner</span>
+                          <span className="text-neutral-600 text-xs">{t('noOwner')}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -164,7 +167,7 @@ export default function AdminWorkspacesTable({
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
                           <Calendar size={11} />
-                          {formatDate(ws.createdAt)}
+                          {formatDate(ws.createdAt, locale)}
                         </div>
                       </td>
 
@@ -177,21 +180,21 @@ export default function AdminWorkspacesTable({
                               disabled={isDeleting}
                               className="text-[11px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
                             >
-                              {isDeleting ? 'Deleting…' : 'Confirm'}
+                              {isDeleting ? 'Deleting…' : t('confirm')}
                             </button>
                             <span className="text-neutral-700">·</span>
                             <button
                               onClick={() => setConfirmDeleteId(null)}
                               className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
                             >
-                              Cancel
+                              {t('cancel')}
                             </button>
                           </div>
                         ) : (
                           <button
                             onClick={() => setConfirmDeleteId(ws.id)}
                             className="p-1 text-neutral-600 hover:text-red-400 transition-colors"
-                            title="Delete workspace"
+                            title={t('delete')}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -205,7 +208,7 @@ export default function AdminWorkspacesTable({
                         <td />
                         <td colSpan={6} className="px-4 py-3">
                           {wsItems.length === 0 ? (
-                            <p className="text-xs text-neutral-600 italic">No items in this workspace.</p>
+                            <p className="text-xs text-neutral-600 italic">{t('noItems')}</p>
                           ) : (
                             <div className="flex flex-col gap-1">
                               {wsItems.map((item) => (
@@ -217,7 +220,7 @@ export default function AdminWorkspacesTable({
                                       ? 'bg-blue-500/10 text-blue-400'
                                       : 'bg-neutral-800 text-neutral-500'
                                   }`}>
-                                    {item.type === 'database' ? 'Database' : 'Page'}
+                                    {item.type === 'database' ? t('roleDatabase') : t('rolePage')}
                                   </span>
                                 </div>
                               ))}

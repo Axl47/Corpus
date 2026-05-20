@@ -9,18 +9,20 @@ import { eq, and, sql, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createSeedWorkspace } from '@/lib/seed';
+import { getTranslations } from 'next-intl/server';
 
 export async function logout() {
   await signOut({ redirectTo: '/login' });
 }
 
 export async function registerUser(_prevState: unknown, formData: FormData) {
+  const t = await getTranslations('Errors');
   const name = (formData.get('name') as string)?.trim();
   const email = (formData.get('email') as string)?.trim().toLowerCase();
   const password = formData.get('password') as string;
 
-  if (!email || !password) return { error: 'Email and password are required' };
-  if (password.length < 8) return { error: 'Password must be at least 8 characters' };
+  if (!email || !password) return { error: t('emailRequired') };
+  if (password.length < 8) return { error: t('passwordTooShort') };
 
   const [existing] = await db
     .select({ id: users.id })
@@ -28,7 +30,7 @@ export async function registerUser(_prevState: unknown, formData: FormData) {
     .where(eq(users.email, email))
     .limit(1);
 
-  if (existing) return { error: 'An account with this email already exists' };
+  if (existing) return { error: t('emailTaken') };
 
   const passwordHash = await bcrypt.hash(password, 12);
   const id = crypto.randomUUID();
@@ -58,19 +60,20 @@ export async function registerUser(_prevState: unknown, formData: FormData) {
   try {
     await signIn('credentials', { email, password, redirectTo: '/' });
   } catch (error) {
-    if (error instanceof AuthError) return { error: 'Registration succeeded but sign-in failed. Please log in.' };
+    if (error instanceof AuthError) return { error: t('signInAfterRegister') };
     throw error;
   }
 }
 
 export async function loginWithCredentials(_prevState: unknown, formData: FormData) {
+  const t = await getTranslations('Errors');
   const email = (formData.get('email') as string)?.trim().toLowerCase();
   const password = formData.get('password') as string;
 
   try {
     await signIn('credentials', { email, password, redirectTo: '/' });
   } catch (error) {
-    if (error instanceof AuthError) return { error: 'Invalid email or password' };
+    if (error instanceof AuthError) return { error: t('invalidCredentials') };
     throw error;
   }
 }
@@ -82,6 +85,8 @@ export async function inviteToWorkspace(
 ) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+
+  const t = await getTranslations('Errors');
 
   // Only owners and admins can invite
   const isAdmin = session.user.role === 'admin';
@@ -97,7 +102,7 @@ export async function inviteToWorkspace(
       )
       .limit(1);
     if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: 'Only workspace owners can invite members' };
+      return { error: t('ownerOnlyInvite') };
     }
   }
 
@@ -108,7 +113,7 @@ export async function inviteToWorkspace(
     .limit(1);
 
   if (!targetUser) {
-    return { error: 'No user found with that email address' };
+    return { error: t('userNotFound') };
   }
 
   const existing = await db
@@ -123,7 +128,7 @@ export async function inviteToWorkspace(
     .limit(1);
 
   if (existing[0]) {
-    return { error: 'User is already a member of this workspace' };
+    return { error: t('alreadyMember') };
   }
 
   await db.insert(workspaceMembers).values({
@@ -140,6 +145,7 @@ export async function inviteToWorkspace(
 export async function removeFromWorkspace(workspaceId: string, userId: string) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  const t = await getTranslations('Errors');
 
   const isAdmin = session.user.role === 'admin';
   if (!isAdmin) {
@@ -154,7 +160,7 @@ export async function removeFromWorkspace(workspaceId: string, userId: string) {
       )
       .limit(1);
     if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: 'Only workspace owners can remove members' };
+      return { error: t('ownerOnlyRemove') };
     }
   }
 
@@ -191,7 +197,8 @@ export async function getWorkspaceMembers(workspaceId: string) {
 export async function getAllUsers() {
   const session = await auth();
   if (!session?.user?.id || session.user.role !== 'admin') {
-    return { error: 'Admin access required' };
+    const t = await getTranslations('Errors');
+    return { error: t('adminRequired') };
   }
 
   const userRows = await db.select({
@@ -228,11 +235,12 @@ export async function getAllUsers() {
 
 export async function adminDeleteUser(userId: string) {
   const session = await auth();
+  const t = await getTranslations('Errors');
   if (!session?.user?.id || session.user.role !== 'admin') {
-    return { error: 'Admin access required' };
+    return { error: t('adminRequired') };
   }
   if (session.user.id === userId) {
-    return { error: 'You cannot delete your own account' };
+    return { error: t('cannotDeleteSelf') };
   }
   await db.delete(users).where(eq(users.id, userId));
   revalidatePath('/');
@@ -242,7 +250,8 @@ export async function adminDeleteUser(userId: string) {
 export async function setUserRole(userId: string, role: 'user' | 'admin') {
   const session = await auth();
   if (!session?.user?.id || session.user.role !== 'admin') {
-    return { error: 'Admin access required' };
+    const t = await getTranslations('Errors');
+    return { error: t('adminRequired') };
   }
   await db.update(users).set({ role }).where(eq(users.id, userId));
   revalidatePath('/');
@@ -256,6 +265,7 @@ export async function updateWorkspaceMemberRole(
 ) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  const t = await getTranslations('Errors');
 
   const isAdmin = session.user.role === 'admin';
   if (!isAdmin) {
@@ -270,7 +280,7 @@ export async function updateWorkspaceMemberRole(
       )
       .limit(1);
     if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: 'Only workspace owners can update member roles' };
+      return { error: t('ownerOnlyUpdateRole') };
     }
   }
 
@@ -287,11 +297,11 @@ export async function updateWorkspaceMemberRole(
     .limit(1);
 
   if (!targetMember) {
-    return { error: 'Target user is not a member of this workspace' };
+    return { error: t('memberNotFound') };
   }
 
   if (targetMember.role === 'owner') {
-    return { error: 'Cannot change the role of the workspace owner. Transfer ownership first.' };
+    return { error: t('cannotChangeOwnerRole') };
   }
 
   await db
@@ -309,6 +319,7 @@ export async function transferWorkspaceOwnership(
 ) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  const t = await getTranslations('Errors');
 
   const isAdmin = session.user.role === 'admin';
   if (!isAdmin) {
@@ -323,7 +334,7 @@ export async function transferWorkspaceOwnership(
       )
       .limit(1);
     if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: 'Only workspace owners can transfer ownership' };
+      return { error: t('ownerOnlyTransfer') };
     }
   }
 
@@ -340,11 +351,11 @@ export async function transferWorkspaceOwnership(
     .limit(1);
 
   if (!targetMember) {
-    return { error: 'Target user is not a member of this workspace' };
+    return { error: t('memberNotFound') };
   }
 
   if (targetMember.role === 'owner') {
-    return { error: 'User is already the owner of this workspace' };
+    return { error: t('alreadyOwner') };
   }
 
   // Find all current owners of this workspace

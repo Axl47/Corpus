@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth/session';
 import type { SchemaColumn } from '@/lib/templates';
 import type { DatabaseView } from '@/lib/types/views';
+import { getTranslations } from 'next-intl/server';
 
 export interface CreateDatabaseOptions {
   schema?: SchemaColumn[];
@@ -46,7 +47,10 @@ async function assertWorkspaceAccess(workspaceId: string): Promise<string> {
     )
     .limit(1);
 
-  if (!member) throw new Error('Unauthorized: no access to this workspace');
+  if (!member) {
+    const t = await getTranslations('Errors');
+    throw new Error(t('unauthorized'));
+  }
   return user.id;
 }
 
@@ -102,7 +106,7 @@ export async function createWorkspace(name: string) {
 
   await db.insert(workspaces).values({
     id,
-    name: name.trim() || 'Untitled Workspace',
+    name: name.trim() || 'Untitled',
     createdAt: new Date(),
   });
 
@@ -122,10 +126,11 @@ export async function createWorkspace(name: string) {
 
 export async function deleteWorkspace(id: string) {
   await assertWorkspaceAccess(id);
+  const t = await getTranslations('Errors');
 
   const accessible = await getWorkspaces();
   if (accessible.length <= 1) {
-    return { error: 'Cannot delete your only workspace' };
+    return { error: t('cannotDeleteOnlyWorkspace') };
   }
 
   await db.delete(workspaces).where(eq(workspaces.id, id));
@@ -147,7 +152,7 @@ export async function deleteWorkspace(id: string) {
 export async function renameWorkspace(id: string, name: string) {
   await assertWorkspaceAccess(id);
   await db.update(workspaces)
-    .set({ name: name.trim() || 'Untitled Workspace', updatedAt: new Date() })
+    .set({ name: name.trim() || 'Untitled', updatedAt: new Date() })
     .where(eq(workspaces.id, id));
 
   revalidatePath('/', 'layout');
@@ -567,7 +572,10 @@ export async function updateWorkspaceItemsOrder(itemIds: string[]) {
 
 export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspaceId: string, itemIdsOrder: string[]) {
   const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
-  if (!item[0]) throw new Error('Item not found');
+  if (!item[0]) {
+    const t = await getTranslations('Errors');
+    throw new Error(t('itemNotFound'));
+  }
   
   await assertWorkspaceAccess(item[0].workspaceId);
   await assertWorkspaceAccess(targetWorkspaceId);
@@ -584,7 +592,10 @@ export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspa
 
 export async function getAdminWorkspacesOverview() {
   const user = await getCurrentUser();
-  if (user.role !== 'admin') throw new Error('Admin access required');
+  if (user.role !== 'admin') {
+    const t = await getTranslations('Errors');
+    throw new Error(t('adminRequired'));
+  }
 
   const allWorkspaces = await db
     .select()
@@ -626,7 +637,10 @@ export async function getAdminWorkspacesOverview() {
 
 export async function adminDeleteWorkspace(workspaceId: string) {
   const user = await getCurrentUser();
-  if (user.role !== 'admin') throw new Error('Admin access required');
+  if (user.role !== 'admin') {
+    const t = await getTranslations('Errors');
+    throw new Error(t('adminRequired'));
+  }
 
   await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
   revalidatePath('/', 'layout');

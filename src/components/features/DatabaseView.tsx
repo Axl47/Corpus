@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { createPage, getPage, deletePage, duplicatePage, reorderPages, updatePageProperties } from '@/lib/actions/page';
 import { updateDatabaseViews } from '@/lib/actions/database';
 import { updateWorkspaceItemIcon } from '@/lib/actions/workspace';
@@ -154,6 +155,7 @@ export default function DatabaseView({
   database: any;
   initialPages: any[];
 }) {
+  const t = useTranslations('Database');
   const schema: any[] = database.schema ?? [];
   const router = useRouter();
 

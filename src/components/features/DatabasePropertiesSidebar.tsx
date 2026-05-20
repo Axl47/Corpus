@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   X,
   Plus,
@@ -74,13 +75,13 @@ interface DatabasePropertiesSidebarProps {
   onDefaultPageIconChange?: (icon: string | null, color: string | null) => void;
 }
 
-const OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
-  { value: 'contains',     label: 'contains',        needsValue: true  },
-  { value: 'not_contains', label: "doesn't contain", needsValue: true  },
-  { value: 'equals',       label: 'is',              needsValue: true  },
-  { value: 'not_equals',   label: 'is not',          needsValue: true  },
-  { value: 'is_empty',     label: 'is empty',        needsValue: false },
-  { value: 'is_not_empty', label: 'is not empty',    needsValue: false },
+const OPERATOR_KEYS: { value: FilterOperator; key: string; needsValue: boolean }[] = [
+  { value: 'contains',     key: 'operatorContains',       needsValue: true  },
+  { value: 'not_contains', key: 'operatorDoesNotContain', needsValue: true  },
+  { value: 'equals',       key: 'operatorIs',             needsValue: true  },
+  { value: 'not_equals',   key: 'operatorIsNot',          needsValue: true  },
+  { value: 'is_empty',     key: 'operatorIsEmpty',        needsValue: false },
+  { value: 'is_not_empty', key: 'operatorIsNotEmpty',     needsValue: false },
 ];
 
 function getPropertyIcon(type: string) {
@@ -146,6 +147,12 @@ export default function DatabasePropertiesSidebar({
   defaultPageIconColor,
   onDefaultPageIconChange,
 }: DatabasePropertiesSidebarProps) {
+  const t = useTranslations('Database');
+  const tWs = useTranslations('Workspace');
+  const tPage = useTranslations('Page');
+
+  const OPERATORS = OPERATOR_KEYS.map((op) => ({ ...op, label: t(op.key as Parameters<typeof t>[0]) }));
+
   const [schema, setSchema] = useState<any[]>(() => database.schema || []);
   const [isSavingSchema, setIsSavingSchema] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState<string | null>(null);
@@ -321,8 +328,8 @@ export default function DatabasePropertiesSidebar({
       {/* Tabs */}
       <div className="flex border-b border-neutral-800 shrink-0">
         {([
-          { id: 'layout',     label: 'Layout',     icon: LayoutTemplate },
-          { id: 'properties', label: 'Properties', icon: Database },
+          { id: 'layout',     label: t('layout'),     icon: LayoutTemplate },
+          { id: 'properties', label: t('properties'), icon: Database },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -357,7 +364,7 @@ export default function DatabasePropertiesSidebar({
                       value={col.name}
                       onChange={(e) => updateColumn(idx, { name: e.target.value })}
                       disabled={isTitle}
-                      placeholder="Property name"
+                      placeholder={t('propertyName')}
                       className="flex-1 min-w-0 bg-transparent text-xs text-neutral-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <select
@@ -366,12 +373,12 @@ export default function DatabasePropertiesSidebar({
                       disabled={isTitle}
                       className={`${selectCls} text-neutral-400 py-1 px-1.5 shrink-0 disabled:opacity-40 w-28 cursor-pointer truncate`}
                     >
-                      <option value="text">Text</option>
-                      <option value="select">Select</option>
-                      <option value="multi_select">Multi</option>
-                      <option value="number">Number</option>
-                      <option value="date">Date</option>
-                      <option value="datetime">DateTime</option>
+                      <option value="text">{t('typeText')}</option>
+                      <option value="select">{t('typeSelect')}</option>
+                      <option value="multi_select">{t('typeMultiSelect')}</option>
+                      <option value="number">{t('typeNumber')}</option>
+                      <option value="date">{t('typeDate')}</option>
+                      <option value="datetime">{t('typeDateTime')}</option>
                     </select>
                     {!isTitle ? (
                       <button
@@ -388,18 +395,18 @@ export default function DatabasePropertiesSidebar({
                   {(col.type === 'date' || col.type === 'datetime') && (
                     <div className="pl-10 pr-3 py-2 bg-neutral-900/30 border-b border-neutral-800/50 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date format</span>
+                        <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('dateFormat')}</span>
                         <div className="flex items-center gap-2">
                           <select
                             value={col.dateFormat || 'default'}
                             onChange={(e) => updateColumn(idx, { dateFormat: e.target.value })}
                             className={`${selectCls} text-neutral-400 py-1 px-1.5 cursor-pointer w-28 truncate`}
                           >
-                            <option value="default">Month Day, Year</option>
-                            <option value="iso">YYYY-MM-DD</option>
-                            <option value="uk">DD/MM/YYYY</option>
-                            <option value="us">MM/DD/YYYY</option>
-                            <option value="relative">Relative time</option>
+                            <option value="default">{t('dateFormatDefault')}</option>
+                            <option value="iso">{t('dateFormatISO')}</option>
+                            <option value="uk">{t('dateFormatUK')}</option>
+                            <option value="us">{t('dateFormatUS')}</option>
+                            <option value="relative">{t('dateFormatRelative')}</option>
                           </select>
                           <span className="w-5 shrink-0" />
                         </div>
@@ -474,7 +481,7 @@ export default function DatabasePropertiesSidebar({
                       </div>
                       <input
                         type="text"
-                        placeholder="Add option…"
+                        placeholder={t('addOption')}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -500,7 +507,7 @@ export default function DatabasePropertiesSidebar({
               className="flex items-center gap-1.5 px-4 py-2.5 w-full text-xs text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/10 transition-colors text-left cursor-pointer border-b border-neutral-800/50"
             >
               <Plus size={12} />
-              Add property
+              {t('addProperty')}
             </button>
 
             {isSchemaDirty && (
@@ -510,14 +517,14 @@ export default function DatabasePropertiesSidebar({
                   disabled={isSavingSchema}
                   className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
                 >
-                  Discard
+                  {tWs('cancel')}
                 </button>
                 <button
                   onClick={handleSaveSchema}
                   disabled={isSavingSchema}
                   className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  {isSavingSchema ? 'Saving…' : 'Save'}
+                  {isSavingSchema ? tWs('saving') : tWs('create')}
                 </button>
               </div>
             )}
@@ -536,15 +543,15 @@ export default function DatabasePropertiesSidebar({
                 onChange={(e) => onOpenBehaviorChange(e.target.value as 'center' | 'side' | 'full')}
                 className={`${selectCls} w-full text-xs py-1.5 px-2`}
               >
-                <option value="full">Full page</option>
-                <option value="side">Side peek</option>
-                <option value="center">Center peek</option>
+                <option value="full">{t('openFull')}</option>
+                <option value="side">{t('openSide')}</option>
+                <option value="center">{t('openCenter')}</option>
               </select>
             </div>
 
             {/* Default Page Icon */}
             <div className="px-4 py-3 relative">
-              <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Default page icon</span>
+              <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">{t('defaultPageIcon')}</span>
               <div className="flex items-center gap-2">
                 <button
                   ref={defaultIconBtnRef}
@@ -557,7 +564,7 @@ export default function DatabasePropertiesSidebar({
                     size={14} 
                     fallbackType="page" 
                   />
-                  <span>{defaultPageIcon ? 'Change icon' : 'Choose icon'}</span>
+                  <span>{defaultPageIcon ? tPage('changeIcon') : tPage('addIcon')}</span>
                 </button>
                 {defaultPageIcon && (
                   <button
@@ -599,7 +606,7 @@ export default function DatabasePropertiesSidebar({
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-amber-500/80">Add a Select or Multi-Select property to enable row coloring</span>
+                  <span className="text-xs text-amber-500/80">{t('addSelectProperty')}</span>
                 )}
               </div>
             )}
@@ -607,7 +614,7 @@ export default function DatabasePropertiesSidebar({
             {/* Kanban: Group by */}
             {activeView.config.type === 'kanban' && (
               <div className="px-4 py-3">
-                <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Group by</span>
+                <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">{t('groupBy')}</span>
                 {selectColumns.length > 0 ? (
                   <select
                     value={groupByCol}
@@ -619,7 +626,7 @@ export default function DatabasePropertiesSidebar({
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-amber-500/80">Add a Select property to enable grouping</span>
+                  <span className="text-xs text-amber-500/80">{t('addSelectForGroup')}</span>
                 )}
               </div>
             )}
@@ -628,10 +635,10 @@ export default function DatabasePropertiesSidebar({
             {activeView.config.type === 'kanban' && (
               <div>
                 <div className="px-4 py-2.5">
-                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Card properties</span>
+                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('cardProperties')}</span>
                 </div>
                 {availableCardProps.length === 0 ? (
-                  <p className="text-[11px] text-neutral-700 text-center pb-3">No additional properties.</p>
+                  <p className="text-[11px] text-neutral-700 text-center pb-3">{t('noAdditionalProperties')}</p>
                 ) : (
                   <div className="flex flex-col">
                     {visibleCardProps.map((col) => (
@@ -678,19 +685,19 @@ export default function DatabasePropertiesSidebar({
                   onClick={() => onShowPropertyLabelsChange?.(!showPropertyLabels)}
                   className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30"
                 >
-                  <span className="text-xs text-neutral-300">Show property labels</span>
+                  <span className="text-xs text-neutral-300">{t('showLabels')}</span>
                   <Checkbox checked={showPropertyLabels} />
                 </button>
                 <div className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-xs text-neutral-300">Property text</span>
+                  <span className="text-xs text-neutral-300">{t('propertyText')}</span>
                   <div className="flex items-center gap-2">
                     <select
                       value={propertyTextClamp}
                       onChange={(e) => onPropertyTextClampChange?.(e.target.value as 'truncate' | 'wrap')}
                       className={`${selectCls} text-neutral-400 py-1 px-1.5 w-28 cursor-pointer truncate`}
                     >
-                      <option value="truncate">Single line</option>
-                      <option value="wrap">Multi-line</option>
+                      <option value="truncate">{t('truncate')}</option>
+                      <option value="wrap">{t('wrap')}</option>
                     </select>
                     <span className="w-5 shrink-0" />
                   </div>
@@ -701,7 +708,7 @@ export default function DatabasePropertiesSidebar({
             {/* Kanban: Card color */}
             {activeView.config.type === 'kanban' && (
               <div className="px-4 py-3 border-b border-neutral-800/30 flex items-center justify-between gap-3">
-                <span className="text-xs text-neutral-300 shrink-0">Card color</span>
+                <span className="text-xs text-neutral-300 shrink-0">{t('cardColor')}</span>
                 <div className="flex items-center gap-2">
                   <select
                     value={cardColorCol ?? ''}
@@ -724,7 +731,7 @@ export default function DatabasePropertiesSidebar({
                 onClick={() => onGroupColBgChange?.(!groupColBg)}
                 className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30"
               >
-                <span className="text-xs text-neutral-300">Group background color</span>
+                <span className="text-xs text-neutral-300">{t('groupBackground')}</span>
                 <Checkbox checked={groupColBg} />
               </button>
             )}
@@ -733,7 +740,7 @@ export default function DatabasePropertiesSidebar({
             {activeView.config.type === 'calendar' && (
               <div className="px-4 py-3 flex flex-col gap-3">
                 <div>
-                  <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">Date property</span>
+                  <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('calendarBy')}</span>
                   {dateColumns.length > 0 ? (
                     <select
                       value={dateCol}
@@ -746,7 +753,7 @@ export default function DatabasePropertiesSidebar({
                       ))}
                     </select>
                   ) : (
-                    <span className="text-xs text-amber-500/80">Add a Date property to enable calendar</span>
+                    <span className="text-xs text-amber-500/80">{t('addDateForCalendar')}</span>
                   )}
                 </div>
                 <div className="flex gap-3">
@@ -762,20 +769,20 @@ export default function DatabasePropertiesSidebar({
                     </select>
                   </div>
                   <div className="flex-1">
-                    <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">Week starts</span>
+                    <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('weekStart')}</span>
                     <select
                       value={firstDayOfWeek || 'sunday'}
                       onChange={(e) => onFirstDayOfWeekChange?.(e.target.value as 'sunday' | 'monday')}
                       className={`${selectCls} w-full text-xs py-1.5 px-2`}
                     >
-                      <option value="sunday">Sunday</option>
-                      <option value="monday">Monday</option>
+                      <option value="sunday">{t('sunday')}</option>
+                      <option value="monday">{t('monday')}</option>
                     </select>
                   </div>
                 </div>
                 {colorColumns.length > 0 && (
                   <div>
-                    <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">Card color</span>
+                    <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('cardColor')}</span>
                     <select
                       value={cardColorCol ?? ''}
                       onChange={(e) => onCardColorColChange?.(e.target.value)}
@@ -795,10 +802,10 @@ export default function DatabasePropertiesSidebar({
             {activeView.config.type === 'calendar' && (
               <div>
                 <div className="px-4 py-2.5">
-                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Card properties</span>
+                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('cardProperties')}</span>
                 </div>
                 {calAvailableCardProps.length === 0 ? (
-                  <p className="text-[11px] text-neutral-700 text-center pb-3">No additional properties.</p>
+                  <p className="text-[11px] text-neutral-700 text-center pb-3">{t('noAdditionalProperties')}</p>
                 ) : (
                   <div className="flex flex-col">
                     {visibleCalCardProps.map((col) => (
@@ -845,19 +852,19 @@ export default function DatabasePropertiesSidebar({
                   onClick={() => onShowPropertyLabelsChange?.(!showPropertyLabels)}
                   className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30"
                 >
-                  <span className="text-xs text-neutral-300">Show property labels</span>
+                  <span className="text-xs text-neutral-300">{t('showLabels')}</span>
                   <Checkbox checked={showPropertyLabels} />
                 </button>
                 <div className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-xs text-neutral-300">Property text</span>
+                  <span className="text-xs text-neutral-300">{t('propertyText')}</span>
                   <div className="flex items-center gap-2">
                     <select
                       value={propertyTextClamp}
                       onChange={(e) => onPropertyTextClampChange?.(e.target.value as 'truncate' | 'wrap')}
                       className={`${selectCls} text-neutral-400 py-1 px-1.5 w-28 cursor-pointer truncate`}
                     >
-                      <option value="truncate">Single line</option>
-                      <option value="wrap">Multi-line</option>
+                      <option value="truncate">{t('truncate')}</option>
+                      <option value="wrap">{t('wrap')}</option>
                     </select>
                     <span className="w-5 shrink-0" />
                   </div>
@@ -902,14 +909,14 @@ export default function DatabasePropertiesSidebar({
             <div>
               <div className="flex items-center justify-between px-4 py-2.5">
                 <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
-                  Filters{filters.length > 0 && ` (${filters.length})`}
+                  {t('filters')}{filters.length > 0 && ` (${filters.length})`}
                 </span>
                 <button onClick={addFilter} className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">
                   <Plus size={10} /> Add
                 </button>
               </div>
               {filters.length === 0 ? (
-                <p className="text-[11px] text-neutral-700 text-center py-4">No filters applied.</p>
+                <p className="text-[11px] text-neutral-700 text-center py-4">{t('noFilters')}</p>
               ) : (
                 <div className="flex flex-col">
                   {filters.map((filter) => {
@@ -982,7 +989,7 @@ export default function DatabasePropertiesSidebar({
                                   );
                                 })}
                                 {(colSchema.options || []).length === 0 && (
-                                  <span className="text-[10px] text-neutral-600 italic">No options defined</span>
+                                  <span className="text-[10px] text-neutral-600 italic">{t('noOptionsDefined')}</span>
                                 )}
                               </div>
                             );
@@ -992,7 +999,7 @@ export default function DatabasePropertiesSidebar({
                               type="text"
                               value={filter.value}
                               onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
-                              placeholder="Value…"
+                              placeholder={t('filterValue')}
                               className={`${selectCls} w-full focus:border-neutral-700`}
                             />
                           );
@@ -1008,14 +1015,14 @@ export default function DatabasePropertiesSidebar({
             <div>
               <div className="flex items-center justify-between px-4 py-2.5">
                 <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
-                  Sorts{sorts.length > 0 && ` (${sorts.length})`}
+                  {t('sorts')}{sorts.length > 0 && ` (${sorts.length})`}
                 </span>
                 <button onClick={addSort} className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">
                   <Plus size={10} /> Add
                 </button>
               </div>
               {sorts.length === 0 ? (
-                <p className="text-[11px] text-neutral-700 text-center py-4">No sorts applied.</p>
+                <p className="text-[11px] text-neutral-700 text-center py-4">{t('noSorts')}</p>
               ) : (
                 <div className="flex flex-col">
                   {sorts.map((sort) => (
@@ -1033,7 +1040,7 @@ export default function DatabasePropertiesSidebar({
                         onClick={() => updateSort(sort.id, { direction: sort.direction === 'asc' ? 'desc' : 'asc' })}
                         className={`${selectCls} shrink-0 hover:bg-neutral-800 transition-colors`}
                       >
-                        {sort.direction === 'asc' ? 'A → Z' : 'Z → A'}
+                        {sort.direction === 'asc' ? t('sortAscending') : t('sortDescending')}
                       </button>
                       <button
                         onClick={() => deleteSort(sort.id)}

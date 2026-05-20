@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { GripVertical, Settings, Trash2, Plus, Copy } from 'lucide-react';
 import { normalizeOption, getOptionColorByValue, getCardBorderDots, formatDateValue } from '@/lib/types/properties';
+import { useTranslations } from 'next-intl';
 import type { SelectOption } from '@/lib/types/properties';
 import InlineCellEditor from './InlineCellEditor';
 import PageIcon from './PageIcon';
@@ -60,6 +61,8 @@ export default function KanbanBoard({
   defaultPageIconColor?: string;
   onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
 }) {
+  const t = useTranslations('Database');
+  const tPage = useTranslations('Page');
   const schema = database.schema as any[];
 
   const [editingCell, setEditingCell] = useState<{ pageId: string; colId: string } | null>(null);
@@ -259,7 +262,7 @@ export default function KanbanBoard({
               } ${!isUncategorized ? 'cursor-grab active:cursor-grabbing' : ''}`}
             >
               <h3 className="text-xs font-medium uppercase tracking-wider text-neutral-400">
-                {isUncategorized ? 'No Status' : columnName}
+                {isUncategorized ? t('uncategorized') : columnName}
               </h3>
               <span className="text-xs text-neutral-500 tabular-nums">
                 {groupedPages[columnName].length}
@@ -274,7 +277,7 @@ export default function KanbanBoard({
               }`}
             >
               {groupedPages[columnName].length === 0 ? (
-                <div className="text-xs text-neutral-500 py-4">No pages</div>
+                <div className="text-xs text-neutral-500 py-4">{t('noPages')}</div>
               ) : (
                 groupedPages[columnName].map((page) => {
                   const colorColSchema = cardColorCol ? schema.find((c) => c.id === cardColorCol) : null;
@@ -325,7 +328,7 @@ export default function KanbanBoard({
                           setActiveMenuCardId(activeMenuCardId === page.id ? null : page.id);
                         }}
                         className="p-1 hover:bg-neutral-700/60 text-neutral-400 hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors rounded"
-                        title="Drag to move or click for actions"
+                        title={t('dragMove')}
                       >
                         <GripVertical size={13} />
                       </button>
@@ -400,7 +403,7 @@ export default function KanbanBoard({
                           />
                         )}
                       </div>
-                      <span className={propertyTextClamp === 'truncate' ? 'truncate min-w-0' : ''}>{page.properties['title'] || 'Untitled'}</span>
+                      <span className={propertyTextClamp === 'truncate' ? 'truncate min-w-0' : ''}>{page.properties['title'] || tPage('untitled')}</span>
                     </h4>
 
                     <div className="mt-1.5 flex flex-col gap-1.5">

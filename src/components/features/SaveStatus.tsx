@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 type State = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -9,6 +10,7 @@ interface SaveStatusProps {
 }
 
 export default function SaveStatus({ state }: SaveStatusProps) {
+  const t = useTranslations('Page');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function SaveStatus({ state }: SaveStatusProps) {
     return (
       <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 select-none">
         <div className="w-2.5 h-2.5 rounded-full border border-neutral-600 border-t-transparent animate-spin shrink-0" />
-        <span>Saving</span>
+        <span>{t('saving')}</span>
       </div>
     );
   }
@@ -38,7 +40,7 @@ export default function SaveStatus({ state }: SaveStatusProps) {
     return (
       <div className="flex items-center gap-1 text-[11px] text-green-400 select-none">
         <Check size={11} strokeWidth={2.5} />
-        <span>Saved</span>
+        <span>{t('saved')}</span>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export default function SaveStatus({ state }: SaveStatusProps) {
     return (
       <div className="flex items-center gap-1 text-[11px] text-red-400 select-none">
         <AlertCircle size={11} />
-        <span>Error saving</span>
+        <span>{t('savingError')}</span>
       </div>
     );
   }

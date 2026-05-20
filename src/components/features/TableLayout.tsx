@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { getOptionColorByValue, formatDateValue, normalizeOption, type SelectOption } from '@/lib/types/properties';
+import { useTranslations } from 'next-intl';
 import InlineCellEditor from './InlineCellEditor';
 import { GripHorizontal, GripVertical, Settings, Trash2, Type, List, Hash, AlignLeft, Calendar, Clock, Tags, Plus, Copy, EyeOff, ArrowUp, ArrowDown, Filter, X, RotateCcw } from 'lucide-react';
 import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
@@ -86,6 +87,8 @@ export default function TableLayout({
   defaultPageIconColor?: string;
   onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
 }) {
+  const t = useTranslations('Database');
+  const tPage = useTranslations('Page');
   const schema: any[] = database.schema ?? [];
   const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
 
@@ -497,7 +500,7 @@ export default function TableLayout({
             {pages.length === 0 ? (
               <tr>
                 <td colSpan={visibleCols.length} className="py-16 text-center text-neutral-600 text-sm">
-                  No pages yet. Use &quot;New&quot; to get started.
+                  {t('noPages')}
                 </td>
               </tr>
             ) : (
@@ -608,7 +611,7 @@ export default function TableLayout({
                               }}
                               className="font-medium text-neutral-100 hover:text-white cursor-text hover:underline truncate"
                             >
-                              {val || 'Untitled'}
+                              {val || tPage('untitled')}
                             </span>
                           </div>
                         ) : col.type === 'select' ? (
@@ -696,7 +699,7 @@ export default function TableLayout({
               hasSorts ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing'
             }`}
             style={{ width: 22, height: 24 }}
-            title={hasSorts ? 'Page actions (Sorting is active — cannot reorder)' : 'Drag to reorder or click for actions'}
+            title={t('dragReorder')}
           >
             <GripVertical size={14} />
           </button>
@@ -754,7 +757,7 @@ export default function TableLayout({
                     >
                       <span className="flex items-center gap-2">
                         <ArrowUp size={13} className="text-neutral-500" />
-                        Sort Ascending (A → Z)
+                        {t('sortAscending')}
                       </span>
                       {activeSort?.direction === 'asc' && <span className="text-[10px] text-blue-400">✓</span>}
                     </button>
@@ -766,7 +769,7 @@ export default function TableLayout({
                     >
                       <span className="flex items-center gap-2">
                         <ArrowDown size={13} className="text-neutral-500" />
-                        Sort Descending (Z → A)
+                        {t('sortDescending')}
                       </span>
                       {activeSort?.direction === 'desc' && <span className="text-[10px] text-blue-400">✓</span>}
                     </button>
@@ -887,7 +890,7 @@ export default function TableLayout({
                                 );
                               })}
                               {(colSchema.options || []).length === 0 && (
-                                  <span className="text-[10px] text-neutral-600 italic">No options defined</span>
+                                  <span className="text-[10px] text-neutral-600 italic">{t('noOptionsDefined')}</span>
                               )}
                             </div>
                           );

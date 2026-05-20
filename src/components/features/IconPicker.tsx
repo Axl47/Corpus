@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CURATED_ICONS, ICON_COLORS, ICON_COLOR_HEX } from './PageIcon';
 import { X, Smile, Star, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const POPULAR_EMOJIS = [
   '😊', '🚀', '📝', '📅', '💻', '🎨', 
@@ -31,6 +32,7 @@ export default function IconPicker({
   onClose,
   anchorRef,
 }: IconPickerProps) {
+  const t = useTranslations('IconPicker');
   const [activeTab, setActiveTab] = useState<'emoji' | 'lucide'>(
     currentIcon?.startsWith('lucide:') ? 'lucide' : 'emoji'
   );
@@ -129,13 +131,13 @@ export default function IconPicker({
       className={`z-50 bg-neutral-900 border border-neutral-800 shadow-2xl p-4 w-72 rounded-lg text-left text-neutral-200 animate-fade-in animate-duration-150 ${coords ? '' : 'absolute'}`}
     >
       <div className="flex items-center justify-between pb-3 border-b border-neutral-800 mb-3">
-        <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Select Icon</span>
+        <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('title')}</span>
         <div className="flex items-center gap-1.5">
           {currentIcon && (
             <button
               onClick={handleRemove}
               className="p-1 hover:bg-neutral-800 text-red-400 hover:text-red-300 rounded transition-colors cursor-pointer"
-              title="Remove icon"
+              title={t('remove')}
             >
               <Trash2 size={13} />
             </button>
@@ -160,7 +162,7 @@ export default function IconPicker({
           }`}
         >
           <Smile size={13} />
-          <span>Emoji</span>
+          <span>{t('tabEmoji')}</span>
         </button>
         <button
           onClick={() => setActiveTab('lucide')}
@@ -171,7 +173,7 @@ export default function IconPicker({
           }`}
         >
           <Star size={13} />
-          <span>Icon</span>
+          <span>{t('tabIcon')}</span>
         </button>
       </div>
 
@@ -193,7 +195,7 @@ export default function IconPicker({
           <form onSubmit={handleCustomEmojiSubmit} className="flex gap-2 pt-2 border-t border-neutral-850">
             <input
               type="text"
-              placeholder="Paste custom emoji..."
+              placeholder={t('customEmojiPlaceholder')}
               value={customEmoji}
               onChange={(e) => setCustomEmoji(e.target.value)}
               maxLength={4}

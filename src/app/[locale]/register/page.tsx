@@ -3,8 +3,11 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { registerUser } from '@/lib/actions/auth';
+import { useTranslations } from 'next-intl';
+import LanguageSwitcher from '@/components/features/LanguageSwitcher';
 
 export default function RegisterPage() {
+  const t = useTranslations('Auth');
   const [state, formAction, isPending] = useActionState(registerUser, null);
 
   return (
@@ -18,7 +21,7 @@ export default function RegisterPage() {
             className="w-14 h-14 object-contain rounded-xl mb-4 shadow-lg"
           />
           <h1 className="text-2xl font-bold text-white tracking-tight">Remnus</h1>
-          <p className="text-neutral-400 text-sm mt-1">Create your account</p>
+          <p className="text-neutral-400 text-sm mt-1">{t('createAccountSubtitle')}</p>
         </div>
 
         {/* Card */}
@@ -30,41 +33,43 @@ export default function RegisterPage() {
             className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-100 text-neutral-900 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
           >
             <GoogleIcon />
-            Continue with Google
+            {t('continueWithGoogle')}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 border-t border-neutral-800" />
-            <span className="text-xs text-neutral-600">or</span>
+            <span className="text-xs text-neutral-600">{t('or')}</span>
             <div className="flex-1 border-t border-neutral-800" />
           </div>
 
           {/* Registration form */}
           <form action={formAction} className="space-y-3">
             <div>
-              <label className="block text-xs text-neutral-400 mb-1.5">Name <span className="text-neutral-600">(optional)</span></label>
+              <label className="block text-xs text-neutral-400 mb-1.5">
+                {t('name')} <span className="text-neutral-600">{t('optional')}</span>
+              </label>
               <input
                 name="name"
                 type="text"
                 autoComplete="name"
                 className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neutral-500 placeholder:text-neutral-600"
-                placeholder="Your name"
+                placeholder={t('namePlaceholder')}
               />
             </div>
             <div>
-              <label className="block text-xs text-neutral-400 mb-1.5">Email</label>
+              <label className="block text-xs text-neutral-400 mb-1.5">{t('email')}</label>
               <input
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
                 className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neutral-500 placeholder:text-neutral-600"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
             <div>
-              <label className="block text-xs text-neutral-400 mb-1.5">Password</label>
+              <label className="block text-xs text-neutral-400 mb-1.5">{t('password')}</label>
               <input
                 name="password"
                 type="password"
@@ -72,7 +77,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 minLength={8}
                 className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neutral-500 placeholder:text-neutral-600"
-                placeholder="Min. 8 characters"
+                placeholder={t('passwordPlaceholder')}
               />
             </div>
 
@@ -85,17 +90,22 @@ export default function RegisterPage() {
               disabled={isPending}
               className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
             >
-              {isPending ? 'Creating account…' : 'Create account'}
+              {isPending ? t('creatingAccount') : t('createAccount')}
             </button>
           </form>
         </div>
 
         <p className="text-center text-xs text-neutral-600 mt-4">
-          Already have an account?{' '}
+          {t('alreadyHaveAccount')}{' '}
           <Link href="/login" className="text-neutral-400 hover:text-neutral-200 transition-colors">
-            Sign in
+            {t('signIn')}
           </Link>
         </p>
+
+        {/* Language switcher */}
+        <div className="mt-6 flex justify-center">
+          <LanguageSwitcher />
+        </div>
       </div>
     </div>
   );

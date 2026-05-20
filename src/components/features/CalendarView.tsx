@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { getOptionColorByValue, getCardBorderDots, formatDateValue } from '@/lib/types/properties';
 import { ChevronLeft, ChevronRight, GripVertical, Settings, Trash2, Calendar as CalendarIcon, Clock, Plus, Copy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
@@ -117,6 +118,8 @@ export default function CalendarView({
   defaultPageIconColor,
   onPageIconChange,
 }: CalendarViewProps) {
+  const t = useTranslations('Database');
+  const tPage = useTranslations('Page');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [activeIconPickerPageId, setActiveIconPickerPageId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -402,7 +405,7 @@ export default function CalendarView({
                             setActiveMenuCardId(activeMenuCardId === page.id ? null : page.id);
                           }}
                           className="p-1 hover:bg-neutral-700/60 text-neutral-400 hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors rounded"
-                          title="Drag to reschedule or click for actions"
+                          title={t('dragReschedule')}
                         >
                           <GripVertical size={12} />
                         </button>
@@ -481,7 +484,7 @@ export default function CalendarView({
                             />
                           )}
                         </div>
-                        <span className={propertyTextClamp === 'truncate' ? 'truncate min-w-0' : ''}>{page.properties['title'] || 'Untitled'}</span>
+                        <span className={propertyTextClamp === 'truncate' ? 'truncate min-w-0' : ''}>{page.properties['title'] || tPage('untitled')}</span>
                       </h4>
 
                       {/* Card properties */}

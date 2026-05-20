@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TEMPLATES, type TemplateDefinition, type DatabaseTemplateDefinition, type PageTemplateDefinition } from '@/lib/templates';
 import { createStandalonePage, createWorkspaceDatabase, switchWorkspace } from '@/lib/actions/workspace';
 import { createPage } from '@/lib/actions/page';
@@ -27,6 +28,35 @@ export default function TemplatePickerModal({
   onOptimisticCreate,
   parentId,
 }: TemplatePickerModalProps) {
+  const t = useTranslations('Templates');
+  const tCommon = useTranslations('Workspace');
+
+  const templateName = (name: string) => {
+    const map: Record<string, string> = {
+      'Blank Page': t('blankPage'),
+      'Meeting Notes': t('meetingNotes'),
+      'Project Brief': t('projectBrief'),
+      'Blank Database': t('blankDatabase'),
+      'Task Tracker': t('taskTracker'),
+      'Event Calendar': t('eventCalendar'),
+      'Reading List': t('readingList'),
+    };
+    return map[name] ?? name;
+  };
+
+  const templateDesc = (name: string, desc: string) => {
+    const map: Record<string, string> = {
+      'Blank Page': t('blankPageDesc'),
+      'Meeting Notes': t('meetingNotesDesc'),
+      'Project Brief': t('projectBriefDesc'),
+      'Blank Database': t('blankDatabaseDesc'),
+      'Task Tracker': t('taskTrackerDesc'),
+      'Event Calendar': t('eventCalendarDesc'),
+      'Reading List': t('readingListDesc'),
+    };
+    return map[name] ?? desc;
+  };
+
   const [step, setStep] = useState<'pick' | 'confirm'>('pick');
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateDefinition | null>(null);
   const [title, setTitle] = useState('');
@@ -118,7 +148,7 @@ export default function TemplatePickerModal({
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-850 bg-neutral-900/30 shrink-0">
-            <h2 className="text-sm font-semibold text-neutral-100">New Item</h2>
+            <h2 className="text-sm font-semibold text-neutral-100">{t('modalTitle')}</h2>
             <button
               onClick={onClose}
               className="p-1 text-neutral-500 hover:text-neutral-200 transition-colors rounded"
@@ -132,11 +162,17 @@ export default function TemplatePickerModal({
             {/* Blank group */}
             <div>
               <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">
-                Blank
+                {t('groupBlank')}
               </p>
               <div className="grid grid-cols-2 gap-2.5">
                 {BLANK_TEMPLATES.map(template => (
-                  <TemplateCard key={template.id} template={template} onClick={() => selectTemplate(template)} />
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    localizedName={templateName(template.name)}
+                    localizedDesc={templateDesc(template.name, template.description)}
+                    onClick={() => selectTemplate(template)}
+                  />
                 ))}
               </div>
             </div>
@@ -144,11 +180,17 @@ export default function TemplatePickerModal({
             {/* Templates group */}
             <div>
               <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">
-                Templates
+                {t('groupTemplates')}
               </p>
               <div className="grid grid-cols-3 gap-2.5">
                 {OTHER_TEMPLATES.map(template => (
-                  <TemplateCard key={template.id} template={template} onClick={() => selectTemplate(template)} />
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    localizedName={templateName(template.name)}
+                    localizedDesc={templateDesc(template.name, template.description)}
+                    onClick={() => selectTemplate(template)}
+                  />
                 ))}
               </div>
             </div>
@@ -170,7 +212,7 @@ export default function TemplatePickerModal({
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-base leading-none shrink-0">{selectedTemplate?.icon}</span>
               <span className="text-sm font-semibold text-neutral-100 truncate">
-                {selectedTemplate?.name}
+                {selectedTemplate ? templateName(selectedTemplate.name) : ''}
               </span>
             </div>
           </div>
@@ -200,7 +242,7 @@ export default function TemplatePickerModal({
               onClick={() => setStep('pick')}
               className="text-sm text-neutral-400 hover:text-neutral-200 transition-colors px-3 py-1.5 rounded"
             >
-              Back
+              {tCommon('cancel')}
             </button>
             <button
               onClick={handleCreate}
@@ -210,7 +252,7 @@ export default function TemplatePickerModal({
               {isPending && (
                 <div className="w-3 h-3 rounded-full border-2 border-white/25 border-t-white animate-spin shrink-0" />
               )}
-              {isPending ? 'Creating…' : 'Create'}
+              {isPending ? tCommon('creating') : tCommon('create')}
             </button>
           </div>
         </div>
@@ -221,9 +263,13 @@ export default function TemplatePickerModal({
 
 function TemplateCard({
   template,
+  localizedName,
+  localizedDesc,
   onClick,
 }: {
   template: TemplateDefinition;
+  localizedName: string;
+  localizedDesc: string;
   onClick: () => void;
 }) {
   return (
@@ -233,9 +279,9 @@ function TemplateCard({
     >
       <div className="text-xl mb-2 leading-none">{template.icon}</div>
       <p className="text-xs font-semibold text-neutral-200 group-hover:text-white transition-colors mb-0.5">
-        {template.name}
+        {localizedName}
       </p>
-      <p className="text-[11px] text-neutral-500 leading-relaxed">{template.description}</p>
+      <p className="text-[11px] text-neutral-500 leading-relaxed">{localizedDesc}</p>
     </button>
   );
 }

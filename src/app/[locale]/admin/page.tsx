@@ -5,6 +5,7 @@ import { getAdminWorkspacesOverview, getAllWorkspaceItems } from '@/lib/actions/
 import { Shield, Users, Layers, FileText, TrendingUp } from 'lucide-react';
 import AdminUsersTable from '@/components/features/AdminUsersTable';
 import AdminWorkspacesTable from '@/components/features/AdminWorkspacesTable';
+import { getTranslations } from 'next-intl/server';
 
 export const metadata = { title: 'Admin — Remnus' };
 
@@ -35,6 +36,8 @@ function StatCard({ icon, label, value, sub }: {
 export default async function AdminPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== 'admin') redirect('/');
+
+  const t = await getTranslations('Admin');
 
   const [usersResult, workspaces, allItems] = await Promise.all([
     getAllUsers(),
@@ -79,8 +82,8 @@ export default async function AdminPage() {
         <div className="flex items-center gap-3">
           <Shield size={20} className="text-blue-400" />
           <div>
-            <h1 className="text-lg font-semibold text-neutral-100">Admin Panel</h1>
-            <p className="text-xs text-neutral-500 mt-0.5">Overview of users, workspaces, and activity</p>
+            <h1 className="text-lg font-semibold text-neutral-100">{t('panelTitle')}</h1>
+            <p className="text-xs text-neutral-500 mt-0.5">{t('panelSubtitle')}</p>
           </div>
         </div>
       </div>
@@ -91,37 +94,37 @@ export default async function AdminPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             icon={<Users size={14} />}
-            label="Total Users"
+            label={t('totalUsers')}
             value={userList.length}
           />
           <StatCard
             icon={<TrendingUp size={14} />}
-            label="New This Week"
+            label={t('newThisWeek')}
             value={newThisWeek}
-            sub="last 7 days"
+            sub={t('last7Days')}
           />
           <StatCard
             icon={<TrendingUp size={14} />}
-            label="New This Month"
+            label={t('newThisMonth')}
             value={newThisMonth}
-            sub="last 30 days"
+            sub={t('last30Days')}
           />
           <StatCard
             icon={<Layers size={14} />}
-            label="Workspaces"
+            label={t('workspaces')}
             value={workspaces.length}
           />
           <StatCard
             icon={<Layers size={14} />}
-            label="New Workspaces"
+            label={t('newWorkspaces')}
             value={newWorkspacesThisMonth}
-            sub="last 30 days"
+            sub={t('last30Days')}
           />
           <StatCard
             icon={<FileText size={14} />}
-            label="Total Items"
+            label={t('totalItems')}
             value={totalItems}
-            sub="pages & databases"
+            sub={t('pagesDatabases')}
           />
         </div>
 
@@ -129,8 +132,8 @@ export default async function AdminPage() {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <Users size={15} className="text-neutral-400" />
-            <h2 className="text-sm font-medium text-neutral-300">Users</h2>
-            <span className="text-xs text-neutral-600 ml-1">{userList.length} total</span>
+            <h2 className="text-sm font-medium text-neutral-300">{t('usersSection')}</h2>
+            <span className="text-xs text-neutral-600 ml-1">{userList.length} {t('total')}</span>
           </div>
           <AdminUsersTable users={sortedUsers} currentUserId={session.user.id} />
         </section>
@@ -139,8 +142,8 @@ export default async function AdminPage() {
         <section className="pb-6">
           <div className="flex items-center gap-2 mb-3">
             <Layers size={15} className="text-neutral-400" />
-            <h2 className="text-sm font-medium text-neutral-300">Workspaces</h2>
-            <span className="text-xs text-neutral-600 ml-1">{workspaces.length} total</span>
+            <h2 className="text-sm font-medium text-neutral-300">{t('workspacesSection')}</h2>
+            <span className="text-xs text-neutral-600 ml-1">{workspaces.length} {t('total')}</span>
           </div>
           <AdminWorkspacesTable workspaces={workspaces} items={allItems} />
         </section>

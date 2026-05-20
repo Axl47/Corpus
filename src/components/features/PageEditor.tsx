@@ -4,6 +4,7 @@ import { updatePageContent, updatePageProperties, duplicatePage, deletePage, upd
 import { ArrowLeft, X, ChevronDown, MoreHorizontal, Trash2, Copy, Smile, ArrowLeftRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
@@ -39,6 +40,9 @@ export default function PageEditor({
   onPageUpdated?: (updatedPage: any) => void;
   subItems?: WorkspaceItemRow[];
 }) {
+  const t = useTranslations('Page');
+  const tDb = useTranslations('Database');
+  const tEditor = useTranslations('Editor');
   const [properties, setProperties] = useState<Record<string, any>>(initialPage.properties || {});
   const [icon, setIcon] = useState<string | null>(initialPage.icon);
   const [iconColor, setIconColor] = useState<string | null>(initialPage.iconColor);
@@ -63,7 +67,7 @@ export default function PageEditor({
     localStorage.setItem(`page-width-${initialPage.id}`, next);
   };
 
-  const widthLabels: Record<WidthMode, string> = { narrow: 'Narrow', wide: 'Wide', full: 'Full width' };
+  const widthLabels: Record<WidthMode, string> = { narrow: t('narrow'), wide: t('wide'), full: t('full') };
 
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState(false);
@@ -183,7 +187,7 @@ export default function PageEditor({
       {!isPeek && (
         <div className="flex items-center justify-between mb-10">
           <Link href={`/db/${database.id}`} className="inline-flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm font-medium">
-            <ArrowLeft size={16} /> Back to {database.name}
+            <ArrowLeft size={16} /> {t('back')} — {database.name}
           </Link>
           <div className="flex items-center gap-4">
             <SaveStatus state={saveState} />
@@ -215,13 +219,13 @@ export default function PageEditor({
                     className="w-full px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors border-b border-neutral-850"
                   >
                     <Copy size={13} />
-                    <span>Duplicate page</span>
+                    <span>Duplicate</span>
                   </button>
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
                       setOpenMenu(false);
-                      if (confirm('Are you sure you want to delete this page?')) {
+                      if (confirm(t('deleteConfirm', { title: properties['title'] || t('untitled') }))) {
                         await deletePage(initialPage.id, database.id);
                         router.push(`/db/${database.id}`);
                       }
@@ -229,7 +233,7 @@ export default function PageEditor({
                     className="w-full px-3 py-2 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Trash2 size={13} />
-                    <span>Delete page</span>
+                    <span>{t('deletePage')}</span>
                   </button>
                 </div>
               )}
@@ -246,7 +250,7 @@ export default function PageEditor({
               ref={iconButtonRef}
               onClick={() => setShowIconPicker(!showIconPicker)}
               className="p-1 hover:bg-neutral-800 rounded transition-colors duration-150 cursor-pointer flex items-center justify-center shrink-0"
-              title={icon ? "Change icon" : "Add icon"}
+              title={icon ? t('changeIcon') : t('addIcon')}
             >
               <PageIcon icon={icon} iconColor={iconColor} size={40} fallbackType="page" />
             </button>
@@ -255,7 +259,7 @@ export default function PageEditor({
                 onClick={() => handleIconSelect(null, null)}
                 className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover/icon-wrapper:opacity-100 px-1.5 py-0.5 text-[9px] bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white rounded transition-all cursor-pointer font-medium whitespace-nowrap shadow-xl z-20"
               >
-                Remove
+                {t('changeIcon')}
               </button>
             )}
           </div>
@@ -276,7 +280,7 @@ export default function PageEditor({
             type="text"
             value={properties['title'] || ''}
             onChange={(e) => handleTextPropertyChange('title', e.target.value)}
-            placeholder="Untitled"
+            placeholder={t('untitled')}
             className="w-full bg-transparent text-white font-bold text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
         </div>
@@ -305,7 +309,7 @@ export default function PageEditor({
                         </span>
                       );
                     })() : (
-                      <span className="text-neutral-600 text-sm">Empty</span>
+                      <span className="text-neutral-600 text-sm">{tDb('empty')}</span>
                     )}
                     <ChevronDown size={12} className="text-neutral-600" />
                   </button>
@@ -315,7 +319,7 @@ export default function PageEditor({
                         onClick={() => { handlePropertyChange(col.id, ''); setOpenSelectId(null); }}
                         className="w-full text-left px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-800 transition-colors cursor-pointer"
                       >
-                        Empty
+                        {tDb('empty')}
                       </button>
                       {(col.options || []).map((rawOpt: string | SelectOption) => {
                         const opt = normalizeOption(rawOpt);
@@ -396,7 +400,7 @@ export default function PageEditor({
                   type={col.type === 'number' ? 'number' : 'text'}
                   value={val || ''}
                   onChange={(e) => handleTextPropertyChange(col.id, e.target.value)}
-                  placeholder="Empty"
+                  placeholder={tDb('empty')}
                   className="bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-neutral-700 rounded p-1 -ml-1 flex-1 text-sm placeholder:text-neutral-700 transition-shadow"
                 />
               )}
@@ -410,7 +414,7 @@ export default function PageEditor({
         key={initialPage.id}
         initialContent={initialPage.content || ''}
         onChange={handleContentChange}
-        placeholder="Press '/' for commands or start writing..."
+        placeholder={tEditor('placeholder')}
         workspaceId={database.workspaceId}
         parentId={initialPage.id}
         initialSubItems={subItems}

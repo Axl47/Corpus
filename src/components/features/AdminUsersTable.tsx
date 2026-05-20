@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Calendar, ChevronLeft, ChevronRight, Mail, Globe, Trash2 } from 'lucide-react';
 import { adminDeleteUser } from '@/lib/actions/auth';
+import { useTranslations, useLocale } from 'next-intl';
 
 type UserRow = {
   id: string;
@@ -20,10 +21,10 @@ function safeDate(val: Date | string | number | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function formatDate(val: Date | string | number | null | undefined) {
+function formatDate(val: Date | string | number | null | undefined, locale: string) {
   const d = safeDate(val);
   if (!d) return '—';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
 }
 
 const PAGE_SIZE = 10;
@@ -35,6 +36,8 @@ export default function AdminUsersTable({
   users: UserRow[];
   currentUserId: string;
 }) {
+  const t = useTranslations('Admin');
+  const locale = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -61,17 +64,17 @@ export default function AdminUsersTable({
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden">
       {total === 0 ? (
-        <div className="py-10 text-center text-xs text-neutral-600">No users found.</div>
+        <div className="py-10 text-center text-xs text-neutral-600">{t('noUsers')}</div>
       ) : (
         <>
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-900/60">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">Email</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-28">Sign-in</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">Role</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">Joined</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colName')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colEmail')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-28">{t('colSignIn')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colRole')}</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colJoined')}</th>
                 <th className="w-24 px-4 py-2.5" />
               </tr>
             </thead>
@@ -93,12 +96,12 @@ export default function AdminUsersTable({
                       {u.authType === 'google' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
                           <Globe size={9} />
-                          Google
+                          {t('signInGoogle')}
                         </span>
                       ) : u.authType === 'email' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
                           <Mail size={9} />
-                          Email
+                          {t('signInEmail')}
                         </span>
                       ) : (
                         <span className="text-xs text-neutral-600">—</span>
@@ -117,14 +120,14 @@ export default function AdminUsersTable({
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
                         <Calendar size={11} />
-                        {formatDate(u.createdAt)}
+                        {formatDate(u.createdAt, locale)}
                       </div>
                     </td>
 
                     {/* Delete / confirm */}
                     <td className="px-4 py-3">
                       {isSelf ? (
-                        <span className="text-[10px] text-neutral-700">You</span>
+                        <span className="text-[10px] text-neutral-700">{t('youBadge')}</span>
                       ) : isConfirming ? (
                         <div className="flex items-center gap-1.5">
                           <button
@@ -132,21 +135,21 @@ export default function AdminUsersTable({
                             disabled={isDeleting}
                             className="text-[11px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
                           >
-                            {isDeleting ? 'Deleting…' : 'Confirm'}
+                            {isDeleting ? 'Deleting…' : t('confirm')}
                           </button>
                           <span className="text-neutral-700">·</span>
                           <button
                             onClick={() => setConfirmDeleteId(null)}
                             className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
                           >
-                            Cancel
+                            {t('cancel')}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteId(u.id)}
                           className="p-1 text-neutral-600 hover:text-red-400 transition-colors"
-                          title="Delete user"
+                          title={t('delete')}
                         >
                           <Trash2 size={14} />
                         </button>

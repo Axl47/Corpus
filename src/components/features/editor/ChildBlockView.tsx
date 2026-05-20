@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { GripVertical } from 'lucide-react';
 import PageIcon from '../PageIcon';
 import { deleteWorkspaceItem, checkItemHasContent } from '@/lib/actions/workspace';
+import { useTranslations } from 'next-intl';
 
 export default function ChildBlockView({
   node,
@@ -16,6 +17,7 @@ export default function ChildBlockView({
   deleteNode: () => void;
   editor: any;
 }) {
+  const t = useTranslations('Editor');
   const { itemId, title, itemType, icon, iconColor } = node.attrs;
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
@@ -81,7 +83,7 @@ export default function ChildBlockView({
         <button
           onClick={handleDeleteClick}
           className="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded text-neutral-600 hover:text-red-400 hover:bg-neutral-800/60 cursor-pointer shrink-0 text-base leading-none"
-          title="Delete"
+          title={t('deleteChildConfirm')}
         >
           ×
         </button>
@@ -98,23 +100,23 @@ export default function ChildBlockView({
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-sm font-semibold text-neutral-100 mb-2 truncate">
-                Delete &ldquo;{title}&rdquo;?
+                {t('deleteChildTitle')}
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed mb-5">
-                This item has content that will be permanently deleted and cannot be recovered.
+                {t('deleteChildDesc')}
               </p>
               <div className="flex items-center justify-end gap-2">
                 <button
                   onClick={() => setShowConfirm(false)}
                   className="text-xs text-neutral-400 hover:text-neutral-200 px-3 py-1.5 rounded transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {t('deleteChildCancel')}
                 </button>
                 <button
                   onClick={confirmDelete}
                   className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-1.5 rounded font-medium transition-colors cursor-pointer border border-red-500/20"
                 >
-                  Delete
+                  {t('deleteChildConfirm')}
                 </button>
               </div>
             </div>

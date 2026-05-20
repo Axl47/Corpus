@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { loginWithCredentials } from '@/lib/actions/auth';
 import { loginAsDemo } from '@/lib/actions/demo';
+import { useTranslations } from 'next-intl';
+import LanguageSwitcher from '@/components/features/LanguageSwitcher';
 
 export default function LoginPage() {
+  const t = useTranslations('Auth');
   const [state, formAction, isPending] = useActionState(loginWithCredentials, null);
   const [demoState, demoFormAction, isDemoPending] = useActionState(loginAsDemo, null);
 
@@ -20,7 +23,7 @@ export default function LoginPage() {
             className="w-14 h-14 object-contain rounded-xl mb-4 shadow-lg"
           />
           <h1 className="text-2xl font-bold text-white tracking-tight">Remnus</h1>
-          <p className="text-neutral-400 text-sm mt-1">Sign in to your workspace</p>
+          <p className="text-neutral-400 text-sm mt-1">{t('signInSubtitle')}</p>
         </div>
 
         {/* Card */}
@@ -32,31 +35,31 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-100 text-neutral-900 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
           >
             <GoogleIcon />
-            Continue with Google
+            {t('continueWithGoogle')}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 border-t border-neutral-800" />
-            <span className="text-xs text-neutral-600">or</span>
+            <span className="text-xs text-neutral-600">{t('or')}</span>
             <div className="flex-1 border-t border-neutral-800" />
           </div>
 
           {/* Credentials form */}
           <form action={formAction} className="space-y-3">
             <div>
-              <label className="block text-xs text-neutral-400 mb-1.5">Email</label>
+              <label className="block text-xs text-neutral-400 mb-1.5">{t('email')}</label>
               <input
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
                 className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-neutral-500 placeholder:text-neutral-600"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
             <div>
-              <label className="block text-xs text-neutral-400 mb-1.5">Password</label>
+              <label className="block text-xs text-neutral-400 mb-1.5">{t('password')}</label>
               <input
                 name="password"
                 type="password"
@@ -76,15 +79,15 @@ export default function LoginPage() {
               disabled={isPending}
               className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
             >
-              {isPending ? 'Signing in…' : 'Sign in'}
+              {isPending ? t('signingIn') : t('signIn')}
             </button>
           </form>
         </div>
 
         <p className="text-center text-xs text-neutral-600 mt-4">
-          Don&apos;t have an account?{' '}
+          {t('noAccount')}{' '}
           <Link href="/register" className="text-neutral-400 hover:text-neutral-200 transition-colors">
-            Create one
+            {t('createOne')}
           </Link>
         </p>
 
@@ -92,7 +95,7 @@ export default function LoginPage() {
         <div className="mt-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 border-t border-neutral-800" />
-            <span className="text-xs text-neutral-600">or</span>
+            <span className="text-xs text-neutral-600">{t('or')}</span>
             <div className="flex-1 border-t border-neutral-800" />
           </div>
           <form action={demoFormAction}>
@@ -102,15 +105,20 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 border border-neutral-800 text-neutral-400 hover:text-neutral-200 font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
             >
               <span className="text-base">🧪</span>
-              {isDemoPending ? 'Loading demo…' : 'Try Demo'}
+              {isDemoPending ? t('loadingDemo') : t('tryDemo')}
             </button>
           </form>
           {demoState?.error && (
             <p className="text-xs text-red-400 text-center mt-2">{demoState.error}</p>
           )}
           <p className="text-center text-xs text-neutral-700 mt-2">
-            Explore without signing up — changes reset each session
+            {t('demoHint')}
           </p>
+        </div>
+
+        {/* Language switcher */}
+        <div className="mt-6 flex justify-center">
+          <LanguageSwitcher />
         </div>
       </div>
     </div>

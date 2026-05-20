@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { LayoutList, KanbanSquare, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import type { DatabaseView } from '@/lib/types/views';
+import { useTranslations } from 'next-intl';
 
 interface ViewsBarProps {
   views: DatabaseView[];
@@ -23,6 +24,7 @@ export default function ViewsBar({
   onDelete,
   onReorder,
 }: ViewsBarProps) {
+  const t = useTranslations('Database');
   const [addOpen, setAddOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export default function ViewsBar({
                   onClick={() => startRename(view)}
                   className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 transition-colors rounded-none border-b border-neutral-850/60 cursor-pointer"
                 >
-                  Rename
+                  {t('renameView')}
                 </button>
                 {views.length > 1 && (
                   <button
@@ -173,7 +175,7 @@ export default function ViewsBar({
                     }}
                     className="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-neutral-800/20 transition-colors rounded-none cursor-pointer"
                   >
-                    Delete
+                    {t('deleteView')}
                   </button>
                 )}
               </div>
@@ -186,7 +188,7 @@ export default function ViewsBar({
         <button
           onClick={() => setAddOpen((o) => !o)}
           className="p-2 text-neutral-600 hover:text-neutral-400 transition-colors cursor-pointer"
-          title="Add view"
+          title={t('addView')}
         >
           <Plus size={14} />
         </button>
@@ -200,7 +202,7 @@ export default function ViewsBar({
               }}
               className="w-full text-left px-3 py-2.5 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 flex items-center gap-2 transition-colors rounded-none border-b border-neutral-850/60 cursor-pointer"
             >
-              <LayoutList size={13} /> Table view
+              <LayoutList size={13} /> {t('tableView')}
             </button>
             <button
               onClick={() => {
@@ -209,7 +211,7 @@ export default function ViewsBar({
               }}
               className="w-full text-left px-3 py-2.5 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 flex items-center gap-2 transition-colors rounded-none border-b border-neutral-850/60 cursor-pointer"
             >
-              <KanbanSquare size={13} /> Kanban view
+              <KanbanSquare size={13} /> {t('kanbanView')}
             </button>
             <button
               onClick={() => {
@@ -218,7 +220,7 @@ export default function ViewsBar({
               }}
               className="w-full text-left px-3 py-2.5 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 flex items-center gap-2 transition-colors rounded-none cursor-pointer"
             >
-              <CalendarIcon size={13} /> Calendar view
+              <CalendarIcon size={13} /> {t('calendarView')}
             </button>
           </div>
         )}

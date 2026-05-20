@@ -16,8 +16,42 @@ If you skip this step, future agents will work from a stale map and make mistake
 
 **Remnus** is a Notion-like application built around a **workspace** model. Users can create standalone pages (title + markdown) and customizable databases (dynamic columns, table/kanban views) — both living side by side in a unified sidebar. Each database row is also a page with markdown content.
 
-## UI Language
-All user-facing text — labels, placeholders, empty states, buttons, error messages — must be written in **English**. Date and time values must be formatted using the `en-US` locale. Do not introduce Turkish or any other language into the UI.
+## i18n & Localization
+
+Remnus is fully internationalized using **next-intl v4** (App Router native). All user-facing text is loaded from translation files — **no hardcoded strings in components**.
+
+### Supported Languages
+| Code | Language |
+|------|----------|
+| `en` | English (default) |
+| `tr` | Türkçe |
+| `hi` | हिन्दी |
+| `es` | Español |
+| `fr` | Français |
+| `de` | Deutsch |
+
+### How Locale is Resolved (priority order)
+1. **`NEXT_LOCALE` cookie** — set when the user manually picks a language via `LanguageSwitcher`; persists for 1 year.
+2. **`Accept-Language` header** — the browser/OS language, negotiated against the 6 supported locales via `negotiator` + `@formatjs/intl-localematcher`. **Automatic OS language detection works out of the box on first visit** — no configuration required, `localeDetection: true` is the next-intl default.
+3. **`en` fallback** — used when the OS language is not in the supported list.
+
+### Architecture
+- **Clean URLs:** `localePrefix: 'never'` — all URLs stay as `/db/123`, never `/en/db/123`. next-intl internally rewrites to `[locale]` segment transparently.
+- **Route segment:** All pages live under `src/app/[locale]/`. The locale flows from middleware rewrite.
+- **Translation files:** `messages/{locale}.json` — 13 namespaces per file (~200 keys total). `en.json` is the source of truth.
+- **Namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`.
+- **Infrastructure files:** `src/i18n/routing.ts` (defineRouting), `src/i18n/request.ts` (getRequestConfig + message loader), `src/lib/actions/locale.ts` (setLocale server action), `src/components/features/LanguageSwitcher.tsx` (dropdown in sidebar + auth pages).
+
+### Rules for All Future Development
+**Every new component or server action that surfaces user-facing text MUST follow these rules:**
+
+1. **Client components** — `import { useTranslations } from 'next-intl'` and call `useTranslations('Namespace')` inside the component body.
+2. **Server components / layouts** — `import { getTranslations } from 'next-intl/server'` and `await getTranslations('Namespace')`.
+3. **Server actions** — same as above; use `getTranslations('Errors')` for error messages returned to the client.
+4. **Add all new keys to ALL 6 files** (`messages/en.json`, `tr.json`, `hi.json`, `es.json`, `fr.json`, `de.json`) before committing. Missing keys cause runtime warnings and fall back to the key name.
+5. **No hardcoded display strings** — not even English fallbacks like `|| 'Untitled'` or `'No items yet'`. Always use `t('key')`.
+6. **Date formatting** — use `useLocale()` from `'next-intl'` (client) or the `locale` param from `getRequestConfig` (server) instead of hardcoded `'en-US'`.
+7. **Namespace selection** — pick the closest existing namespace. Create a new one only for a clearly standalone domain (add it to all 6 files and document it here).
 
 ## Color Theme
 | Role | Name | Hex | Tailwind token |
@@ -86,7 +120,7 @@ To support fully dynamic, user-defined properties without structural database mi
 - **Optimistic Mutations:** `WorkspaceSidebar` manages `localItems` / `localWorkspaces` local state and applies icon, rename, delete, and create changes immediately — server revalidation happens in background. `TemplatePickerModal` calls `onOptimisticCreate` immediately then `onCreated` with the real ID after server responds.
 - **Revalidation Policy:** `revalidatePath('/')` should only be called for mutations that structurally affect the sidebar (create/delete workspace items, workspace rename/delete). Content mutations (`updatePageContent`, `updatePageProperties`) should NOT call revalidatePath.
 - **Client-side Cache:** TanStack Query (`@tanstack/react-query`) is installed and wrapped via `src/components/providers/QueryProvider.tsx` in `layout.tsx`. Use it for client mutation hooks and future caching needs.
-- **Loading Skeletons:** `src/app/page/[itemId]/loading.tsx`, `src/app/db/[id]/loading.tsx`, `src/app/db/[id]/[pageId]/loading.tsx` provide instant skeleton feedback during route transitions.
+- **Loading Skeletons:** `src/app/[locale]/page/[itemId]/loading.tsx`, `src/app/[locale]/db/[id]/loading.tsx`, `src/app/[locale]/db/[id]/[pageId]/loading.tsx` provide instant skeleton feedback during route transitions.
 
 ### Migration Notes
 - Drizzle migrator applies migrations in order of the `when` timestamp in `_journal.json`.
@@ -99,16 +133,17 @@ To support fully dynamic, user-defined properties without structural database mi
 - `src/auth.ts`: Full Auth.js config — imports `authConfig`, adds `DrizzleAdapter`, `Credentials` provider with `bcryptjs` password check, JWT callbacks (`jwt` + `session`), and `createUser` event for first-user admin bootstrap.
 - `src/middleware.ts`: Runs on every request edge. Allows `/login`, `/register`, `/api/auth/*`, and static assets; redirects everything else to `/login` if unauthenticated.
 - `src/app/`: Next.js App Router orchestration and layouts. Server components fetch data here.
-  - `src/app/layout.tsx`: Root layout — calls `auth()` to get session; if no session renders bare layout (for `/login`/`/register`); otherwise fetches workspace data and renders sidebar with `currentUser` prop.
-  - `src/app/page.tsx`: Home page — redirects to first workspace item of the active workspace if one exists, otherwise shows empty-state welcome screen.
-  - `src/app/login/page.tsx`: Login page (client component). Google OAuth button + email/password form via `loginWithCredentials` server action with `useActionState`. Links to `/register`.
-  - `src/app/register/page.tsx`: Registration page (client component). Google OAuth button + name/email/password form via `registerUser` server action with `useActionState`. Links to `/login`.
-  - `src/app/api/auth/[...nextauth]/route.ts`: Auth.js HTTP handler — re-exports `{ GET, POST }` from `@/auth`.
-  - `src/app/db/[id]/page.tsx`: Database view (TableLayout or KanbanBoard).
-  - `src/app/db/[id]/[pageId]/page.tsx`: Database row page editor (markdown + properties).
-  - `src/app/page/[itemId]/page.tsx`: Standalone workspace page editor (title + markdown only).
-  - `src/app/admin/page.tsx`: Admin-only dashboard (redirects non-admins to `/`). Shows 6 stat cards (total users, new this week/month, total workspaces, new workspaces this month, total items), a paginated users table with `authType` badge and delete, and a paginated workspaces table with item expand and delete. Fetches `getAllUsers()`, `getAdminWorkspacesOverview()`, and `getAllWorkspaceItems()` in parallel; passes `currentUserId` to `AdminUsersTable` and flat `items` array to `AdminWorkspacesTable`.
-  - `src/app/admin/workspaces/page.tsx`: Redirects to `/admin`.
+  - `src/app/layout.tsx`: Minimal root passthrough — returns `children` directly with no HTML/body tags. Those live in `[locale]/layout.tsx`.
+  - `src/app/[locale]/layout.tsx`: Full locale-aware layout — validates locale against `routing.locales` (→ `notFound()` if invalid), calls `getMessages()`, wraps children with `<NextIntlClientProvider>`, sets `<html lang={locale}>`. Calls `auth()` to get session; if no session renders bare layout (for `/login`/`/register`); otherwise fetches workspace data and renders sidebar with `currentUser` prop.
+  - `src/app/[locale]/page.tsx`: Home page — redirects to first workspace item of the active workspace if one exists, otherwise shows empty-state welcome screen.
+  - `src/app/[locale]/login/page.tsx`: Login page (client component). Google OAuth button + email/password form via `loginWithCredentials` server action with `useActionState`. Includes `LanguageSwitcher` in the top-right corner. Links to `/register`.
+  - `src/app/[locale]/register/page.tsx`: Registration page (client component). Google OAuth button + name/email/password form via `registerUser` server action with `useActionState`. Includes `LanguageSwitcher` in the top-right corner. Links to `/login`.
+  - `src/app/api/auth/[...nextauth]/route.ts`: Auth.js HTTP handler — re-exports `{ GET, POST }` from `@/auth`. Lives outside `[locale]` — API routes are not locale-wrapped.
+  - `src/app/[locale]/db/[id]/page.tsx`: Database view (TableLayout or KanbanBoard).
+  - `src/app/[locale]/db/[id]/[pageId]/page.tsx`: Database row page editor (markdown + properties).
+  - `src/app/[locale]/page/[itemId]/page.tsx`: Standalone workspace page editor (title + markdown only).
+  - `src/app/[locale]/admin/page.tsx`: Admin-only dashboard (redirects non-admins to `/`). Shows 6 stat cards (total users, new this week/month, total workspaces, new workspaces this month, total items), a paginated users table with `authType` badge and delete, and a paginated workspaces table with item expand and delete. Fetches `getAllUsers()`, `getAdminWorkspacesOverview()`, and `getAllWorkspaceItems()` in parallel; passes `currentUserId` to `AdminUsersTable` and flat `items` array to `AdminWorkspacesTable`.
+  - `src/app/[locale]/admin/workspaces/page.tsx`: Redirects to `/admin`.
 - `src/lib/templates.ts`: Template definitions for the `TemplatePickerModal`. Exports `TemplateDefinition` (union of `PageTemplateDefinition` and `DatabaseTemplateDefinition`), `SchemaColumn`, and `TEMPLATES` array containing 7 templates: Blank Page, Meeting Notes, Project Brief, Blank Database, Task Tracker (Kanban), Event Calendar (Calendar+Table), Reading List (Table with rowColorCol).
 - `src/lib/types/`: Types definitions.
   - `views.ts`: Types for `DatabaseView`, `TableViewConfig`, `KanbanViewConfig`, `CalendarViewConfig`, `ViewFilter`, `ViewSort`, operator definitions, and `OpenBehavior` options ('center' | 'side' | 'full'). `TableViewConfig` includes optional `columnWidths` (mapping of column ID to custom width in pixels) and optional `rowColorCol` (property ID of a select/multi_select column that drives the row's background tint color). All three view configs include optional `defaultPageIcon` (string) and `defaultPageIconColor` (string) properties for view-level fallback icons. `KanbanViewConfig` includes: `cardProperties` (ordered list of visible property IDs; undefined = first 2), `showPropertyLabels` (boolean, default true), `propertyTextClamp` ('truncate' | 'wrap', default 'truncate'), `cardColorCol` (property ID of a select/multi_select column that drives the card's segmented left-border color), and `groupColBg` (boolean, tints each kanban column background with its group option's color). `CalendarViewConfig` includes `cardColorCol` (same card-color mechanism), `cardProperties` (ordered list of visible property IDs; undefined = first 1), `showPropertyLabels` (boolean, default true), and `propertyTextClamp` ('truncate' | 'wrap', default 'truncate').
@@ -126,7 +161,7 @@ To support fully dynamic, user-defined properties without structural database mi
     - Utilizes decoupled double transitions (`isSaving` / `startSaveTransition` vs `isPending` / `startTransition`) to isolate and display a "Saving..." indicator only when writing order changes to the DB, keeping workspace navigation indicator-free.
     - Prevents redundant server actions by validating if the drop actually resulted in an order change before persisting.
     - Displays beautiful Dusk Blue thematic glowing line indicators (`left-6` indented for items to match sidebar tree borders).
-    - Supports inline workspace creation and adding items via `TemplatePickerModal` directly from the hover `+` button next to parent items, instantly creating children in scope. Hovering over a workspace reveals a Settings gear icon which opens the `WorkspaceSettingsModal`. Accepts `currentUser` prop (`{ id, name, email, image, role }`) and renders a user panel at the bottom with avatar, name/email, Admin badge (if applicable), and a logout button (calls `logout()` server action).
+    - Supports inline workspace creation and adding items via `TemplatePickerModal` directly from the hover `+` button next to parent items, instantly creating children in scope. Hovering over a workspace reveals a Settings gear icon which opens the `WorkspaceSettingsModal`. Accepts `currentUser` prop (`{ id, name, email, image, role }`) and renders a user panel at the bottom with avatar, name/email, Admin badge (if applicable), a `LanguageSwitcher` dropdown, and a logout button (calls `logout()` server action).
   - `WorkspaceSettingsModal`: Premium, two-tab settings modal. "General" tab handles renaming the workspace and deletion. "Members" tab provides member invitation (with Member/Viewer roles), rendering of all workspace members, and full role updating, removal, and ownership transfer actions for owners and administrators.
   - `TemplatePickerModal`: Two-step full-screen modal for creating new workspace items from templates. Step 1 shows a grid of template cards grouped by "Pages" and "Databases" tabs. Step 2 confirms the item name. Calls `createStandalonePage` or `createWorkspaceDatabase` with template-specific schema and view configuration. Templates defined in `src/lib/templates.ts`.
   - `DatabaseView`: Orchestrates the active view tabs, controls active view state, manages the schema, handles view creation/renaming/deletion, provides filtering/sorting coordination, and manages page peek overlay modals (Center / Side Peek) and opening behaviors (supporting Table, Kanban, and Calendar layouts). Handles deep-linking views via URL search params (`?v=view_id`) using a `useEffect`-based sync (not a `useState` initializer — avoids SSR hydration mismatch) and browser dynamic document title updates.
@@ -149,10 +184,15 @@ To support fully dynamic, user-defined properties without structural database mi
   - `AdminUsersTable`: Client component. Paginated table (10/page) for the admin dashboard. Columns: Name, Email, Sign-in (`'google' | 'email'` badge), Role, Joined date, Delete. Sorted newest-first by the parent page. Accepts `currentUserId` prop — own row shows "You" instead of delete button. Delete uses inline Confirm/Cancel flow then calls `adminDeleteUser` and `router.refresh()`.
   - `AdminWorkspacesTable`: Client component. Paginated table (10/page) for the admin dashboard. Columns: expand toggle, Name, Owner, Members, Items, Created date, Delete. Accepts `items: WorkspaceItem[]` prop (flat array grouped client-side by `workspaceId`). Expand toggle opens a sub-row listing workspace items with their icon (emoji or type fallback) and a Page/Database badge. Delete uses the same inline Confirm/Cancel flow calling `adminDeleteWorkspace` and `router.refresh()`.
 - `src/lib/auth/session.ts`: Shared `getCurrentUser()` — a `React.cache`-wrapped call to `auth()`. Import from here in all server actions instead of calling `auth()` directly. Ensures auth is resolved at most once per request.
-- `src/components/providers/QueryProvider.tsx`: TanStack Query `QueryClientProvider` wrapper (staleTime 60s, gcTime 5min, no window-focus refetch). Wraps the authenticated layout in `src/app/layout.tsx`.
+- `src/components/providers/QueryProvider.tsx`: TanStack Query `QueryClientProvider` wrapper (staleTime 60s, gcTime 5min, no window-focus refetch). Wraps the authenticated layout in `src/app/[locale]/layout.tsx`.
 - `src/components/features/SaveStatus.tsx`: Auto-fading save indicator (`idle` → `saving` → `saved` → `error`). Used in `StandalonePageEditor` and `PageEditor` to give users feedback on auto-save debounce completion.
 - `src/lib/seed.ts`: `createSeedWorkspace(userId, userName?)` and `createDemoSeedData(userId, userName?)` both call the shared `createRichWorkspaceData` helper. Seeds: Getting Started page, a **📁 Projects** folder page (with nested sub-projects **🚀 Remnus v2 Launch** and **🎨 Design System**, each containing child pages and databases), Sprint Board, Bug Tracker, Team Calendar, and Reading List. All inserts use `createdAt: new Date()`; all database row `properties` include a `title` key.
 
+- `src/i18n/routing.ts`: Defines supported locales (`en`, `tr`, `hi`, `es`, `fr`, `de`), `defaultLocale: 'en'`, and `localePrefix: 'never'` for clean URLs. Also exports the `Locale` union type.
+- `src/i18n/request.ts`: `getRequestConfig` — validates the incoming locale; loads and returns `messages/{locale}.json`. Falls back to `defaultLocale` if locale is unrecognized.
+- `src/lib/actions/locale.ts`: `setLocale(locale)` server action — writes the `NEXT_LOCALE` cookie (1-year expiry, path `/`). Called by `LanguageSwitcher` on language change.
+- `src/components/features/LanguageSwitcher.tsx`: Client component. Dropdown listing all 6 languages with flag emoji + native name. On select: calls `setLocale(code)` then `router.refresh()` to reload with the new locale. Rendered in the `WorkspaceSidebar` user panel and top-right of `/login`/`/register` pages.
+- `messages/`: Translation JSON files (`en.json`, `tr.json`, `hi.json`, `es.json`, `fr.json`, `de.json`). ~200 keys per file in 13 namespaces. `en.json` is the authoritative source of truth — all other files must have the same key structure.
 - `src/db/`: Contains Drizzle `schema.ts`, connection `index.ts`, migration scripts, and `migrations/` folder.
 
 ### Common Commands

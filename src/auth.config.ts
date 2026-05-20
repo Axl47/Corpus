@@ -12,8 +12,12 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
 
-      const isAuthRoute = path.startsWith('/login') || path.startsWith('/register');
-      const isApiAuth = path.startsWith('/api/auth');
+      // Strip locale prefix (e.g. /en/login → /login) so auth checks work
+      // regardless of whether next-intl has already rewritten the path.
+      const cleanPath = path.replace(/^\/[a-z]{2}(\/|$)/, '/');
+
+      const isAuthRoute = cleanPath.startsWith('/login') || cleanPath.startsWith('/register');
+      const isApiAuth = cleanPath.startsWith('/api/auth');
       const isPublicAsset = /\.(png|ico|svg|jpg|jpeg|webp|woff2?)$/.test(path);
 
       if (isApiAuth || isPublicAsset) return true;

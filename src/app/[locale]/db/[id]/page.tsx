@@ -9,7 +9,7 @@ export default async function DatabasePage(props: { params: Promise<{ id: string
     getDatabase(params.id),
     getPages(params.id),
   ]);
-  
+
   if (!db) return notFound();
 
   return (

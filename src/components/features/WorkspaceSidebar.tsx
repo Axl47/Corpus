@@ -2,6 +2,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   Plus,
   X,
@@ -35,6 +36,7 @@ import type { WorkspaceItemRow } from '@/lib/actions/workspace';
 import IconPicker from './IconPicker';
 import TemplatePickerModal from './TemplatePickerModal';
 import WorkspaceSettingsModal from './WorkspaceSettingsModal';
+import LanguageSwitcher from '@/components/features/LanguageSwitcher';
 
 type WorkspaceType = {
   id: string;
@@ -60,6 +62,7 @@ export default function WorkspaceSidebar({
   activeWorkspace: WorkspaceType;
   currentUser: CurrentUser;
 }) {
+  const t = useTranslations('Workspace');
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -595,12 +598,15 @@ export default function WorkspaceSidebar({
           <img src="/logo-square-dark.png" alt="Remnus Logo" className={`w-5 h-5 object-contain rounded-md shrink-0 shadow-sm ${isSaving ? 'animate-pulse' : ''}`} />
           <span className="font-bold tracking-tight text-white">Remnus</span>
         </Link>
-        {isSaving && (
-          <div className="flex items-center gap-1.5 text-[11px] text-blue-400 font-medium bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">
-            <div className="w-2 h-2 rounded-full border border-blue-400 border-t-transparent animate-spin shrink-0" />
-            <span>Saving...</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          {isSaving && (
+            <div className="flex items-center gap-1.5 text-[11px] text-blue-400 font-medium bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-pulse">
+              <div className="w-2 h-2 rounded-full border border-blue-400 border-t-transparent animate-spin shrink-0" />
+              <span>{t('saving')}</span>
+            </div>
+          )}
+          <LanguageSwitcher compact />
+        </div>
       </div>
 
       {/* Tree view list */}
@@ -680,7 +686,7 @@ export default function WorkspaceSidebar({
                       setExpandedWorkspaces(prev => ({ ...prev, [w.id]: true }));
                     }}
                     className="p-1 rounded hover:bg-neutral-700 text-neutral-400 hover:text-white"
-                    title="New item"
+                    title={t('newItem')}
                   >
                     <Plus size={12} />
                   </button>
@@ -689,7 +695,7 @@ export default function WorkspaceSidebar({
                       setSettingsModalWorkspace({ id: w.id, name: w.name });
                     }}
                     className="p-1 rounded hover:bg-neutral-700 text-neutral-400 hover:text-white"
-                    title="Workspace settings"
+                    title={t('workspaceSettings')}
                   >
                     <Settings size={12} />
                   </button>
@@ -772,7 +778,7 @@ export default function WorkspaceSidebar({
                                   setActiveIconPickerId(activeIconPickerId === item.id ? null : item.id);
                                 }}
                                 className="hover:bg-neutral-800 p-0.5 rounded transition-colors flex items-center justify-center cursor-pointer"
-                                title="Change icon"
+                                title={t('changeIcon')}
                               >
                                 <PageIcon
                                   icon={item.icon}
@@ -839,7 +845,7 @@ export default function WorkspaceSidebar({
                                         setExpandedItems(prev => ({ ...prev, [item.id]: true }));
                                       }}
                                       className="p-1 rounded hover:bg-neutral-700 text-neutral-400 hover:text-white"
-                                      title="Add sub-page"
+                                      title={t('addSubPage')}
                                     >
                                       <Plus size={12} />
                                     </button>
@@ -849,7 +855,7 @@ export default function WorkspaceSidebar({
                                     className={`p-1 rounded transition-colors text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700 ${
                                       openMenuItemId === item.id ? 'bg-neutral-700 text-neutral-200' : ''
                                     }`}
-                                    title="More options"
+                                    title={t('moreOptions')}
                                   >
                                     <MoreHorizontal size={13} />
                                   </button>
@@ -874,7 +880,7 @@ export default function WorkspaceSidebar({
                   {/* Empty state */}
                   {workspaceChildren.length === 0 && (
                     <div className="text-xs text-neutral-600 py-1.5 px-2.5 italic">
-                      Empty workspace. Click + to add.
+                      {t('emptyWorkspace')}
                     </div>
                   )}
                 </div>
@@ -891,7 +897,7 @@ export default function WorkspaceSidebar({
                 type="text"
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
-                placeholder="Workspace name..."
+                placeholder={t('workspaceNamePlaceholder')}
                 className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateWorkspace();
@@ -905,13 +911,13 @@ export default function WorkspaceSidebar({
                   disabled={!newWorkspaceName.trim() || isPending}
                   className="flex-1 bg-neutral-50 hover:bg-neutral-100 disabled:opacity-40 text-neutral-950 rounded text-[11px] font-semibold py-1 px-2 transition-colors"
                 >
-                  {isPending ? 'Creating...' : 'Create'}
+                  {isPending ? t('creating') : t('create')}
                 </button>
                 <button
                   onClick={() => setIsCreatingWorkspace(false)}
                   className="bg-neutral-800 hover:bg-neutral-750 text-neutral-400 rounded text-[11px] font-medium py-1 px-2 border border-neutral-700 transition-colors"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               </div>
             </div>
@@ -920,7 +926,7 @@ export default function WorkspaceSidebar({
               onClick={() => setIsCreatingWorkspace(true)}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-neutral-500 hover:text-neutral-350 hover:bg-neutral-850/30 border border-dashed border-neutral-800 hover:border-neutral-700 rounded-lg transition-all"
             >
-              <Plus size={12} /> Add Workspace
+              <Plus size={12} /> {t('addWorkspace')}
             </button>
           )}
         </div>
@@ -942,14 +948,14 @@ export default function WorkspaceSidebar({
             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
           >
             <Edit3 size={12} className="text-neutral-500" />
-            Rename
+            {t('rename')}
           </button>
           <button
             onClick={() => handleDuplicateItem(activeMenuItem)}
             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
           >
             <Copy size={12} className="text-neutral-500" />
-            Duplicate
+            {t('duplicate')}
           </button>
           <div className="border-t border-neutral-800 my-1" />
           <button
@@ -957,7 +963,7 @@ export default function WorkspaceSidebar({
             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-400 hover:bg-neutral-800 hover:text-red-300 transition-colors"
           >
             <Trash size={12} />
-            Delete
+            {t('delete')}
           </button>
         </div>
       )}
@@ -1031,7 +1037,7 @@ export default function WorkspaceSidebar({
             className={`flex items-center gap-2.5 px-3 py-2 text-xs hover:text-neutral-200 hover:bg-neutral-800/30 transition-colors ${pathname.startsWith('/admin') ? 'text-neutral-200 bg-neutral-800/40' : 'text-neutral-400'}`}
           >
             <Shield size={13} className="shrink-0" />
-            <span>Admin</span>
+            <span>{t('adminLink')}</span>
           </Link>
         </div>
       )}
@@ -1066,7 +1072,7 @@ export default function WorkspaceSidebar({
             {currentUser.role === 'admin' && (
               <span className="shrink-0 flex items-center gap-0.5 text-[9px] font-semibold text-blue-400 bg-blue-500/10 px-1 py-0.5 rounded">
                 <Shield size={8} />
-                Admin
+                {t('adminLink')}
               </span>
             )}
           </div>
@@ -1079,7 +1085,7 @@ export default function WorkspaceSidebar({
         <button
           onClick={() => logout()}
           className="shrink-0 p-1.5 rounded text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition-colors opacity-0 group-hover/user:opacity-100"
-          title="Sign out"
+          title={t('signOut')}
         >
           <LogOut size={13} />
         </button>

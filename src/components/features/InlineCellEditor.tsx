@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   type SelectOption,
   normalizeOption,
@@ -21,6 +22,7 @@ export default function InlineCellEditor({
   onSave: (val: any) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations('Database');
   const [inputValue, setInputValue] = useState(value ?? '');
   const [mounted, setMounted] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -192,7 +194,7 @@ export default function InlineCellEditor({
                 );
               })}
               {(!column.options || column.options.length === 0) && (
-                <div className="px-3 py-2 text-xs text-neutral-600">No options configured</div>
+                <div className="px-3 py-2 text-xs text-neutral-600">{t('noOptionsConfigured')}</div>
               )}
             </div>
           </div>,

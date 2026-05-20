@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import Link from 'next/link';
 import { ChevronLeft, ArrowLeftRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { updateStandalonePageContent, updateWorkspaceItemTitle, updateWorkspaceItemIcon } from '@/lib/actions/workspace';
 import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
@@ -30,6 +31,8 @@ export default function StandalonePageEditor({
   page: Page;
   subItems?: WorkspaceItemRow[];
 }) {
+  const t = useTranslations('Page');
+  const tEditor = useTranslations('Editor');
   const [title, setTitle] = useState(item.title);
   const savedTitle = useRef(item.title);
   const [icon, setIcon] = useState(item.icon);
@@ -58,7 +61,7 @@ export default function StandalonePageEditor({
     await updateWorkspaceItemIcon(item.id, newIcon, newColor);
   };
 
-  const widthLabels: Record<WidthMode, string> = { narrow: 'Narrow', wide: 'Wide', full: 'Full width' };
+  const widthLabels: Record<WidthMode, string> = { narrow: t('narrow'), wide: t('wide'), full: t('full') };
 
   useEffect(() => {
     if (title === savedTitle.current) return;
@@ -101,7 +104,7 @@ export default function StandalonePageEditor({
           className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
         >
           <ChevronLeft size={14} />
-          {item.parentId ? 'Back' : 'Workspace'}
+          {t('back')}
         </Link>
         <div className="flex items-center gap-3">
           <SaveStatus state={saveState} />
@@ -123,7 +126,7 @@ export default function StandalonePageEditor({
               ref={iconButtonRef}
               onClick={() => setShowIconPicker(!showIconPicker)}
               className="p-1 hover:bg-neutral-800 rounded transition-colors duration-150 cursor-pointer flex items-center justify-center shrink-0"
-              title={icon ? "Change icon" : "Add icon"}
+              title={icon ? t('changeIcon') : t('addIcon')}
             >
               <PageIcon icon={icon} iconColor={iconColor} size={40} fallbackType="page" />
             </button>
@@ -153,7 +156,7 @@ export default function StandalonePageEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Untitled"
+            placeholder={t('untitled')}
             className="w-full bg-transparent text-white font-bold text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
         </div>
@@ -163,7 +166,7 @@ export default function StandalonePageEditor({
         key={page.id}
         initialContent={page.content}
         onChange={handleContentChange}
-        placeholder="Start writing..."
+        placeholder={tEditor('placeholder')}
         workspaceId={item.workspaceId}
         parentId={item.id}
         initialSubItems={subItems}
