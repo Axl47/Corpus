@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, GripVertical, Settings, Trash2, Calendar as 
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
-import { useRouter } from 'next/navigation';
 
 interface CalendarViewProps {
   database: any;
@@ -26,6 +25,7 @@ interface CalendarViewProps {
   onCreatePage?: (initialProperties?: Record<string, any>) => void;
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
+  onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
 }
 
 const formatYYYYMMDD = (d: Date) => {
@@ -115,15 +115,15 @@ export default function CalendarView({
   onCreatePage,
   defaultPageIcon,
   defaultPageIconColor,
+  onPageIconChange,
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
-  const router = useRouter();
   const [activeIconPickerPageId, setActiveIconPickerPageId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const handleCalendarIconSelect = async (pageId: string, newIcon: string | null, newColor: string | null) => {
-    await updatePageIcon(pageId, newIcon, newColor);
-    router.refresh();
+  const handleCalendarIconSelect = (pageId: string, newIcon: string | null, newColor: string | null) => {
+    onPageIconChange?.(pageId, newIcon, newColor);
+    updatePageIcon(pageId, newIcon, newColor);
   };
 
   // Card dragging states

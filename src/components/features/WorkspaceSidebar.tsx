@@ -104,9 +104,10 @@ export default function WorkspaceSidebar({
     }
   }, [renamingItemId]);
 
-  const handleSidebarIconSelect = async (itemId: string, newIcon: string | null, newColor: string | null) => {
-    await updateWorkspaceItemIcon(itemId, newIcon, newColor);
-    router.refresh();
+  const handleSidebarIconSelect = (itemId: string, newIcon: string | null, newColor: string | null) => {
+    // Optimistic update — no router.refresh() needed
+    setLocalItems(prev => prev.map(i => i.id === itemId ? { ...i, icon: newIcon, iconColor: newColor } : i));
+    updateWorkspaceItemIcon(itemId, newIcon, newColor);
   };
 
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -284,7 +285,6 @@ export default function WorkspaceSidebar({
     // Persist to DB
     startSaveTransition(async () => {
       await updateWorkspacesOrder(reordered.map(w => w.id));
-      router.refresh();
     });
   };
 
@@ -368,21 +368,20 @@ export default function WorkspaceSidebar({
 
       startSaveTransition(async () => {
         await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
-        router.refresh();
       });
     } else {
       // Cross-workspace moving and reordering!
       const sourceWsItems = localItems.filter(i => i.workspaceId === sourceWorkspaceId && i.id !== draggedItemId);
       const targetWsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
-      
+
       const updatedDraggedItem = { ...draggedItem, workspaceId: targetWorkspaceId };
       const reorderedTargetWsItems = [...targetWsItems];
-      
+
       let newTargetIndex = reorderedTargetWsItems.findIndex(i => i.id === targetId);
       if (itemDropPosition === 'after') {
         newTargetIndex += 1;
       }
-      
+
       reorderedTargetWsItems.splice(newTargetIndex, 0, updatedDraggedItem);
 
       const cleanItems = [
@@ -396,7 +395,6 @@ export default function WorkspaceSidebar({
 
       startSaveTransition(async () => {
         await moveWorkspaceItemToWorkspace(draggedItemId, targetWorkspaceId, reorderedTargetWsItems.map(i => i.id));
-        router.refresh();
       });
     }
   };
@@ -458,7 +456,6 @@ export default function WorkspaceSidebar({
 
       startSaveTransition(async () => {
         await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
-        router.refresh();
       });
     } else {
       // Move to target workspace at the end of the list
@@ -479,7 +476,6 @@ export default function WorkspaceSidebar({
 
       startSaveTransition(async () => {
         await moveWorkspaceItemToWorkspace(draggedItemId, targetWorkspaceId, reorderedTargetWsItems.map(i => i.id));
-        router.refresh();
       });
     }
   };
@@ -529,10 +525,11 @@ export default function WorkspaceSidebar({
       setRenamingItemId(null);
       return;
     }
+    // Optimistic update
+    setLocalItems(prev => prev.map(i => i.id === item.id ? { ...i, title } : i));
+    setRenamingItemId(null);
     startTransition(async () => {
       await updateWorkspaceItemTitle(item.id, title);
-      setRenamingItemId(null);
-      router.refresh();
     });
   };
 
@@ -549,13 +546,22 @@ export default function WorkspaceSidebar({
   const handleDeleteItem = (item: WorkspaceItemRow) => {
     setOpenMenuItemId(null);
     setLoadingItem({ id: item.id, action: 'delete' });
+
+    // Optimistic: remove item (and all descendants) from local state immediately
+    const collectDescendantIds = (id: string, allItems: WorkspaceItemRow[]): string[] => {
+      const children = allItems.filter(i => i.parentId === id);
+      return [id, ...children.flatMap(c => collectDescendantIds(c.id, allItems))];
+    };
+    const idsToRemove = new Set(collectDescendantIds(item.id, localItems));
+    setLocalItems(prev => prev.filter(i => !idsToRemove.has(i.id)));
+
+    const href = item.type === 'database' && item.databaseId
+      ? `/db/${item.databaseId}`
+      : `/page/${item.id}`;
+    if (pathname.startsWith(href)) router.push('/');
+
     startTransition(async () => {
       await deleteWorkspaceItem(item.id);
-      const href = item.type === 'database' && item.databaseId
-        ? `/db/${item.databaseId}`
-        : `/page/${item.id}`;
-      if (pathname.startsWith(href)) router.push('/');
-      else router.refresh();
     });
   };
 
@@ -965,10 +971,36 @@ export default function WorkspaceSidebar({
             setTemplatePickerWorkspaceId(null);
             setTemplatePickerParentId(null);
           }}
-          onCreated={(type, id) => {
+          onOptimisticCreate={(type, tempId, title, icon, iconColor) => {
+            // Add temp item to sidebar instantly
+            const newItem: WorkspaceItemRow = {
+              id: tempId,
+              workspaceId: templatePickerWorkspaceId,
+              type,
+              title,
+              parentId: templatePickerParentId ?? null,
+              sortOrder: 0,
+              icon,
+              iconColor,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              databaseId: null,
+            };
+            setLocalItems(prev => [newItem, ...prev]);
+            if (templatePickerParentId) {
+              setExpandedItems(prev => ({ ...prev, [templatePickerParentId]: true }));
+            }
             setTemplatePickerWorkspaceId(null);
             setTemplatePickerParentId(null);
-            router.push(type === 'page' ? `/page/${id}` : `/db/${id}`);
+          }}
+          onCreated={(type, navId, tempId, sidebarItemId) => {
+            // Replace temp item with real item and navigate
+            const realSidebarId = type === 'page' ? navId : (sidebarItemId ?? navId);
+            setLocalItems(prev => prev.map(i => {
+              if (i.id !== tempId) return i;
+              return { ...i, id: realSidebarId, databaseId: type === 'database' ? navId : null };
+            }));
+            router.push(type === 'page' ? `/page/${navId}` : `/db/${navId}`);
           }}
         />
       )}
@@ -981,11 +1013,12 @@ export default function WorkspaceSidebar({
           onClose={() => setSettingsModalWorkspace(null)}
           onRenamed={(newName) => {
             setSettingsModalWorkspace(prev => prev ? { ...prev, name: newName } : null);
-            router.refresh();
+            setLocalWorkspaces(prev => prev.map(w => w.id === settingsModalWorkspace.id ? { ...w, name: newName } : w));
           }}
           onDeleted={() => {
+            setLocalWorkspaces(prev => prev.filter(w => w.id !== settingsModalWorkspace.id));
+            setSettingsModalWorkspace(null);
             router.push('/');
-            router.refresh();
           }}
         />
       )}

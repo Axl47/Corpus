@@ -79,14 +79,19 @@ To support fully dynamic, user-defined properties without structural database mi
 - **Env vars required:** `AUTH_SECRET` (random 32-char string), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. Google Cloud Console redirect URI: `http://localhost:3000/api/auth/callback/google`.
 
 ### Performance & Database Optimizations
-- **Database Indexing:** Ensure that all relational foreign key fields (`workspaceId`, `itemId`, `databaseId`, `userId`) and compound lookups have active database indexes configured in `src/db/schema.ts` to prevent slow full-table scans in SQLite.
-- **Session Lookup Caching:** Use React's `cache` function to memoize `getCurrentUser()` within the request life-cycle, preventing redundant Auth.js `auth()` database queries during rendering.
+- **Database Indexing:** Ensure that all relational foreign key fields (`workspaceId`, `itemId`, `databaseId`, `userId`, `parentId`) and compound lookups have active database indexes configured in `src/db/schema.ts` to prevent slow full-table scans in SQLite.
+- **SQLite PRAGMAs:** `src/db/index.ts` applies WAL mode, `synchronous=NORMAL`, `foreign_keys=ON`, `cache_size=-20000`, and `temp_store=MEMORY` at startup for local SQLite, dramatically reducing write latency.
+- **Session Lookup Caching:** `getCurrentUser()` lives in `src/lib/auth/session.ts` and is wrapped in `React.cache`. Import it from there in all server actions — do NOT call `auth()` directly. This ensures `auth()` runs at most once per request cycle.
 - **Query Parallelization:** Avoid query waterfalls by fetching independent data sources concurrently using `Promise.all` (e.g., in layout loading and database view loading).
+- **Optimistic Mutations:** `WorkspaceSidebar` manages `localItems` / `localWorkspaces` local state and applies icon, rename, delete, and create changes immediately — server revalidation happens in background. `TemplatePickerModal` calls `onOptimisticCreate` immediately then `onCreated` with the real ID after server responds.
+- **Revalidation Policy:** `revalidatePath('/')` should only be called for mutations that structurally affect the sidebar (create/delete workspace items, workspace rename/delete). Content mutations (`updatePageContent`, `updatePageProperties`) should NOT call revalidatePath.
+- **Client-side Cache:** TanStack Query (`@tanstack/react-query`) is installed and wrapped via `src/components/providers/QueryProvider.tsx` in `layout.tsx`. Use it for client mutation hooks and future caching needs.
+- **Loading Skeletons:** `src/app/page/[itemId]/loading.tsx`, `src/app/db/[id]/loading.tsx`, `src/app/db/[id]/[pageId]/loading.tsx` provide instant skeleton feedback during route transitions.
 
 ### Migration Notes
 - Drizzle migrator applies migrations in order of the `when` timestamp in `_journal.json`.
 - **The `when` value for a new migration MUST be greater than all existing `when` values** — otherwise the migrator silently skips it.
-- Existing `when` values: `0000` → `1779091089863`, `0001` → `1779200000000`, `0002` → `1779300000000`, `0003` → `1779400000000`, `0004` → `1779500000000`, `0005` → `1779600000000`, `0006` → `1779700000000`, `0007` → `1779800000000`. **New migrations must use a `when` > `1779800000000`.**
+- Existing `when` values: `0000` → `1779091089863`, `0001` → `1779200000000`, `0002` → `1779300000000`, `0003` → `1779400000000`, `0004` → `1779500000000`, `0005` → `1779600000000`, `0006` → `1779700000000`, `0007` → `1779800000000`, `0008` → `1779900000000`, `0009` → `1780000000000`, `0010` → `1780100000000`. **New migrations must use a `when` > `1780100000000`.**
 - Apply with: `npx tsx src/db/migrate.ts`
 
 ### Project Structure
@@ -141,6 +146,9 @@ To support fully dynamic, user-defined properties without structural database mi
   - `editor/SlashCommandList`: `forwardRef` component rendered inside the tippy popup. Keyboard-navigable list of 8 block-insert commands.
   - `AdminUsersTable`: Client component. Paginated table (10/page) for the admin dashboard. Columns: Name, Email, Sign-in (`'google' | 'email'` badge), Role, Joined date, Delete. Sorted newest-first by the parent page. Accepts `currentUserId` prop — own row shows "You" instead of delete button. Delete uses inline Confirm/Cancel flow then calls `adminDeleteUser` and `router.refresh()`.
   - `AdminWorkspacesTable`: Client component. Paginated table (10/page) for the admin dashboard. Columns: expand toggle, Name, Owner, Members, Items, Created date, Delete. Accepts `items: WorkspaceItem[]` prop (flat array grouped client-side by `workspaceId`). Expand toggle opens a sub-row listing workspace items with their icon (emoji or type fallback) and a Page/Database badge. Delete uses the same inline Confirm/Cancel flow calling `adminDeleteWorkspace` and `router.refresh()`.
+- `src/lib/auth/session.ts`: Shared `getCurrentUser()` — a `React.cache`-wrapped call to `auth()`. Import from here in all server actions instead of calling `auth()` directly. Ensures auth is resolved at most once per request.
+- `src/components/providers/QueryProvider.tsx`: TanStack Query `QueryClientProvider` wrapper (staleTime 60s, gcTime 5min, no window-focus refetch). Wraps the authenticated layout in `src/app/layout.tsx`.
+- `src/components/features/SaveStatus.tsx`: Auto-fading save indicator (`idle` → `saving` → `saved` → `error`). Used in `StandalonePageEditor` and `PageEditor` to give users feedback on auto-save debounce completion.
 - `src/lib/seed.ts`: `createSeedWorkspace(userId, userName?)` and `createDemoSeedData(userId, userName?)` both call the shared `createRichWorkspaceData` helper. Seeds: Getting Started page, a **📁 Projects** folder page (with nested sub-projects **🚀 Remna v2 Launch** and **🎨 Design System**, each containing child pages and databases), Sprint Board, Bug Tracker, Team Calendar, and Reading List. All inserts use `createdAt: new Date()`; all database row `properties` include a `title` key.
 
 - `src/db/`: Contains Drizzle `schema.ts`, connection `index.ts`, migration scripts, and `migrations/` folder.

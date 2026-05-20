@@ -8,6 +8,7 @@ import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import SubItemsPanel from './SubItemsPanel';
+import SaveStatus, { type SaveState } from './SaveStatus';
 import {
   type SelectOption,
   normalizeOption,
@@ -40,6 +41,7 @@ export default function PageEditor({
   const [icon, setIcon] = useState<string | null>(initialPage.icon);
   const [iconColor, setIconColor] = useState<string | null>(initialPage.iconColor);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
   const [openSelectId, setOpenSelectId] = useState<string | null>(null);
   const selectDropdownRef = useRef<HTMLDivElement>(null);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
@@ -105,7 +107,10 @@ export default function PageEditor({
   const handleContentChange = useMemo(
     () =>
       debounce((md: string) => {
-        updatePageContent(initialPage.id, md);
+        setSaveState('saving');
+        updatePageContent(initialPage.id, md)
+          .then(() => setSaveState('saved'))
+          .catch(() => setSaveState('error'));
         if (onPageUpdated) {
           onPageUpdated({ ...initialPage, properties, content: md });
         }
@@ -142,10 +147,10 @@ export default function PageEditor({
     }
   };
 
-  const handleIconSelect = async (newIcon: string | null, newColor: string | null) => {
+  const handleIconSelect = (newIcon: string | null, newColor: string | null) => {
     setIcon(newIcon);
     setIconColor(newColor);
-    await updatePageIcon(initialPage.id, newIcon, newColor);
+    updatePageIcon(initialPage.id, newIcon, newColor);
     if (onPageUpdated) {
       onPageUpdated({ ...initialPage, icon: newIcon, iconColor: newColor, properties });
     }
@@ -175,6 +180,7 @@ export default function PageEditor({
             <ArrowLeft size={16} /> Back to {database.name}
           </Link>
           <div className="flex items-center gap-4">
+            <SaveStatus state={saveState} />
             <button
               onClick={cycleWidth}
               className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"

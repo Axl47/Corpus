@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ArrowLeftRight, Smile } from 'lucide-react';
+import { ChevronLeft, ArrowLeftRight } from 'lucide-react';
 import { updateStandalonePageContent, updateWorkspaceItemTitle, updateWorkspaceItemIcon } from '@/lib/actions/workspace';
 import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import SubItemsPanel from './SubItemsPanel';
+import SaveStatus, { type SaveState } from './SaveStatus';
 
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   let timer: ReturnType<typeof setTimeout>;
@@ -26,6 +27,7 @@ export default function StandalonePageEditor({ item, page }: { item: Item; page:
   const [iconColor, setIconColor] = useState(item.iconColor);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
   type WidthMode = 'narrow' | 'wide' | 'full';
   const [widthMode, setWidthMode] = useState<WidthMode>('narrow');
 
@@ -63,7 +65,12 @@ export default function StandalonePageEditor({ item, page }: { item: Item; page:
   }, [title]);
 
   const handleContentChange = useMemo(
-    () => debounce((md: string) => updateStandalonePageContent(item.id, md), 1000),
+    () => debounce((md: string) => {
+      setSaveState('saving');
+      updateStandalonePageContent(item.id, md)
+        .then(() => setSaveState('saved'))
+        .catch(() => setSaveState('error'));
+    }, 1000),
     [item.id]
   );
 
@@ -79,13 +86,16 @@ export default function StandalonePageEditor({ item, page }: { item: Item; page:
           <ChevronLeft size={14} />
           Workspace
         </Link>
-        <button
-          onClick={cycleWidth}
-          className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
-        >
-          <ArrowLeftRight size={14} />
-          {widthLabels[widthMode]}
-        </button>
+        <div className="flex items-center gap-3">
+          <SaveStatus state={saveState} />
+          <button
+            onClick={cycleWidth}
+            className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
+          >
+            <ArrowLeftRight size={14} />
+            {widthLabels[widthMode]}
+          </button>
+        </div>
       </div>
 
       {/* Unified Page Header: Icon + Title Input */}

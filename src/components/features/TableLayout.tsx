@@ -8,7 +8,6 @@ import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
-import { useRouter } from 'next/navigation';
 
 function getPropertyIcon(type: string) {
   switch (type) {
@@ -61,6 +60,7 @@ export default function TableLayout({
   onToggleHideColumn,
   defaultPageIcon,
   defaultPageIconColor,
+  onPageIconChange,
 }: {
   database: any;
   pages: any[];
@@ -84,10 +84,10 @@ export default function TableLayout({
   onToggleHideColumn: (colId: string) => void;
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
+  onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
 }) {
   const schema: any[] = database.schema ?? [];
   const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
-  const router = useRouter();
 
   const [localWidths, setLocalWidths] = useState<Record<string, number>>(() => columnWidths ?? {});
 
@@ -153,9 +153,9 @@ export default function TableLayout({
   const [activeIconPickerPageId, setActiveIconPickerPageId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const handleTableIconSelect = async (pageId: string, newIcon: string | null, newColor: string | null) => {
-    await updatePageIcon(pageId, newIcon, newColor);
-    router.refresh();
+  const handleTableIconSelect = (pageId: string, newIcon: string | null, newColor: string | null) => {
+    onPageIconChange?.(pageId, newIcon, newColor);
+    updatePageIcon(pageId, newIcon, newColor);
   };
 
   // Header menu state

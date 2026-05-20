@@ -172,11 +172,16 @@ export default function DatabaseView({
   const [showIconPicker, setShowIconPicker] = useState(false);
   const dbButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleIconSelect = async (newIcon: string | null, newColor: string | null) => {
+  const handleIconSelect = (newIcon: string | null, newColor: string | null) => {
     if (database.itemId) {
-      await updateWorkspaceItemIcon(database.itemId, newIcon, newColor);
-      router.refresh();
+      updateWorkspaceItemIcon(database.itemId, newIcon, newColor);
     }
+  };
+
+  const handlePageIconChange = (pageId: string, newIcon: string | null, newColor: string | null) => {
+    setLocalPages((prev) =>
+      prev.map((p) => p.id === pageId ? { ...p, icon: newIcon, iconColor: newColor } : p)
+    );
   };
 
   const [views, setViews] = useState<DatabaseView[]>(() => {
@@ -693,6 +698,7 @@ export default function DatabaseView({
               onToggleHideColumn={toggleHideColumn}
               defaultPageIcon={config.defaultPageIcon}
               defaultPageIconColor={config.defaultPageIconColor}
+              onPageIconChange={handlePageIconChange}
             />
           ) : kanbanConfig ? (
             <KanbanBoard
@@ -715,6 +721,7 @@ export default function DatabaseView({
               onCreatePage={handleAddRow}
               defaultPageIcon={config.defaultPageIcon}
               defaultPageIconColor={config.defaultPageIconColor}
+              onPageIconChange={handlePageIconChange}
             />
           ) : calendarConfig ? (
             <CalendarView
@@ -735,6 +742,7 @@ export default function DatabaseView({
               onCreatePage={handleAddRow}
               defaultPageIcon={config.defaultPageIcon}
               defaultPageIconColor={config.defaultPageIconColor}
+              onPageIconChange={handlePageIconChange}
             />
           ) : null}
         </div>

@@ -3,16 +3,14 @@ import { db } from '@/db';
 import { pages, databases, workspaceItems, workspaceMembers } from '@/db/schema';
 import { eq, asc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
+import { getCurrentUser } from '@/lib/auth/session';
 import { deleteWorkspaceItem } from './workspace';
 
 // Verify user has access to the workspace that owns this database
 async function assertDatabaseAccess(databaseId: string) {
-  const session = await auth();
-  if (!session?.user?.id) redirect('/login');
+  const user = await getCurrentUser();
 
-  if (session.user.role === 'admin') return session.user.id;
+  if (user.role === 'admin') return user.id;
 
   const [row] = await db
     .select({ workspaceId: workspaceItems.workspaceId })
@@ -29,13 +27,13 @@ async function assertDatabaseAccess(databaseId: string) {
     .where(
       and(
         eq(workspaceMembers.workspaceId, row.workspaceId),
-        eq(workspaceMembers.userId, session.user.id),
+        eq(workspaceMembers.userId, user.id),
       ),
     )
     .limit(1);
 
   if (!member) throw new Error('Unauthorized: no access to this database');
-  return session.user.id;
+  return user.id;
 }
 
 export async function createPage(
@@ -87,7 +85,6 @@ export async function updatePageProperties(id: string, properties: any) {
     .update(pages)
     .set({ title, properties, updatedAt: new Date() })
     .where(eq(pages.id, id));
-  revalidatePath(`/db/${page[0].databaseId}`);
 }
 
 export async function getPage(id: string) {
@@ -101,7 +98,6 @@ export async function getPage(id: string) {
 export async function updatePageContent(id: string, content: string) {
   const page = await db.select({ databaseId: pages.databaseId }).from(pages).where(eq(pages.id, id)).limit(1);
   if (page[0]) await assertDatabaseAccess(page[0].databaseId);
-
   await db.update(pages).set({ content, updatedAt: new Date() }).where(eq(pages.id, id));
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { GripVertical, Settings, Trash2, Plus, Copy } from 'lucide-react';
 import { normalizeOption, getOptionColorByValue, getCardBorderDots, formatDateValue } from '@/lib/types/properties';
 import type { SelectOption } from '@/lib/types/properties';
@@ -38,6 +37,7 @@ export default function KanbanBoard({
   onCreatePage,
   defaultPageIcon,
   defaultPageIconColor,
+  onPageIconChange,
 }: {
   database: any;
   pages: any[];
@@ -58,17 +58,17 @@ export default function KanbanBoard({
   onCreatePage?: (initialProperties?: Record<string, any>) => void;
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
+  onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
 }) {
-  const router = useRouter();
   const schema = database.schema as any[];
 
   const [editingCell, setEditingCell] = useState<{ pageId: string; colId: string } | null>(null);
   const [activeIconPickerPageId, setActiveIconPickerPageId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const handleKanbanIconSelect = async (pageId: string, newIcon: string | null, newColor: string | null) => {
-    await updatePageIcon(pageId, newIcon, newColor);
-    router.refresh();
+  const handleKanbanIconSelect = (pageId: string, newIcon: string | null, newColor: string | null) => {
+    onPageIconChange?.(pageId, newIcon, newColor);
+    updatePageIcon(pageId, newIcon, newColor);
   };
 
   const handleCellSave = (pageId: string, colId: string, newVal: any) => {

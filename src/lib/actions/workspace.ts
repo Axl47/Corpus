@@ -1,12 +1,10 @@
 'use server';
-import { cache } from 'react';
 import { db } from '@/db';
 import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, users } from '@/db/schema';
-import { eq, isNull, asc, and, inArray, sql } from 'drizzle-orm';
+import { eq, asc, and, inArray, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
+import { getCurrentUser } from '@/lib/auth/session';
 import type { SchemaColumn } from '@/lib/templates';
 import type { DatabaseView } from '@/lib/types/views';
 
@@ -32,12 +30,6 @@ export type WorkspaceItemRow = {
 };
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
-
-const getCurrentUser = cache(async () => {
-  const session = await auth();
-  if (!session?.user?.id) redirect('/login');
-  return session.user as { id: string; role: string; name?: string | null; email?: string | null; image?: string | null };
-});
 
 async function assertWorkspaceAccess(workspaceId: string): Promise<string> {
   const user = await getCurrentUser();
@@ -175,17 +167,26 @@ export async function switchWorkspace(workspaceId: string) {
 export async function getWorkspaceItems(workspaceId: string): Promise<WorkspaceItemRow[]> {
   await assertWorkspaceAccess(workspaceId);
 
-  const items = await db.select().from(workspaceItems)
+  const rows = await db
+    .select({
+      id: workspaceItems.id,
+      workspaceId: workspaceItems.workspaceId,
+      type: workspaceItems.type,
+      title: workspaceItems.title,
+      parentId: workspaceItems.parentId,
+      sortOrder: workspaceItems.sortOrder,
+      icon: workspaceItems.icon,
+      iconColor: workspaceItems.iconColor,
+      createdAt: workspaceItems.createdAt,
+      updatedAt: workspaceItems.updatedAt,
+      databaseId: databases.id,
+    })
+    .from(workspaceItems)
+    .leftJoin(databases, eq(databases.itemId, workspaceItems.id))
     .where(eq(workspaceItems.workspaceId, workspaceId))
     .orderBy(asc(workspaceItems.sortOrder), asc(workspaceItems.createdAt));
 
-  const dbRows = await db.select({ itemId: databases.itemId, dbId: databases.id }).from(databases);
-  const dbMap = new Map(dbRows.filter((r) => r.itemId).map((r) => [r.itemId!, r.dbId]));
-
-  return items.map((item) => ({
-    ...item,
-    databaseId: item.type === 'database' ? (dbMap.get(item.id) ?? null) : null,
-  }));
+  return rows.map((r) => ({ ...r, databaseId: r.databaseId ?? null }));
 }
 
 export async function getAllWorkspaceItems(): Promise<WorkspaceItemRow[]> {
@@ -206,17 +207,26 @@ export async function getAllWorkspaceItems(): Promise<WorkspaceItemRow[]> {
 
   if (accessibleWorkspaceIds.length === 0) return [];
 
-  const items = await db.select().from(workspaceItems)
+  const rows = await db
+    .select({
+      id: workspaceItems.id,
+      workspaceId: workspaceItems.workspaceId,
+      type: workspaceItems.type,
+      title: workspaceItems.title,
+      parentId: workspaceItems.parentId,
+      sortOrder: workspaceItems.sortOrder,
+      icon: workspaceItems.icon,
+      iconColor: workspaceItems.iconColor,
+      createdAt: workspaceItems.createdAt,
+      updatedAt: workspaceItems.updatedAt,
+      databaseId: databases.id,
+    })
+    .from(workspaceItems)
+    .leftJoin(databases, eq(databases.itemId, workspaceItems.id))
     .where(inArray(workspaceItems.workspaceId, accessibleWorkspaceIds))
     .orderBy(asc(workspaceItems.sortOrder), asc(workspaceItems.createdAt));
 
-  const dbRows = await db.select({ itemId: databases.itemId, dbId: databases.id }).from(databases);
-  const dbMap = new Map(dbRows.filter((r) => r.itemId).map((r) => [r.itemId!, r.dbId]));
-
-  return items.map((item) => ({
-    ...item,
-    databaseId: item.type === 'database' ? (dbMap.get(item.id) ?? null) : null,
-  }));
+  return rows.map((r) => ({ ...r, databaseId: r.databaseId ?? null }));
 }
 
 export async function createStandalonePage(
@@ -350,6 +360,42 @@ export async function deleteWorkspaceItem(itemId: string) {
   revalidatePath('/');
 }
 
+export async function checkItemHasContent(itemId: string): Promise<boolean> {
+  const [item] = await db
+    .select({ type: workspaceItems.type, workspaceId: workspaceItems.workspaceId })
+    .from(workspaceItems)
+    .where(eq(workspaceItems.id, itemId))
+    .limit(1);
+  if (!item) return false;
+  await assertWorkspaceAccess(item.workspaceId);
+
+  // Has nested children?
+  const [child] = await db
+    .select({ id: workspaceItems.id })
+    .from(workspaceItems)
+    .where(eq(workspaceItems.parentId, itemId))
+    .limit(1);
+  if (child) return true;
+
+  if (item.type === 'page') {
+    const [page] = await db
+      .select({ content: standalonePages.content })
+      .from(standalonePages)
+      .where(eq(standalonePages.itemId, itemId))
+      .limit(1);
+    return !!(page?.content && page.content.trim().length > 0);
+  } else {
+    // Has any database rows?
+    const [row] = await db
+      .select({ id: pages.id })
+      .from(pages)
+      .innerJoin(databases, eq(databases.id, pages.databaseId))
+      .where(eq(databases.itemId, itemId))
+      .limit(1);
+    return !!row;
+  }
+}
+
 async function deleteWorkspaceItemRecursive(itemId: string, type: 'page' | 'database') {
   // Find all children
   const children = await db.select({ id: workspaceItems.id, type: workspaceItems.type })
@@ -396,17 +442,26 @@ export async function getSubItems(parentId: string): Promise<WorkspaceItemRow[]>
   if (!workspaceId) return [];
   await assertWorkspaceAccess(workspaceId);
 
-  const items = await db.select().from(workspaceItems)
+  const rows = await db
+    .select({
+      id: workspaceItems.id,
+      workspaceId: workspaceItems.workspaceId,
+      type: workspaceItems.type,
+      title: workspaceItems.title,
+      parentId: workspaceItems.parentId,
+      sortOrder: workspaceItems.sortOrder,
+      icon: workspaceItems.icon,
+      iconColor: workspaceItems.iconColor,
+      createdAt: workspaceItems.createdAt,
+      updatedAt: workspaceItems.updatedAt,
+      databaseId: databases.id,
+    })
+    .from(workspaceItems)
+    .leftJoin(databases, eq(databases.itemId, workspaceItems.id))
     .where(eq(workspaceItems.parentId, parentId))
     .orderBy(asc(workspaceItems.sortOrder), asc(workspaceItems.createdAt));
 
-  const dbRows = await db.select({ itemId: databases.itemId, dbId: databases.id }).from(databases);
-  const dbMap = new Map(dbRows.filter((r) => r.itemId).map((r) => [r.itemId!, r.dbId]));
-
-  return items.map((item) => ({
-    ...item,
-    databaseId: item.type === 'database' ? (dbMap.get(item.id) ?? null) : null,
-  }));
+  return rows.map((r) => ({ ...r, databaseId: r.databaseId ?? null }));
 }
 
 export async function duplicateWorkspaceItem(itemId: string) {
@@ -486,14 +541,27 @@ export async function updateWorkspacesOrder(workspaceIds: string[]) {
 }
 
 export async function updateWorkspaceItemsOrder(itemIds: string[]) {
-  for (let i = 0; i < itemIds.length; i++) {
-    const itemId = itemIds[i];
-    const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
-    if (item[0]) {
-      await assertWorkspaceAccess(item[0].workspaceId);
-      await db.update(workspaceItems).set({ sortOrder: i }).where(eq(workspaceItems.id, itemId));
+  if (itemIds.length === 0) return;
+
+  // Single query to get all items and verify access (one auth check per workspace found)
+  const rows = await db
+    .select({ id: workspaceItems.id, workspaceId: workspaceItems.workspaceId })
+    .from(workspaceItems)
+    .where(inArray(workspaceItems.id, itemIds));
+
+  const checkedWorkspaces = new Set<string>();
+  for (const row of rows) {
+    if (!checkedWorkspaces.has(row.workspaceId)) {
+      await assertWorkspaceAccess(row.workspaceId);
+      checkedWorkspaces.add(row.workspaceId);
     }
   }
+
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < itemIds.length; i++) {
+      await tx.update(workspaceItems).set({ sortOrder: i }).where(eq(workspaceItems.id, itemIds[i]));
+    }
+  });
   revalidatePath('/');
 }
 

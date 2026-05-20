@@ -22,6 +22,7 @@ export const workspaceItems = sqliteTable('workspace_items', {
   updatedAt:   integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index('workspace_items_workspace_id_idx').on(table.workspaceId),
+  index('workspace_items_parent_id_idx').on(table.parentId),
 ]);
 
 export const standalonePages = sqliteTable('standalone_pages', {

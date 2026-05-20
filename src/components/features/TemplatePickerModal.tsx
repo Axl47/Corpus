@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
-import { TEMPLATES, type TemplateDefinition, type DatabaseTemplateDefinition } from '@/lib/templates';
+import { TEMPLATES, type TemplateDefinition, type DatabaseTemplateDefinition, type PageTemplateDefinition } from '@/lib/templates';
 import { createStandalonePage, createWorkspaceDatabase, switchWorkspace } from '@/lib/actions/workspace';
 import { createPage } from '@/lib/actions/page';
 
@@ -9,7 +9,10 @@ interface TemplatePickerModalProps {
   workspaceId: string;
   activeWorkspaceId: string;
   onClose: () => void;
-  onCreated: (type: 'page' | 'database', id: string) => void;
+  /** navId = URL id (dbId for databases, itemId for pages), sidebarItemId = workspace_items.id */
+  onCreated: (type: 'page' | 'database', navId: string, tempId: string, sidebarItemId?: string) => void;
+  /** Called immediately on Create click with a temp ID — for optimistic sidebar insertion */
+  onOptimisticCreate?: (type: 'page' | 'database', tempId: string, title: string, icon: string | null, iconColor: string | null) => void;
   parentId?: string;
 }
 
@@ -21,6 +24,7 @@ export default function TemplatePickerModal({
   activeWorkspaceId,
   onClose,
   onCreated,
+  onOptimisticCreate,
   parentId,
 }: TemplatePickerModalProps) {
   const [step, setStep] = useState<'pick' | 'confirm'>('pick');
@@ -55,36 +59,48 @@ export default function TemplatePickerModal({
 
   const handleCreate = () => {
     if (!selectedTemplate || !title.trim() || isPending) return;
+
+    const type = selectedTemplate.category as 'page' | 'database';
+    const tempId = `temp-${crypto.randomUUID().slice(0, 8)}`;
+    const icon = selectedTemplate.icon ?? null;
+    const iconColor = selectedTemplate.iconColor ?? null;
+
+    // Close modal and insert optimistic item immediately
+    onOptimisticCreate?.(type, tempId, title.trim(), icon, iconColor);
+    onClose();
+
+    // Persist to server in background
     startTransition(async () => {
       if (workspaceId !== activeWorkspaceId) {
         await switchWorkspace(workspaceId);
       }
-      if (selectedTemplate.category === 'page') {
+      if (type === 'page') {
+        const pageTpl = selectedTemplate as PageTemplateDefinition;
         const { itemId } = await createStandalonePage(workspaceId, title.trim(), parentId, {
-          initialContent: selectedTemplate.initialContent,
-          icon: selectedTemplate.icon,
-          iconColor: selectedTemplate.iconColor ?? null,
+          initialContent: pageTpl.initialContent,
+          icon,
+          iconColor,
         });
-        onCreated('page', itemId);
+        onCreated('page', itemId, tempId);
       } else {
         const db = selectedTemplate as DatabaseTemplateDefinition;
         const freshViews = db.views.map(v => ({
           ...v,
           id: crypto.randomUUID().slice(0, 8),
         }));
-        const { dbId } = await createWorkspaceDatabase(workspaceId, title.trim(), {
+        const result = await createWorkspaceDatabase(workspaceId, title.trim(), {
           schema: db.schema,
           views: freshViews,
-          icon: db.icon,
-          iconColor: db.iconColor ?? null,
+          icon,
+          iconColor,
           parentId,
         });
         if (db.seedRows?.length) {
           for (const row of db.seedRows) {
-            await createPage(dbId, row.title, row.properties as Record<string, unknown>);
+            await createPage(result.dbId, row.title, row.properties as Record<string, unknown>);
           }
         }
-        onCreated('database', dbId);
+        onCreated('database', result.dbId, tempId, result.itemId);
       }
     });
   };
