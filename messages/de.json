@@ -4,13 +4,11 @@
     "demoChangesNote": "Änderungen sind vorübergehend und werden für jeden Besucher zurückgesetzt.",
     "createFreeAccount": "Kostenloses Konto erstellen →"
   },
-
   "Home": {
     "welcomeTitle": "Willkommen bei Remnus",
     "noWorkspaceHint": "Sie haben noch keine Arbeitsbereiche. Erstellen Sie einen über die Seitenleiste.",
     "emptyWorkspaceHint": "Verwenden Sie die Seitenleiste, um Ihre erste Seite oder Datenbank zu erstellen."
   },
-
   "Auth": {
     "signInSubtitle": "Melden Sie sich in Ihrem Arbeitsbereich an",
     "createAccountSubtitle": "Erstellen Sie Ihr Konto",
@@ -34,7 +32,6 @@
     "loadingDemo": "Demo wird geladen…",
     "demoHint": "Erkunden ohne Registrierung — Änderungen werden pro Sitzung zurückgesetzt"
   },
-
   "Admin": {
     "panelTitle": "Admin-Panel",
     "panelSubtitle": "Übersicht über Benutzer, Arbeitsbereiche und Aktivitäten",
@@ -74,7 +71,6 @@
     "confirm": "Bestätigen",
     "cancel": "Abbrechen"
   },
-
   "Workspace": {
     "saving": "Wird gespeichert...",
     "creating": "Wird erstellt...",
@@ -91,11 +87,12 @@
     "rename": "Umbenennen",
     "duplicate": "Duplizieren",
     "delete": "Löschen",
+    "deleteConfirm": "Möchten Sie \"{title}\" wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+    "deleteCancel": "Abbrechen",
     "adminLink": "Admin",
     "signOut": "Abmelden",
     "you": "Sie"
   },
-
   "WorkspaceSettings": {
     "title": "Arbeitsbereichseinstellungen",
     "tabGeneral": "Allgemein",
@@ -126,7 +123,6 @@
     "removeConfirm": "Sind Sie sicher, dass Sie {name} aus diesem Arbeitsbereich entfernen möchten?",
     "deleteConfirm": "Sind Sie sicher, dass Sie diesen Arbeitsbereich und alle seine Seiten/Datenbanken dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
   },
-
   "Templates": {
     "modalTitle": "Neues Element",
     "groupBlank": "Leer",
@@ -146,7 +142,6 @@
     "readingList": "Leseliste",
     "readingListDesc": "Bücher und Artikel mit Status und Bewertungen verfolgen"
   },
-
   "Database": {
     "addView": "Ansicht hinzufügen",
     "tableView": "Tabellenansicht",
@@ -236,7 +231,6 @@
     "duplicatePage": "Seite duplizieren",
     "deletePageConfirm": "Möchten Sie diese Seite wirklich löschen?"
   },
-
   "Editor": {
     "placeholder": "Drücken Sie '/' für Befehle oder beginnen Sie zu schreiben…",
     "titlePlaceholder": "Ohne Titel",
@@ -274,7 +268,6 @@
     "deleteChildConfirm": "Löschen",
     "deleteChildCancel": "Abbrechen"
   },
-
   "Page": {
     "untitled": "Ohne Titel",
     "addIcon": "Symbol hinzufügen",
@@ -289,7 +282,6 @@
     "saved": "Gespeichert",
     "savingError": "Speicherfehler"
   },
-
   "IconPicker": {
     "title": "Symbol",
     "tabEmoji": "Emoji",
@@ -299,7 +291,6 @@
     "colorLabel": "Farbe",
     "remove": "Entfernen"
   },
-
   "Errors": {
     "emailRequired": "E-Mail und Passwort sind erforderlich",
     "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein",
@@ -321,8 +312,16 @@
     "cannotDeleteOnlyWorkspace": "Sie können Ihren einzigen Arbeitsbereich nicht löschen",
     "itemNotFound": "Element nicht gefunden"
   },
-
   "LanguageSwitcher": {
     "label": "Sprache"
+  },
+  "MobileNav": {
+    "menu": "Menü",
+    "home": "Startseite",
+    "new": "Neu",
+    "close": "Schließen",
+    "workspace": "Arbeitsbereich",
+    "user": "Benutzer",
+    "signOut": "Abmelden"
   }
 }

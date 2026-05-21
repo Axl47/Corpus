@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '../globals.css';
 import { Analytics } from '@vercel/analytics/next';
@@ -6,6 +6,7 @@ import { auth, signOut } from '@/auth';
 import { cookies } from 'next/headers';
 import { getAllWorkspaceItems, getWorkspaces } from '@/lib/actions/workspace';
 import WorkspaceSidebar from '@/components/features/WorkspaceSidebar';
+import MobileNavWrapper from '@/components/features/MobileNavWrapper';
 import QueryProvider from '@/components/providers/QueryProvider';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -14,6 +15,12 @@ import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 
 const inter = Inter({ subsets: ['latin'] });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export const metadata: Metadata = {
   title: 'Remnus',
@@ -79,7 +86,7 @@ export default async function LocaleLayout({
       <body className={`${inter.className} bg-neutral-950 text-neutral-50 flex h-screen overflow-hidden`}>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
-            <aside className="w-72 bg-neutral-900 border-r border-neutral-800 flex flex-col">
+            <aside className="hidden lg:flex w-72 bg-neutral-900 border-r border-neutral-800 flex-col">
               <WorkspaceSidebar
                 items={items}
                 workspaces={workspacesList}
@@ -87,13 +94,19 @@ export default async function LocaleLayout({
                 currentUser={currentUser}
               />
             </aside>
-            <main className="flex-1 flex flex-col h-full overflow-hidden bg-neutral-850">
+            <MobileNavWrapper
+              items={items}
+              workspaces={workspacesList}
+              activeWorkspace={activeWorkspace ?? { id: '', name: 'Workspace' }}
+              currentUser={currentUser}
+            />
+            <main className="flex-1 flex flex-col h-full overflow-hidden bg-neutral-850 pb-14 lg:pb-0">
               {session.user.role === 'demo' && (
-                <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
-                  <div className="flex items-center gap-2 text-xs text-amber-400">
-                    <span className="font-semibold">{t('demoMode')}</span>
-                    <span className="text-amber-500/70">—</span>
-                    <span className="text-amber-400/80">{t('demoChangesNote')}</span>
+                <div className="shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
+                  <div className="flex items-center gap-1.5 text-xs text-amber-400 min-w-0">
+                    <span className="font-semibold shrink-0">{t('demoMode')}</span>
+                    <span className="text-amber-500/70 shrink-0">—</span>
+                    <span className="text-amber-400/80 truncate">{t('demoChangesNote')}</span>
                   </div>
                   <form
                     action={async () => {
@@ -103,7 +116,7 @@ export default async function LocaleLayout({
                   >
                     <button
                       type="submit"
-                      className="shrink-0 text-xs font-medium text-amber-300 hover:text-amber-100 transition-colors"
+                      className="shrink-0 text-xs font-medium text-amber-300 hover:text-amber-100 transition-colors self-start sm:self-auto"
                     >
                       {t('createFreeAccount')}
                     </button>

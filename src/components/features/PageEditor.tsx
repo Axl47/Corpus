@@ -175,12 +175,12 @@ export default function PageEditor({
   };
 
   const containerClass = isPeek
-    ? 'p-6 md:p-8 lg:p-10'
+    ? 'p-4 md:p-8 lg:p-10'
     : widthMode === 'full'
-    ? 'px-16 py-10'
+    ? 'px-4 sm:px-8 md:px-16 py-6 sm:py-10'
     : widthMode === 'wide'
-    ? 'max-w-7xl mx-auto px-8 lg:px-12 py-10'
-    : 'max-w-4xl mx-auto px-8 lg:px-16 py-10';
+    ? 'max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10'
+    : 'max-w-4xl mx-auto px-4 sm:px-8 lg:px-16 py-6 sm:py-10';
 
   return (
     <div className={containerClass}>
@@ -193,7 +193,7 @@ export default function PageEditor({
             <SaveStatus state={saveState} />
             <button
               onClick={cycleWidth}
-              className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
             >
               <ArrowLeftRight size={14} />
               {widthLabels[widthMode]}
@@ -281,19 +281,19 @@ export default function PageEditor({
             value={properties['title'] || ''}
             onChange={(e) => handleTextPropertyChange('title', e.target.value)}
             placeholder={t('untitled')}
-            className="w-full bg-transparent text-white font-bold text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
+            className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
         </div>
       </div>
 
       {/* Properties Section */}
-      <div className="mb-12 space-y-4">
+      <div className={isPeek ? 'mb-6 space-y-1' : 'mb-12 space-y-4'}>
         {schema.filter((col) => col.id !== 'title').map((col) => {
           const val = properties[col.id];
- 
+
           return (
-            <div key={col.id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-8 border-b border-neutral-800/60 pb-3 group">
-              <div className="text-neutral-500 w-32 shrink-0 text-sm font-medium group-hover:text-neutral-400 transition-colors pt-1">{col.name}</div>
+            <div key={col.id} className={`flex items-start gap-2 border-b border-neutral-800/60 group ${isPeek ? 'flex-row gap-3 pb-1.5' : 'flex-col sm:flex-row sm:gap-8 pb-3'}`}>
+              <div className={`text-neutral-500 shrink-0 font-medium group-hover:text-neutral-400 transition-colors pt-1 ${isPeek ? 'w-24 text-xs' : 'w-32 text-sm'}`}>{col.name}</div>
  
               {col.type === 'select' ? (
                 <div className="relative flex-1 max-w-xs pt-0.5" ref={openSelectId === col.id ? selectDropdownRef : undefined}>

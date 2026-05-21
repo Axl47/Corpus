@@ -101,15 +101,16 @@ export default function AdminWorkspacesTable({
         <div className="py-10 text-center text-xs text-neutral-600">{t('noWorkspaces')}</div>
       ) : (
         <>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-900/60">
                 <th className="w-8 px-2" />
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colName')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colOwner')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colMembers')}</th>
+                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colOwner')}</th>
+                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colMembers')}</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colItems')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colCreated')}</th>
+                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colCreated')}</th>
                 <th className="w-24 px-4 py-2.5" />
               </tr>
             </thead>
@@ -142,7 +143,7 @@ export default function AdminWorkspacesTable({
                       <td className="px-4 py-3">
                         <span className="font-medium text-neutral-200">{ws.name}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden md:table-cell px-4 py-3">
                         {ws.ownerName || ws.ownerEmail ? (
                           <div>
                             {ws.ownerName && <span className="text-neutral-300 text-sm">{ws.ownerName}</span>}
@@ -152,7 +153,7 @@ export default function AdminWorkspacesTable({
                           <span className="text-neutral-600 text-xs">{t('noOwner')}</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden md:table-cell px-4 py-3">
                         <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
                           <Users size={12} />
                           {ws.memberCount}
@@ -164,7 +165,7 @@ export default function AdminWorkspacesTable({
                           {ws.itemCount}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden md:table-cell px-4 py-3">
                         <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
                           <Calendar size={11} />
                           {formatDate(ws.createdAt, locale)}
@@ -234,6 +235,7 @@ export default function AdminWorkspacesTable({
               })}
             </tbody>
           </table>
+          </div>
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-800 bg-neutral-900/40">

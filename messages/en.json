@@ -4,13 +4,11 @@
     "demoChangesNote": "Changes are temporary and reset for each visitor.",
     "createFreeAccount": "Create a free account →"
   },
-
   "Home": {
     "welcomeTitle": "Welcome to Remnus",
     "noWorkspaceHint": "You don't have any workspaces yet. Create one from the sidebar to get started.",
     "emptyWorkspaceHint": "Use the sidebar to create your first page or database."
   },
-
   "Auth": {
     "signInSubtitle": "Sign in to your workspace",
     "createAccountSubtitle": "Create your account",
@@ -34,7 +32,6 @@
     "loadingDemo": "Loading demo…",
     "demoHint": "Explore without signing up — changes reset each session"
   },
-
   "Admin": {
     "panelTitle": "Admin Panel",
     "panelSubtitle": "Overview of users, workspaces, and activity",
@@ -74,7 +71,6 @@
     "confirm": "Confirm",
     "cancel": "Cancel"
   },
-
   "Workspace": {
     "saving": "Saving...",
     "creating": "Creating...",
@@ -91,11 +87,12 @@
     "rename": "Rename",
     "duplicate": "Duplicate",
     "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete \"{title}\"? This cannot be undone.",
+    "deleteCancel": "Cancel",
     "adminLink": "Admin",
     "signOut": "Sign out",
     "you": "You"
   },
-
   "WorkspaceSettings": {
     "title": "Workspace Settings",
     "tabGeneral": "General",
@@ -126,7 +123,6 @@
     "removeConfirm": "Are you sure you want to remove {name} from this workspace?",
     "deleteConfirm": "Are you sure you want to permanently delete this workspace and all its pages/databases? This action cannot be undone."
   },
-
   "Templates": {
     "modalTitle": "New Item",
     "groupBlank": "Blank",
@@ -146,7 +142,6 @@
     "readingList": "Reading List",
     "readingListDesc": "Track books and articles with status and ratings"
   },
-
   "Database": {
     "addView": "Add view",
     "tableView": "Table view",
@@ -236,7 +231,6 @@
     "duplicatePage": "Duplicate page",
     "deletePageConfirm": "Are you sure you want to delete this page?"
   },
-
   "Editor": {
     "placeholder": "Press '/' for commands or start writing…",
     "titlePlaceholder": "Untitled",
@@ -274,7 +268,6 @@
     "deleteChildConfirm": "Delete",
     "deleteChildCancel": "Cancel"
   },
-
   "Page": {
     "untitled": "Untitled",
     "addIcon": "Add icon",
@@ -289,7 +282,6 @@
     "saved": "Saved",
     "savingError": "Error saving"
   },
-
   "IconPicker": {
     "title": "Icon",
     "tabEmoji": "Emoji",
@@ -299,7 +291,6 @@
     "colorLabel": "Color",
     "remove": "Remove"
   },
-
   "Errors": {
     "emailRequired": "Email and password are required",
     "passwordTooShort": "Password must be at least 8 characters",
@@ -321,8 +312,16 @@
     "cannotDeleteOnlyWorkspace": "Cannot delete your only workspace",
     "itemNotFound": "Item not found"
   },
-
   "LanguageSwitcher": {
     "label": "Language"
+  },
+  "MobileNav": {
+    "menu": "Menu",
+    "home": "Home",
+    "new": "New",
+    "close": "Close",
+    "workspace": "Workspace",
+    "user": "User",
+    "signOut": "Sign out"
   }
 }

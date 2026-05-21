@@ -67,14 +67,15 @@ export default function AdminUsersTable({
         <div className="py-10 text-center text-xs text-neutral-600">{t('noUsers')}</div>
       ) : (
         <>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-900/60">
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colName')}</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colEmail')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-28">{t('colSignIn')}</th>
+                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-28">{t('colSignIn')}</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colRole')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colJoined')}</th>
+                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colJoined')}</th>
                 <th className="w-24 px-4 py-2.5" />
               </tr>
             </thead>
@@ -92,7 +93,7 @@ export default function AdminUsersTable({
                     <td className="px-4 py-3">
                       <span className="text-neutral-400 text-xs">{u.email ?? '—'}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden md:table-cell px-4 py-3">
                       {u.authType === 'google' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
                           <Globe size={9} />
@@ -117,7 +118,7 @@ export default function AdminUsersTable({
                         <span className="text-xs text-neutral-500">User</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden md:table-cell px-4 py-3">
                       <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
                         <Calendar size={11} />
                         {formatDate(u.createdAt, locale)}
@@ -160,6 +161,7 @@ export default function AdminUsersTable({
               })}
             </tbody>
           </table>
+          </div>
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-800 bg-neutral-900/40">

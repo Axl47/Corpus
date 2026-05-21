@@ -4,13 +4,11 @@
     "demoChangesNote": "Les modifications sont temporaires et réinitialisées pour chaque visiteur.",
     "createFreeAccount": "Créer un compte gratuit →"
   },
-
   "Home": {
     "welcomeTitle": "Bienvenue sur Remnus",
     "noWorkspaceHint": "Vous n'avez pas encore d'espaces de travail. Créez-en un depuis la barre latérale pour commencer.",
     "emptyWorkspaceHint": "Utilisez la barre latérale pour créer votre première page ou base de données."
   },
-
   "Auth": {
     "signInSubtitle": "Connectez-vous à votre espace de travail",
     "createAccountSubtitle": "Créez votre compte",
@@ -34,7 +32,6 @@
     "loadingDemo": "Chargement de la démo…",
     "demoHint": "Explorez sans vous inscrire — les modifications sont réinitialisées à chaque session"
   },
-
   "Admin": {
     "panelTitle": "Panneau d'Administration",
     "panelSubtitle": "Aperçu des utilisateurs, espaces de travail et activité",
@@ -74,7 +71,6 @@
     "confirm": "Confirmer",
     "cancel": "Annuler"
   },
-
   "Workspace": {
     "saving": "Enregistrement...",
     "creating": "Création...",
@@ -91,11 +87,12 @@
     "rename": "Renommer",
     "duplicate": "Dupliquer",
     "delete": "Supprimer",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer \"{title}\" ? Cette action est irréversible.",
+    "deleteCancel": "Annuler",
     "adminLink": "Admin",
     "signOut": "Se déconnecter",
     "you": "Vous"
   },
-
   "WorkspaceSettings": {
     "title": "Paramètres de l'Espace",
     "tabGeneral": "Général",
@@ -126,7 +123,6 @@
     "removeConfirm": "Êtes-vous sûr de vouloir retirer {name} de cet espace ?",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement cet espace et toutes ses pages/bases de données ? Cette action est irréversible."
   },
-
   "Templates": {
     "modalTitle": "Nouvel Élément",
     "groupBlank": "Vide",
@@ -146,7 +142,6 @@
     "readingList": "Liste de Lecture",
     "readingListDesc": "Suivez livres et articles avec statut et notes"
   },
-
   "Database": {
     "addView": "Ajouter une vue",
     "tableView": "Vue tableau",
@@ -236,7 +231,6 @@
     "duplicatePage": "Dupliquer la page",
     "deletePageConfirm": "Êtes-vous sûr de vouloir supprimer cette page ?"
   },
-
   "Editor": {
     "placeholder": "Appuyez sur '/' pour les commandes ou commencez à écrire…",
     "titlePlaceholder": "Sans titre",
@@ -274,7 +268,6 @@
     "deleteChildConfirm": "Supprimer",
     "deleteChildCancel": "Annuler"
   },
-
   "Page": {
     "untitled": "Sans titre",
     "addIcon": "Ajouter une icône",
@@ -289,7 +282,6 @@
     "saved": "Enregistré",
     "savingError": "Erreur d'enregistrement"
   },
-
   "IconPicker": {
     "title": "Icône",
     "tabEmoji": "Emoji",
@@ -299,7 +291,6 @@
     "colorLabel": "Couleur",
     "remove": "Retirer"
   },
-
   "Errors": {
     "emailRequired": "L'e-mail et le mot de passe sont obligatoires",
     "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères",
@@ -321,8 +312,16 @@
     "cannotDeleteOnlyWorkspace": "Vous ne pouvez pas supprimer votre unique espace de travail",
     "itemNotFound": "Élément introuvable"
   },
-
   "LanguageSwitcher": {
     "label": "Langue"
+  },
+  "MobileNav": {
+    "menu": "Menu",
+    "home": "Accueil",
+    "new": "Nouveau",
+    "close": "Fermer",
+    "workspace": "Espace de travail",
+    "user": "Utilisateur",
+    "signOut": "Se déconnecter"
   }
 }

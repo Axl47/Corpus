@@ -4,13 +4,11 @@
     "demoChangesNote": "Değişiklikler geçicidir ve her ziyaretçi için sıfırlanır.",
     "createFreeAccount": "Ücretsiz hesap oluştur →"
   },
-
   "Home": {
     "welcomeTitle": "Remnus'a Hoş Geldiniz",
     "noWorkspaceHint": "Henüz çalışma alanınız yok. Başlamak için kenar çubuğundan bir tane oluşturun.",
     "emptyWorkspaceHint": "İlk sayfanızı veya veritabanınızı oluşturmak için kenar çubuğunu kullanın."
   },
-
   "Auth": {
     "signInSubtitle": "Çalışma alanınıza giriş yapın",
     "createAccountSubtitle": "Hesabınızı oluşturun",
@@ -34,7 +32,6 @@
     "loadingDemo": "Demo yükleniyor…",
     "demoHint": "Kayıt olmadan keşfet — değişiklikler her oturumda sıfırlanır"
   },
-
   "Admin": {
     "panelTitle": "Yönetim Paneli",
     "panelSubtitle": "Kullanıcılar, çalışma alanları ve etkinliğe genel bakış",
@@ -74,7 +71,6 @@
     "confirm": "Onayla",
     "cancel": "İptal"
   },
-
   "Workspace": {
     "saving": "Kaydediliyor...",
     "creating": "Oluşturuluyor...",
@@ -91,11 +87,12 @@
     "rename": "Yeniden adlandır",
     "duplicate": "Çoğalt",
     "delete": "Sil",
+    "deleteConfirm": "\"{title}\" öğesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "deleteCancel": "İptal",
     "adminLink": "Yönetim",
     "signOut": "Çıkış yap",
     "you": "Siz"
   },
-
   "WorkspaceSettings": {
     "title": "Çalışma Alanı Ayarları",
     "tabGeneral": "Genel",
@@ -126,7 +123,6 @@
     "removeConfirm": "{name} kişisini bu çalışma alanından kaldırmak istediğinizden emin misiniz?",
     "deleteConfirm": "Bu çalışma alanını ve tüm sayfa/veritabanlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
   },
-
   "Templates": {
     "modalTitle": "Yeni Öğe",
     "groupBlank": "Boş",
@@ -146,7 +142,6 @@
     "readingList": "Okuma Listesi",
     "readingListDesc": "Kitapları ve makaleleri durum ve puanlarla takip edin"
   },
-
   "Database": {
     "addView": "Görünüm ekle",
     "tableView": "Tablo görünümü",
@@ -236,7 +231,6 @@
     "duplicatePage": "Sayfayı çoğalt",
     "deletePageConfirm": "Bu sayfayı silmek istediğinizden emin misiniz?"
   },
-
   "Editor": {
     "placeholder": "Komutlar için '/' tuşuna basın veya yazmaya başlayın…",
     "titlePlaceholder": "Başlıksız",
@@ -274,7 +268,6 @@
     "deleteChildConfirm": "Sil",
     "deleteChildCancel": "İptal"
   },
-
   "Page": {
     "untitled": "Başlıksız",
     "addIcon": "Simge ekle",
@@ -289,7 +282,6 @@
     "saved": "Kaydedildi",
     "savingError": "Kaydetme hatası"
   },
-
   "IconPicker": {
     "title": "Simge",
     "tabEmoji": "Emoji",
@@ -299,7 +291,6 @@
     "colorLabel": "Renk",
     "remove": "Kaldır"
   },
-
   "Errors": {
     "emailRequired": "E-posta ve şifre gereklidir",
     "passwordTooShort": "Şifre en az 8 karakter olmalıdır",
@@ -321,8 +312,16 @@
     "cannotDeleteOnlyWorkspace": "Tek çalışma alanınızı silemezsiniz",
     "itemNotFound": "Öğe bulunamadı"
   },
-
   "LanguageSwitcher": {
     "label": "Dil"
+  },
+  "MobileNav": {
+    "menu": "Menü",
+    "home": "Ana Sayfa",
+    "new": "Yeni",
+    "close": "Kapat",
+    "workspace": "Çalışma Alanı",
+    "user": "Kullanıcı",
+    "signOut": "Çıkış Yap"
   }
 }

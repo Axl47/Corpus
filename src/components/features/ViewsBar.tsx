@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LayoutList, KanbanSquare, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { LayoutList, KanbanSquare, Calendar as CalendarIcon, Plus, ChevronDown } from 'lucide-react';
 import type { DatabaseView } from '@/lib/types/views';
 import { useTranslations } from 'next-intl';
 
@@ -29,17 +29,20 @@ export default function ViewsBar({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [mobileAddOpen, setMobileAddOpen] = useState(false);
 
   const [draggedViewId, setDraggedViewId] = useState<string | null>(null);
   const [dragOverViewId, setDragOverViewId] = useState<string | null>(null);
 
   const addRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileAddRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (addRef.current && !addRef.current.contains(e.target as Node)) setAddOpen(false);
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null);
+      if (mobileAddRef.current && !mobileAddRef.current.contains(e.target as Node)) setMobileAddOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -99,8 +102,94 @@ export default function ViewsBar({
     setDragOverViewId(null);
   };
 
+  const activeView = views.find(v => v.id === activeViewId);
+  const [mobileDropOpen, setMobileDropOpen] = useState(false);
+  const mobileDropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileDropOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (mobileDropRef.current && !mobileDropRef.current.contains(e.target as Node)) {
+        setMobileDropOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [mobileDropOpen]);
+
+  const getIcon = (view: DatabaseView) => {
+    if (view.config.type === 'kanban') return KanbanSquare;
+    if (view.config.type === 'calendar') return CalendarIcon;
+    return LayoutList;
+  };
+
   return (
-    <div className="flex items-center gap-0">
+    <>
+    {/* Mobile compact view selector */}
+    {activeView && (
+      <div className="sm:hidden flex items-center">
+        <div className="relative" ref={mobileDropRef}>
+          <button
+            onClick={() => setMobileDropOpen(o => !o)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-100 border-b-2 border-neutral-300 -mb-px cursor-pointer"
+          >
+            {(() => { const Icon = getIcon(activeView); return <Icon size={14} />; })()}
+            <span>{activeView.name}</span>
+            <ChevronDown size={13} className={`text-neutral-400 transition-transform duration-150 ${mobileDropOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {mobileDropOpen && (
+            <div className="absolute top-full left-0 mt-1 min-w-40 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
+              {views.map(view => {
+                const isActive = view.id === activeViewId;
+                const Icon = getIcon(view);
+                return (
+                  <button
+                    key={view.id}
+                    onClick={() => { onActivate(view.id); setMobileDropOpen(false); }}
+                    className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2 transition-colors cursor-pointer ${
+                      isActive ? 'text-neutral-100 bg-neutral-800/40' : 'text-neutral-400 hover:bg-neutral-800/20 hover:text-neutral-200'
+                    }`}
+                  >
+                    <Icon size={13} />
+                    <span>{view.name}</span>
+                    {isActive && <span className="ml-auto text-blue-400 text-[10px]">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile add view button */}
+        <div className="relative" ref={mobileAddRef}>
+          <button
+            onClick={() => { setMobileAddOpen(o => !o); setMobileDropOpen(false); }}
+            className="p-2 text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+            title={t('addView')}
+          >
+            <Plus size={14} />
+          </button>
+          {mobileAddOpen && (
+            <div className="absolute top-full left-0 mt-1 w-44 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
+              <button onClick={() => { onAdd('table'); setMobileAddOpen(false); }} className="w-full text-left px-3 py-2.5 text-xs text-neutral-300 hover:bg-neutral-800/20 hover:text-white flex items-center gap-2 transition-colors border-b border-neutral-850/60">
+                <LayoutList size={13} /> {t('tableView')}
+              </button>
+              <button onClick={() => { onAdd('kanban'); setMobileAddOpen(false); }} className="w-full text-left px-3 py-2.5 text-xs text-neutral-300 hover:bg-neutral-800/20 hover:text-white flex items-center gap-2 transition-colors border-b border-neutral-850/60">
+                <KanbanSquare size={13} /> {t('kanbanView')}
+              </button>
+              <button onClick={() => { onAdd('calendar'); setMobileAddOpen(false); }} className="w-full text-left px-3 py-2.5 text-xs text-neutral-300 hover:bg-neutral-800/20 hover:text-white flex items-center gap-2 transition-colors">
+                <CalendarIcon size={13} /> {t('calendarView')}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Desktop full tab list */}
+    <div className="hidden sm:flex items-center gap-0 overflow-x-auto scrollbar-hide"
+      style={{ scrollbarWidth: 'none' }}
+    >
       {views.map((view) => {
         const isActive = view.id === activeViewId;
         let Icon = LayoutList;
@@ -114,7 +203,7 @@ export default function ViewsBar({
         return (
           <div
             key={view.id}
-            className={`relative flex items-center group cursor-grab active:cursor-grabbing transition-all
+            className={`relative shrink-0 flex items-center group cursor-grab active:cursor-grabbing transition-all
               ${draggedViewId === view.id ? 'opacity-25' : ''}
               ${dragOverViewId === view.id ? 'border-l-2 border-l-blue-500/60' : ''}
             `}
@@ -184,7 +273,7 @@ export default function ViewsBar({
         );
       })}
 
-      <div className="relative ml-0.5" ref={addRef}>
+      <div className="relative ml-0.5 shrink-0" ref={addRef}>
         <button
           onClick={() => setAddOpen((o) => !o)}
           className="p-2 text-neutral-600 hover:text-neutral-400 transition-colors cursor-pointer"
@@ -226,5 +315,6 @@ export default function ViewsBar({
         )}
       </div>
     </div>
+    </>
   );
 }

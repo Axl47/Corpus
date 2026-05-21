@@ -311,7 +311,7 @@ export default function DatabasePropertiesSidebar({
   };
 
   return (
-    <div className="w-72 shrink-0 bg-neutral-900 border-l border-neutral-800 flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-200">
+    <div className="w-full sm:w-72 sm:shrink-0 bg-neutral-900 sm:border-l border-neutral-800 flex flex-col sm:h-full overflow-y-auto sm:overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-800 shrink-0">
         <div className="flex items-center gap-2 min-w-0">

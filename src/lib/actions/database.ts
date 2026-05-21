@@ -63,6 +63,7 @@ export async function getDatabase(id: string) {
       icon: workspaceItems.icon,
       iconColor: workspaceItems.iconColor,
       workspaceId: workspaceItems.workspaceId,
+      parentId: workspaceItems.parentId,
     })
     .from(databases)
     .leftJoin(workspaceItems, eq(databases.itemId, workspaceItems.id))

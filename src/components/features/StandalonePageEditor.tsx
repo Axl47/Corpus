@@ -92,25 +92,29 @@ export default function StandalonePageEditor({
   );
 
   const containerClass =
-    widthMode === 'full' ? 'px-16 py-10' :
-    widthMode === 'wide' ? 'max-w-7xl mx-auto px-8 lg:px-12 py-10' :
-    'max-w-4xl mx-auto px-8 lg:px-16 py-10';
+    widthMode === 'full' ? 'px-4 sm:px-8 md:px-16 py-6 sm:py-10' :
+    widthMode === 'wide' ? 'max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10' :
+    'max-w-4xl mx-auto px-4 sm:px-8 lg:px-16 py-6 sm:py-10';
 
   return (
     <div className={containerClass}>
       <div className="mb-6 flex items-center justify-between">
-        <Link
-          href={item.parentId ? `/page/${item.parentId}` : '/'}
-          className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
-        >
-          <ChevronLeft size={14} />
-          {t('back')}
-        </Link>
+        <div>
+          {item.parentId && (
+            <Link
+              href={`/page/${item.parentId}`}
+              className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <ChevronLeft size={14} />
+              {t('back')}
+            </Link>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <SaveStatus state={saveState} />
           <button
             onClick={cycleWidth}
-            className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
           >
             <ArrowLeftRight size={14} />
             {widthLabels[widthMode]}
@@ -157,7 +161,7 @@ export default function StandalonePageEditor({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('untitled')}
-            className="w-full bg-transparent text-white font-bold text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
+            className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
         </div>
       </div>

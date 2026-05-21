@@ -63,11 +63,13 @@ export default function WorkspaceSidebar({
   workspaces,
   activeWorkspace,
   currentUser,
+  hideBrandHeader = false,
 }: {
   items: WorkspaceItemRow[];
   workspaces: WorkspaceType[];
   activeWorkspace: WorkspaceType;
   currentUser: CurrentUser;
+  hideBrandHeader?: boolean;
 }) {
   const t = useTranslations('Workspace');
   const router = useRouter();
@@ -87,9 +89,13 @@ export default function WorkspaceSidebar({
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Item loading state (delete / duplicate)
   const [loadingItem, setLoadingItem] = useState<{ id: string; action: 'delete' | 'duplicate' } | null>(null);
+
+  // Confirm delete state
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
 
   // Inline rename
   const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
@@ -99,7 +105,9 @@ export default function WorkspaceSidebar({
   useEffect(() => {
     if (!openMenuItemId) return;
     const handleMouseDown = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) {
+      const inDesktop = menuRef.current?.contains(e.target as Node);
+      const inMobile = mobileMenuRef.current?.contains(e.target as Node);
+      if (!inDesktop && !inMobile) {
         setOpenMenuItemId(null);
       }
     };
@@ -557,6 +565,11 @@ export default function WorkspaceSidebar({
 
   const handleDeleteItem = (item: WorkspaceItemRow) => {
     setOpenMenuItemId(null);
+    setConfirmDeleteItemId(item.id);
+  };
+
+  const confirmDelete = (item: WorkspaceItemRow) => {
+    setConfirmDeleteItemId(null);
     setLoadingItem({ id: item.id, action: 'delete' });
 
     // Optimistic: remove item (and all descendants) from local state immediately
@@ -581,7 +594,8 @@ export default function WorkspaceSidebar({
     e.preventDefault();
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuAnchor({ x: rect.left, y: rect.bottom + 4 });
+    // right-align: menu's right edge aligns with button's right edge
+    setMenuAnchor({ x: window.innerWidth - rect.right, y: rect.bottom + 4 });
     setOpenMenuItemId(prev => (prev === itemId ? null : itemId));
   };
 
@@ -601,8 +615,8 @@ export default function WorkspaceSidebar({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden h-full">
-      {/* Brand Header */}
-      <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
+      {/* Brand Header — hidden in mobile sheet */}
+      <div className={`p-4 border-b border-neutral-800 flex items-center justify-between shrink-0 ${hideBrandHeader ? 'hidden' : ''}`}>
         <Link href="/" className="font-semibold flex items-center gap-2.5 text-white hover:text-neutral-300 transition-colors">
           <img src="/logo-square-dark.png" alt="Remnus Logo" className={`w-5 h-5 object-contain rounded-md shrink-0 shadow-sm ${isSaving ? 'animate-pulse' : ''}`} />
           <span className="font-bold tracking-tight text-white">Remnus</span>
@@ -688,7 +702,7 @@ export default function WorkspaceSidebar({
                 </div>
 
                 {/* Workspace actions on hover */}
-                <div className="flex items-center gap-0.5 opacity-0 group-hover/root:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/root:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => {
                       setTemplatePickerWorkspaceId(w.id);
@@ -843,7 +857,7 @@ export default function WorkspaceSidebar({
                                   }`} />
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
                                   {item.type === 'page' && (
                                     <button
                                       onClick={(e) => {
@@ -941,40 +955,88 @@ export default function WorkspaceSidebar({
         </div>
       </div>
 
-      {/* Item context menu (fixed, outside overflow container) */}
-      {activeMenuItem && menuAnchor && (
-        <div
-          ref={menuRef}
-          style={{ top: menuAnchor.y, left: menuAnchor.x }}
-          className="fixed z-200 bg-neutral-900 border border-neutral-800 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 min-w-40 animate-scale-in"
-        >
-          <button
-            onClick={() => {
-              setOpenMenuItemId(null);
-              setRenamingItemId(activeMenuItem.id);
-              setRenamingTitle(activeMenuItem.title);
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
-          >
-            <Edit3 size={12} className="text-neutral-500" />
-            {t('rename')}
-          </button>
-          <button
-            onClick={() => handleDuplicateItem(activeMenuItem)}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
-          >
-            <Copy size={12} className="text-neutral-500" />
-            {t('duplicate')}
-          </button>
-          <div className="border-t border-neutral-800 my-1" />
-          <button
-            onClick={() => handleDeleteItem(activeMenuItem)}
-            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-400 hover:bg-neutral-800 hover:text-red-300 transition-colors"
-          >
-            <Trash size={12} />
-            {t('delete')}
-          </button>
-        </div>
+      {/* Item context menu — mobile: bottom sheet, desktop: floating dropdown */}
+      {activeMenuItem && (
+        <>
+          {/* Mobile bottom sheet menu */}
+          <div
+            className={`fixed inset-0 z-250 sm:hidden transition-opacity duration-200 ${openMenuItemId ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setOpenMenuItemId(null)}
+          />
+          <div ref={mobileMenuRef} className={`fixed inset-x-0 bottom-14 z-250 sm:hidden bg-neutral-900 border-t border-neutral-800 rounded-t-xl transition-transform duration-200 ease-in-out ${openMenuItemId ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <div className="w-8 h-1 rounded-full bg-neutral-700" />
+            </div>
+            <div className="px-4 py-2 text-xs text-neutral-500 font-medium truncate border-b border-neutral-800/60 mb-1">
+              {activeMenuItem.title}
+            </div>
+            <button
+              onClick={() => {
+                setOpenMenuItemId(null);
+                setRenamingItemId(activeMenuItem.id);
+                setRenamingTitle(activeMenuItem.title);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-neutral-300 active:bg-neutral-800 transition-colors"
+            >
+              <Edit3 size={15} className="text-neutral-500 shrink-0" />
+              {t('rename')}
+            </button>
+            <button
+              onClick={() => handleDuplicateItem(activeMenuItem)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-neutral-300 active:bg-neutral-800 transition-colors"
+            >
+              <Copy size={15} className="text-neutral-500 shrink-0" />
+              {t('duplicate')}
+            </button>
+            <div className="border-t border-neutral-800 mx-4 my-1" />
+            <button
+              onClick={() => handleDeleteItem(activeMenuItem)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-red-400 active:bg-neutral-800 transition-colors mb-2"
+            >
+              <Trash size={15} className="shrink-0" />
+              {t('delete')}
+            </button>
+          </div>
+
+          {/* Desktop floating dropdown */}
+          {menuAnchor && (
+            <div
+              ref={menuRef}
+              style={{
+                top: Math.min(menuAnchor.y, window.innerHeight - 160),
+                right: Math.max(menuAnchor.x, 8),
+              }}
+              className="fixed z-200 hidden sm:block bg-neutral-900 border border-neutral-800 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 min-w-44 animate-scale-in"
+            >
+              <button
+                onClick={() => {
+                  setOpenMenuItemId(null);
+                  setRenamingItemId(activeMenuItem.id);
+                  setRenamingTitle(activeMenuItem.title);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+              >
+                <Edit3 size={12} className="text-neutral-500" />
+                {t('rename')}
+              </button>
+              <button
+                onClick={() => handleDuplicateItem(activeMenuItem)}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+              >
+                <Copy size={12} className="text-neutral-500" />
+                {t('duplicate')}
+              </button>
+              <div className="border-t border-neutral-800 my-1" />
+              <button
+                onClick={() => handleDeleteItem(activeMenuItem)}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-red-400 hover:bg-neutral-800 hover:text-red-300 transition-colors"
+              >
+                <Trash size={12} />
+                {t('delete')}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {templatePickerWorkspaceId && (
@@ -1037,6 +1099,42 @@ export default function WorkspaceSidebar({
           }}
         />
       )}
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteItemId && (() => {
+        const item = localItems.find(i => i.id === confirmDeleteItemId);
+        if (!item) return null;
+        return (
+          <>
+            <div
+              className="fixed inset-0 z-300 bg-black/60"
+              onClick={() => setConfirmDeleteItemId(null)}
+            />
+            <div className="fixed z-300 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-sm bg-neutral-900 border border-neutral-800 rounded-xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+              <div>
+                <p className="text-sm font-semibold text-neutral-100 mb-1.5">{t('delete')} — {item.title}</p>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  {t('deleteConfirm', { title: item.title })}
+                </p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setConfirmDeleteItemId(null)}
+                  className="px-4 py-2 text-xs font-medium text-neutral-400 hover:text-neutral-200 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
+                >
+                  {t('deleteCancel')}
+                </button>
+                <button
+                  onClick={() => confirmDelete(item)}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                >
+                  {t('delete')}
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Admin panel link */}
       {currentUser.role === 'admin' && (

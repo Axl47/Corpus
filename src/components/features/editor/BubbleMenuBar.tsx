@@ -135,7 +135,7 @@ export default function BubbleMenuBar({ editor }: Props) {
         maxRight:  vp.right  - anchorRect.left - MARGIN,
       };
 
-      const menuWidth = menuRef.current?.offsetWidth ?? 300;
+      const menuWidth = menuRef.current?.offsetWidth ?? Math.min(300, window.innerWidth - 32);
 
       // Vertical: prefer above selection; flip below when clipped.
       const topAbove = selRect.top    - TOOLBAR_H - 8 - anchorRect.top;

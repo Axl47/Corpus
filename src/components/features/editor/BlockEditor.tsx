@@ -52,7 +52,7 @@ function buildInitialContent(markdown: string, subItems: WorkspaceItemRow[]): st
   const blocks = missing
     .map(item => {
       const safeTitle = (item.title || '').replace(/"/g, '&quot;');
-      return `<div data-cb-id="${item.id}" data-cb-type="${item.type}" data-cb-title="${safeTitle}" data-cb-icon="${item.icon || ''}" data-cb-iconcolor="${item.iconColor || ''}"></div>`;
+      return `<div data-cb-id="${item.id}" data-cb-dbid="${item.databaseId || ''}" data-cb-type="${item.type}" data-cb-title="${safeTitle}" data-cb-icon="${item.icon || ''}" data-cb-iconcolor="${item.iconColor || ''}"></div>`;
     })
     .join('\n\n');
 

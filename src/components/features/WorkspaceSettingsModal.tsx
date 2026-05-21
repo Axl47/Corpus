@@ -220,7 +220,7 @@ export default function WorkspaceSettingsModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-scale-in"
+        className="w-full max-w-full sm:max-w-lg bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         style={{ maxHeight: '85vh' }}
       >

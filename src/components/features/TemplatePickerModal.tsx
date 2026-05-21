@@ -142,7 +142,7 @@ export default function TemplatePickerModal({
     >
       {step === 'pick' ? (
         <div
-          className="w-full max-w-2xl bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-scale-in"
+          className="w-full max-w-full sm:max-w-2xl bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-scale-in"
           style={{ maxHeight: '82vh' }}
           onClick={e => e.stopPropagation()}
         >
@@ -164,7 +164,7 @@ export default function TemplatePickerModal({
               <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">
                 {t('groupBlank')}
               </p>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {BLANK_TEMPLATES.map(template => (
                   <TemplateCard
                     key={template.id}
@@ -182,7 +182,7 @@ export default function TemplatePickerModal({
               <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">
                 {t('groupTemplates')}
               </p>
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                 {OTHER_TEMPLATES.map(template => (
                   <TemplateCard
                     key={template.id}

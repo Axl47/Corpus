@@ -4,13 +4,11 @@
     "demoChangesNote": "Los cambios son temporales y se restablecen para cada visitante.",
     "createFreeAccount": "Crear una cuenta gratuita →"
   },
-
   "Home": {
     "welcomeTitle": "Bienvenido a Remnus",
     "noWorkspaceHint": "Aún no tienes espacios de trabajo. Crea uno desde la barra lateral para comenzar.",
     "emptyWorkspaceHint": "Usa la barra lateral para crear tu primera página o base de datos."
   },
-
   "Auth": {
     "signInSubtitle": "Inicia sesión en tu espacio de trabajo",
     "createAccountSubtitle": "Crea tu cuenta",
@@ -34,7 +32,6 @@
     "loadingDemo": "Cargando demo…",
     "demoHint": "Explora sin registrarte — los cambios se restablecen cada sesión"
   },
-
   "Admin": {
     "panelTitle": "Panel de Administración",
     "panelSubtitle": "Resumen de usuarios, espacios de trabajo y actividad",
@@ -74,7 +71,6 @@
     "confirm": "Confirmar",
     "cancel": "Cancelar"
   },
-
   "Workspace": {
     "saving": "Guardando...",
     "creating": "Creando...",
@@ -91,11 +87,12 @@
     "rename": "Renombrar",
     "duplicate": "Duplicar",
     "delete": "Eliminar",
+    "deleteConfirm": "¿Estás seguro de que deseas eliminar \"{title}\"? Esta acción no se puede deshacer.",
+    "deleteCancel": "Cancelar",
     "adminLink": "Admin",
     "signOut": "Cerrar sesión",
     "you": "Tú"
   },
-
   "WorkspaceSettings": {
     "title": "Configuración del Espacio",
     "tabGeneral": "General",
@@ -126,7 +123,6 @@
     "removeConfirm": "¿Estás seguro de que deseas eliminar a {name} de este espacio?",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar permanentemente este espacio y todas sus páginas/bases de datos? Esta acción no se puede deshacer."
   },
-
   "Templates": {
     "modalTitle": "Nuevo Elemento",
     "groupBlank": "En Blanco",
@@ -146,7 +142,6 @@
     "readingList": "Lista de Lectura",
     "readingListDesc": "Rastrea libros y artículos con estado y calificaciones"
   },
-
   "Database": {
     "addView": "Agregar vista",
     "tableView": "Vista de tabla",
@@ -236,7 +231,6 @@
     "duplicatePage": "Duplicar página",
     "deletePageConfirm": "¿Estás seguro de que quieres eliminar esta página?"
   },
-
   "Editor": {
     "placeholder": "Presiona '/' para comandos o comienza a escribir…",
     "titlePlaceholder": "Sin título",
@@ -274,7 +268,6 @@
     "deleteChildConfirm": "Eliminar",
     "deleteChildCancel": "Cancelar"
   },
-
   "Page": {
     "untitled": "Sin título",
     "addIcon": "Agregar ícono",
@@ -289,7 +282,6 @@
     "saved": "Guardado",
     "savingError": "Error al guardar"
   },
-
   "IconPicker": {
     "title": "Ícono",
     "tabEmoji": "Emoji",
@@ -299,7 +291,6 @@
     "colorLabel": "Color",
     "remove": "Eliminar"
   },
-
   "Errors": {
     "emailRequired": "El correo y la contraseña son obligatorios",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
@@ -321,8 +312,16 @@
     "cannotDeleteOnlyWorkspace": "No puedes eliminar tu único espacio de trabajo",
     "itemNotFound": "Elemento no encontrado"
   },
-
   "LanguageSwitcher": {
     "label": "Idioma"
+  },
+  "MobileNav": {
+    "menu": "Menú",
+    "home": "Inicio",
+    "new": "Nuevo",
+    "close": "Cerrar",
+    "workspace": "Espacio de trabajo",
+    "user": "Usuario",
+    "signOut": "Cerrar sesión"
   }
 }

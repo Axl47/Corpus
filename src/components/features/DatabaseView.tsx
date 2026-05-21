@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { createPage, getPage, deletePage, duplicatePage, reorderPages, updatePageProperties } from '@/lib/actions/page';
 import { updateDatabaseViews } from '@/lib/actions/database';
 import { updateWorkspaceItemIcon } from '@/lib/actions/workspace';
-import { Plus, Settings, Columns3, Filter, ArrowUpDown, X, Maximize2, Database, ArrowLeftRight, MoreHorizontal, Trash2, Copy } from 'lucide-react';
+import { Plus, Settings, Columns3, Filter, ArrowUpDown, X, Maximize2, Database, ArrowLeftRight, MoreHorizontal, Trash2, Copy, ChevronLeft } from 'lucide-react';
 import TableLayout from './TableLayout';
 import KanbanBoard from './KanbanBoard';
 import CalendarView from './CalendarView';
@@ -590,7 +591,20 @@ export default function DatabaseView({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className={`flex-1 flex flex-col min-h-0 pt-8 w-full ${widthMode === 'full' ? 'px-16' : 'px-8'} ${widthMode === 'full' ? '' : widthMode === 'wide' ? 'max-w-screen-2xl mx-auto' : 'max-w-6xl mx-auto'}`}>
+      <div className={`flex-1 flex flex-col min-h-0 pt-6 sm:pt-8 w-full ${widthMode === 'full' ? 'px-4 sm:px-8 lg:px-16' : 'px-4 sm:px-8'} ${widthMode === 'full' ? '' : widthMode === 'wide' ? 'max-w-screen-2xl mx-auto' : 'max-w-6xl mx-auto'}`}>
+      {/* Back button for nested databases */}
+      {database.parentId && (
+        <div className="mb-4 shrink-0">
+          <Link
+            href={`/page/${database.parentId}`}
+            className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+          >
+            <ChevronLeft size={14} />
+            {tPage('back')}
+          </Link>
+        </div>
+      )}
+
       {/* Unified Page Header: Icon + Title */}
       <div className="flex items-center gap-3 mb-8 group/icon-header relative select-none shrink-0">
         <div className="relative shrink-0 flex items-center group/icon-wrapper">
@@ -625,7 +639,7 @@ export default function DatabaseView({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-3xl font-bold text-white tracking-tight leading-none">{database.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-none">{database.name}</h1>
         </div>
       </div>
 
@@ -642,10 +656,10 @@ export default function DatabaseView({
         />
 
         <div className="flex items-center gap-0 pb-1.5">
-          {/* Full Width Toggle */}
+          {/* Full Width Toggle — hidden on mobile */}
           <button
             onClick={cycleWidth}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer rounded"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer rounded"
           >
             <ArrowLeftRight size={13} />
             {widthLabels[widthMode]}
@@ -663,11 +677,11 @@ export default function DatabaseView({
             <Settings size={13} /> {t('settings')}
           </button>
 
-          {/* New Page button */}
+          {/* New Page button — hidden on mobile (available via bottom nav) */}
           <button
             onClick={handleAddRow}
             disabled={isAdding}
-            className="flex items-center gap-1.5 bg-neutral-100 text-neutral-900 hover:bg-white px-4 py-1.5 transition-colors text-sm font-medium disabled:opacity-50 ml-1 cursor-pointer rounded"
+            className="hidden sm:flex items-center gap-1.5 bg-neutral-100 text-neutral-900 hover:bg-white px-4 py-1.5 transition-colors text-sm font-medium disabled:opacity-50 ml-1 cursor-pointer rounded"
           >
             <Plus size={14} /> {t('new')}
           </button>
@@ -750,17 +764,21 @@ export default function DatabaseView({
           ) : null}
         </div>
 
-        {/* Backdrop overlay for closing the sidebar when clicking outside */}
+        {/* Backdrop — desktop: transparent click-to-close, mobile: dark overlay */}
         {sidebarOpen && (
           <div
-            className="absolute inset-0 bg-transparent z-20 cursor-default"
+            className="absolute inset-0 sm:bg-transparent bg-black/40 z-20 cursor-default sm:pointer-events-auto"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Sidebar Panel Overlay */}
+        {/* Sidebar Panel — desktop: right panel, mobile: bottom sheet */}
         {sidebarOpen && (
-          <div className="absolute top-0 right-0 h-full z-30 flex">
+          <div className="
+            z-30 flex flex-col overflow-hidden
+            fixed inset-x-0 bottom-14 max-h-[85vh] rounded-t-2xl border-t border-neutral-800
+            sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:rounded-none sm:border-t-0 sm:flex-row sm:overflow-visible
+          ">
             <DatabasePropertiesSidebar
               database={database}
               activeView={activeView}
@@ -820,13 +838,13 @@ export default function DatabaseView({
           {/* Dark Glassmorphism Backdrop */}
           <div
             onClick={() => setPeekPageId(null)}
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 animate-fade-in transition-opacity cursor-pointer animate-duration-200"
+            className="fixed inset-x-0 top-0 bottom-14 lg:bottom-0 bg-black/40 backdrop-blur-xs z-50 animate-fade-in transition-opacity cursor-pointer animate-duration-200"
           />
 
           {/* Center Peek Modal */}
           {(config.openBehavior ?? 'center') === 'center' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10 pointer-events-none">
-              <div className="relative w-full max-w-4xl max-h-[85vh] md:max-h-[90vh] bg-neutral-850 border border-neutral-800 flex flex-col shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] overflow-hidden rounded-lg pointer-events-auto animate-scale-in">
+            <div className="fixed z-50 inset-x-0 bottom-14 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4 md:p-10 sm:pointer-events-none">
+              <div className="w-full sm:max-w-4xl max-h-[92vh] sm:max-h-[90vh] bg-neutral-850 border-t sm:border border-neutral-800 flex flex-col sm:shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] overflow-hidden rounded-t-2xl sm:rounded-lg pointer-events-auto animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
                 {/* Peek Sticky Header */}
                 <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-850 shrink-0 bg-neutral-900/30">
                   <div className="flex items-center gap-3">
@@ -926,7 +944,7 @@ export default function DatabaseView({
 
           {/* Side Peek Drawer */}
           {(config.openBehavior ?? 'center') === 'side' && (
-            <div className="fixed top-0 right-0 h-full w-full max-w-2xl bg-neutral-900 border-l border-neutral-800 shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] z-50 flex flex-col overflow-hidden rounded-none animate-slide-in-right">
+            <div className="fixed z-50 flex flex-col overflow-hidden bg-neutral-900 inset-x-0 bottom-14 max-h-[92vh] rounded-t-2xl border-t border-neutral-800 sm:left-auto sm:top-0 sm:right-0 sm:bottom-0 sm:h-full sm:w-full sm:max-w-2xl sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
               {/* Peek Sticky Header */}
               <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-850 shrink-0 bg-neutral-900/30">
                 <div className="flex items-center gap-3">

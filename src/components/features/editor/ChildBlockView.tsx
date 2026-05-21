@@ -18,11 +18,13 @@ export default function ChildBlockView({
   editor: any;
 }) {
   const t = useTranslations('Editor');
-  const { itemId, title, itemType, icon, iconColor } = node.attrs;
+  const { itemId, databaseId, title, itemType, icon, iconColor } = node.attrs;
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
-  const href = itemType === 'database' ? `/db/${itemId}` : `/page/${itemId}`;
+  // For databases: use databaseId (databases.id) if present, else fall back to itemId
+  // (old slash-command blocks stored databases.id in itemId for backward compat)
+  const href = itemType === 'database' ? `/db/${databaseId || itemId}` : `/page/${itemId}`;
 
   const handleNavigate = async (e: React.MouseEvent) => {
     e.preventDefault();

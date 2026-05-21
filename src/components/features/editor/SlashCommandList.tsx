@@ -39,7 +39,7 @@ export function buildChildCommands(workspaceId: string, parentId: string): Slash
         createWorkspaceDatabase(workspaceId, 'Untitled', { parentId }).then(result => {
           editor.commands.insertContent({
             type: 'childBlock',
-            attrs: { itemId: result.dbId, title: 'Untitled', itemType: 'database', icon: null, iconColor: null },
+            attrs: { itemId: result.itemId, databaseId: result.dbId, title: 'Untitled', itemType: 'database', icon: null, iconColor: null },
           });
         });
       },
