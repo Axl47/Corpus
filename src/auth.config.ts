@@ -26,8 +26,8 @@ export const authConfig: NextAuthConfig = {
       if (isMarketingRoute) return true;
 
       if (isAuthRoute) {
-        // Logged-in users visiting /login or /register are sent to home
-        if (isLoggedIn) return Response.redirect(new URL('/', nextUrl));
+        // Logged-in users visiting /login or /register are sent to the app
+        if (isLoggedIn) return Response.redirect(new URL('/app', nextUrl));
         return true;
       }
 

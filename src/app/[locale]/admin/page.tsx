@@ -35,7 +35,7 @@ function StatCard({ icon, label, value, sub }: {
 
 export default async function AdminPage() {
   const session = await auth();
-  if (!session?.user || session.user.role !== 'admin') redirect('/');
+  if (!session?.user || session.user.role !== 'admin') redirect('/login');
 
   const t = await getTranslations('Admin');
 

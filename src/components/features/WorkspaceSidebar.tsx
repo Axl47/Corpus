@@ -528,9 +528,9 @@ export default function WorkspaceSidebar({
       const targetHref = hrefFor(firstItem);
       router.push(targetHref);
     } else {
-      // No items, go to home page but switch workspace first in the background
+      // No items — switch workspace then show the empty state
       switchWorkspace(id).then(() => {
-        router.push('/');
+        router.push('/app');
       });
     }
   };
@@ -544,7 +544,7 @@ export default function WorkspaceSidebar({
       setIsCreatingWorkspace(false);
       setNewWorkspaceName('');
       setExpandedWorkspaces(prev => ({ ...prev, [id]: true }));
-      router.push('/');
+      router.push('/app');
     });
   };
 
@@ -594,7 +594,7 @@ export default function WorkspaceSidebar({
     const href = item.type === 'database' && item.databaseId
       ? `/db/${item.databaseId}`
       : `/page/${item.id}`;
-    if (pathname.startsWith(href)) router.push('/');
+    if (pathname.startsWith(href)) router.push('/app');
 
     startTransition(async () => {
       await deleteWorkspaceItem(item.id);
@@ -1117,7 +1117,7 @@ export default function WorkspaceSidebar({
           onDeleted={() => {
             setLocalWorkspaces(prev => prev.filter(w => w.id !== settingsModalWorkspace.id));
             setSettingsModalWorkspace(null);
-            router.push('/');
+            router.push('/app');
           }}
         />
       )}
