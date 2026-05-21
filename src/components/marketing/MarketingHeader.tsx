@@ -49,13 +49,13 @@ export default function MarketingHeader({ user }: Props) {
           {user ? (
             <>
               <span className="text-sm text-neutral-400 max-w-32 truncate">{displayName}</span>
-              <Link
+              <a
                 href="/app"
                 className="flex items-center gap-1.5 rounded-md bg-blue-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-blue-400 transition-colors"
               >
                 {t('navGoToApp')}
                 <ArrowRight size={14} />
-              </Link>
+              </a>
             </>
           ) : (
             <>
@@ -103,14 +103,13 @@ export default function MarketingHeader({ user }: Props) {
             {user ? (
               <>
                 <p className="px-3 text-xs text-neutral-500">{displayName}</p>
-                <Link
+                <a
                   href="/app"
                   className="flex items-center justify-center gap-1.5 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-400 transition-colors"
-                  onClick={() => setMenuOpen(false)}
                 >
                   {t('navGoToApp')}
                   <ArrowRight size={14} />
-                </Link>
+                </a>
               </>
             ) : (
               <>
