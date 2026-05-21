@@ -6,6 +6,7 @@ import { loginWithCredentials } from '@/lib/actions/auth';
 import { loginAsDemo } from '@/lib/actions/demo';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/features/LanguageSwitcher';
+import { ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('Auth');
@@ -15,6 +16,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        <div className="mb-5">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-200 transition-colors"
+          >
+            <ArrowLeft size={15} />
+            {t('backToHome')}
+          </Link>
+        </div>
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <img

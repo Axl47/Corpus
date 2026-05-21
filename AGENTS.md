@@ -169,7 +169,7 @@ To support fully dynamic, user-defined properties without structural database mi
 - `src/app/`: Next.js App Router orchestration and layouts. Server components fetch data here.
   - `src/app/layout.tsx`: Minimal root passthrough — returns `children` directly with no HTML/body tags. Those live in `[locale]/layout.tsx`.
   - `src/app/[locale]/layout.tsx`: Full locale-aware layout — validates locale against `routing.locales` (→ `notFound()` if invalid), calls `getMessages()`, wraps children with `<NextIntlClientProvider>`, sets `<html lang={locale}>`. Calls `auth()` to get session; if no session renders bare layout (for `/login`/`/register`); otherwise fetches workspace data and renders sidebar with `currentUser` prop. On mobile (< `lg`), the sidebar `<aside>` is hidden (`hidden lg:flex`) and `<MobileNavWrapper>` is rendered at the bottom of the layout (`lg:hidden`) with `pb-16 lg:pb-0` padding on the main content area to prevent content from hiding behind the nav bar.
-  - `src/app/[locale]/page.tsx`: Smart home page — unauthenticated visitors see the marketing landing page (`MarketingShell` + `HeroSection` + `FeaturesSection` + `PricingSection`); authenticated users are redirected to their first workspace item (or shown an empty-state welcome screen).
+  - `src/app/[locale]/page.tsx`: Smart home page — unauthenticated visitors (and authenticated users with no workspace items) see `LandingBridgeSwitcher`; authenticated users with workspace items are redirected to their first item (`/db/:id` or `/page/:id`).
   - `src/app/[locale]/pricing/page.tsx`: Public pricing page — wraps `PricingSection` in `MarketingShell`. Unauthenticated: full marketing layout with header/footer. Authenticated: content only (no marketing header, sidebar handles navigation).
   - `src/app/[locale]/contact/page.tsx`: Public contact page — wraps `ContactSection` in `MarketingShell`. Same auth-aware rendering as pricing.
   - `src/app/[locale]/login/page.tsx`: Login page (client component). Google OAuth button + email/password form via `loginWithCredentials` server action with `useActionState`. Includes `LanguageSwitcher` in the top-right corner. Links to `/register`.
@@ -228,13 +228,32 @@ To support fully dynamic, user-defined properties without structural database mi
 - `src/components/providers/QueryProvider.tsx`: TanStack Query `QueryClientProvider` wrapper (staleTime 60s, gcTime 5min, no window-focus refetch). Wraps the authenticated layout in `src/app/[locale]/layout.tsx`.
 - `src/components/features/SaveStatus.tsx`: Auto-fading save indicator (`idle` → `saving` → `saved` → `error`). Used in `StandalonePageEditor` and `PageEditor` to give users feedback on auto-save debounce completion.
 - `src/components/marketing/`: Marketing / landing page components — all publicly accessible, no auth required.
-  - `MarketingShell.tsx`: Server component wrapper. Checks auth: unauthenticated → renders `<MarketingHeader>` + children + `<MarketingFooter>`; authenticated → renders children only (sidebar already provides navigation).
+  - `MarketingShell.tsx`: Server component wrapper. Checks auth: unauthenticated → renders `<MarketingHeader>` + children + `<MarketingFooter>`; authenticated → renders children only (sidebar already provides navigation). Used by `/pricing` and `/contact` pages.
   - `MarketingHeader.tsx`: Client component. Sticky nav with logo, Home/Pricing/Contact links, and Sign in / Get started CTAs. Includes a hamburger menu for mobile.
   - `MarketingFooter.tsx`: Server component. Logo, tagline, links (Home, Pricing, Contact, Open App), and copyright with `{year}` interpolation from the `Landing` namespace.
   - `HeroSection.tsx`: Server component. Large headline, subtitle, primary CTA (→ `/register`) and secondary CTA (→ `/login`), with a subtle radial glow background effect.
   - `FeaturesSection.tsx`: Server component. 3×2 grid of feature cards (Rich Pages, Flexible Databases, Kanban Boards, Calendar View, Multilingual, Nested Structure) using Lucide icons.
   - `PricingSection.tsx`: Server component. Two-column pricing grid — Free tier (full features, self-hosted) and Pro tier (coming soon). Accepts optional `compact?: boolean` prop used when embedded on the landing page.
   - `ContactSection.tsx`: Server component. Three contact channel cards: GitHub, Email, Community.
+  - **Bridge Switcher landing (primary home page)**:
+  - `LandingBridgeSwitcher.tsx`: Top-level composition — assembles all Bridge sections into the full scrolling landing page. Used directly by `page.tsx` (no `MarketingShell` wrapper — has its own nav/footer).
+  - `LandingNav.tsx`: Sticky site header. Auth-aware: Sign in + Get started for unauthenticated, "Go to app" for authenticated. Logo from `/logo-square-transparent.png`.
+  - `LandingHero.tsx`: Section 01. Two-column grid. 108px H1 with Instrument Serif italic accent at 114px. Stats row (24 tools / 6 clients / 0 API keys). Right column: AI dock + MCP pill + workspace screenshot. Radial gradient bg.
+  - `LandingWhy.tsx`: Section 02. Editorial blockquote at 52px. Serif italic accent + underlined bold closing line.
+  - `LandingWhatsInside.tsx`: Section 03. Workspace frame with 3-tab switcher (Board/Table/Calendar via `ViewTab`). Pages adjunct with `MarkdownPageMini`. Dual-control callout with 3px left accent border.
+  - `LandingIntegrations.tsx`: Section 04. 3×2 grid of AI client cards using `AIMark`. native/beta status pills.
+  - `LandingSetup.tsx`: Section 05. 3-step setup grid with numbered badges and code snippets.
+  - `LandingTools.tsx`: Section 06. 8-row tools table with read/write/admin scope chips.
+  - `LandingPricing.tsx`: Section 07. 2-column pricing — Self-hosted ($0) vs Team ($8/user/mo). Uses `LandingChip`.
+  - `LandingClosing.tsx`: Section 08. Centered CTA. 84/90px H2 with serif accent. AI clients pill row.
+  - `LandingFooter.tsx`: Footer. Logo + tagline + copyright left column. 4 link columns (Product, Integrations, Protocol, Company).
+  - `LandingChip.tsx`: Status/tag pill. `color-mix(in oklab, color 16%, transparent)` background via inline style.
+  - `AIMark.tsx`: Inline SVG marks for 6 AI clients (claude/cursor/windsurf/chatgpt/continue/zed). Props: `name`, `size?`.
+  - `mini/ViewTab.tsx`: Tab card with active/inactive states. Active badge top-right.
+  - `mini/KanbanMini.tsx`: 3-column static kanban preview with colored card borders.
+  - `mini/TableMini.tsx`: Static grid table preview with status chips. Props: `width`, `rows`.
+  - `mini/CalendarMini.tsx`: 4-week × 7-day static calendar grid with event dots. Day 18 = today.
+  - `mini/MarkdownPageMini.tsx`: Sprint kickoff page preview with checklist, cursor badge, and linked DB callout.
 - `src/lib/seed.ts`: `createSeedWorkspace(userId, userName?)` and `createDemoSeedData(userId, userName?)` both call the shared `createRichWorkspaceData` helper. Seeds: Getting Started page, a **📁 Projects** folder page (with nested sub-projects **🚀 Remnus v2 Launch** and **🎨 Design System**, each containing child pages and databases), Sprint Board, Bug Tracker, Team Calendar, and Reading List. All inserts use `createdAt: new Date()`; all database row `properties` include a `title` key.
 
 - `src/i18n/routing.ts`: Defines supported locales (`en`, `tr`, `hi`, `es`, `fr`, `de`), `defaultLocale: 'en'`, and `localePrefix: 'never'` for clean URLs. Also exports the `Locale` union type.

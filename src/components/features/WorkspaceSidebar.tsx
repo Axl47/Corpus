@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition, useRef, useEffect } from 'react';
+import { useState, useTransition, useRef, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -151,6 +151,16 @@ export default function WorkspaceSidebar({
   // Local state for optimistic UI during drag and drop
   const [localWorkspaces, setLocalWorkspaces] = useState<WorkspaceType[]>(workspaces);
   const [localItems, setLocalItems] = useState<WorkspaceItemRow[]>(items);
+
+  // Remnus logo → first root-level item of the active workspace
+  const logoHref = useMemo(() => {
+    const first = localItems.find(
+      (i) => i.workspaceId === activeWorkspace.id && !i.parentId,
+    );
+    if (!first) return undefined;
+    if (first.type === 'database' && first.databaseId) return `/db/${first.databaseId}`;
+    return `/page/${first.id}`;
+  }, [localItems, activeWorkspace.id]);
 
   // Find which workspace contains the active item based on the pathname
   const activeWorkspaceIdFromPath = (() => {
@@ -617,7 +627,7 @@ export default function WorkspaceSidebar({
     <div className="flex flex-col flex-1 overflow-hidden h-full">
       {/* Brand Header — hidden in mobile sheet */}
       <div className={`p-4 border-b border-neutral-800 flex items-center justify-between shrink-0 ${hideBrandHeader ? 'hidden' : ''}`}>
-        <Link href="/" className="font-semibold flex items-center gap-2.5 text-white hover:text-neutral-300 transition-colors">
+        <Link href={logoHref ?? '#'} className="font-semibold flex items-center gap-2.5 text-white hover:text-neutral-300 transition-colors">
           <img src="/logo-square-dark.png" alt="Remnus Logo" className={`w-5 h-5 object-contain rounded-md shrink-0 shadow-sm ${isSaving ? 'animate-pulse' : ''}`} />
           <span className="font-bold tracking-tight text-white">Remnus</span>
         </Link>
