@@ -6,8 +6,8 @@ import { eq, ne } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { createDemoSeedData } from '@/lib/seed';
 
-const DEMO_EMAIL = 'demo@remna.app';
-const DEMO_PASSWORD = 'remna-demo-2024';
+const DEMO_EMAIL = 'demo@remnus.com';
+const DEMO_PASSWORD = 'remnus-demo-2024';
 
 export async function loginAsDemo(_prevState: unknown, _formData: FormData): Promise<{ error: string } | null> {
   // Require at least one real (non-demo) user to exist before enabling demo mode

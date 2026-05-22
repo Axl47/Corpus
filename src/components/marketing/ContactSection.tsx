@@ -17,7 +17,7 @@ export default async function ContactSection() {
       title: t('emailTitle'),
       desc: t('emailDesc'),
       label: t('emailLabel'),
-      href: 'mailto:hello@remna.app',
+      href: 'mailto:hello@remnus.com',
     },
     {
       icon: MessageSquare,
