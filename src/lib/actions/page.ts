@@ -5,12 +5,12 @@ import { eq, asc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth/session';
 import { deleteWorkspaceItem } from './workspace';
+import { publish } from '@/lib/realtime/publish';
 
-// Verify user has access to the workspace that owns this database
-async function assertDatabaseAccess(databaseId: string) {
+// Verify user has access to the workspace that owns this database.
+// Returns { userId, workspaceId } so callers can emit realtime events.
+async function assertDatabaseAccess(databaseId: string): Promise<{ userId: string; workspaceId: string }> {
   const user = await getCurrentUser();
-
-  if (user.role === 'admin') return user.id;
 
   const [row] = await db
     .select({ workspaceId: workspaceItems.workspaceId })
@@ -21,19 +21,22 @@ async function assertDatabaseAccess(databaseId: string) {
 
   if (!row) throw new Error('Database not found');
 
-  const [member] = await db
-    .select({ id: workspaceMembers.id })
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.workspaceId, row.workspaceId),
-        eq(workspaceMembers.userId, user.id),
-      ),
-    )
-    .limit(1);
+  if (user.role !== 'admin') {
+    const [member] = await db
+      .select({ id: workspaceMembers.id })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, row.workspaceId),
+          eq(workspaceMembers.userId, user.id),
+        ),
+      )
+      .limit(1);
 
-  if (!member) throw new Error('Unauthorized: no access to this database');
-  return user.id;
+    if (!member) throw new Error('Unauthorized: no access to this database');
+  }
+
+  return { userId: user.id, workspaceId: row.workspaceId };
 }
 
 export async function createPage(
@@ -43,7 +46,7 @@ export async function createPage(
   icon?: string | null,
   iconColor?: string | null
 ) {
-  await assertDatabaseAccess(databaseId);
+  const { userId, workspaceId } = await assertDatabaseAccess(databaseId);
 
   const id = crypto.randomUUID();
   const existing = await db.select({ sortOrder: pages.sortOrder }).from(pages).where(eq(pages.databaseId, databaseId));
@@ -62,6 +65,7 @@ export async function createPage(
     iconColor: iconColor || null,
   });
   revalidatePath(`/db/${databaseId}`);
+  publish({ scope: 'database', workspaceId, resourceId: databaseId, actorId: userId });
   return id;
 }
 
@@ -102,7 +106,7 @@ export async function updatePageContent(id: string, content: string) {
 }
 
 export async function deletePage(id: string, databaseId: string) {
-  await assertDatabaseAccess(databaseId);
+  const { userId, workspaceId } = await assertDatabaseAccess(databaseId);
 
   // Clean up any nested workspace items under this page
   const subItems = await db.select({ id: workspaceItems.id }).from(workspaceItems).where(eq(workspaceItems.parentId, id));
@@ -112,10 +116,11 @@ export async function deletePage(id: string, databaseId: string) {
 
   await db.delete(pages).where(eq(pages.id, id));
   revalidatePath(`/db/${databaseId}`);
+  publish({ scope: 'database', workspaceId, resourceId: databaseId, actorId: userId });
 }
 
 export async function duplicatePage(id: string, databaseId: string) {
-  await assertDatabaseAccess(databaseId);
+  const { userId, workspaceId } = await assertDatabaseAccess(databaseId);
 
   const source = await db.select().from(pages).where(eq(pages.id, id));
   if (!source[0]) return;
@@ -142,11 +147,12 @@ export async function duplicatePage(id: string, databaseId: string) {
   });
 
   revalidatePath(`/db/${databaseId}`);
+  publish({ scope: 'database', workspaceId, resourceId: databaseId, actorId: userId });
   return newId;
 }
 
 export async function reorderPages(databaseId: string, orderedIds: string[]) {
-  await assertDatabaseAccess(databaseId);
+  const { userId, workspaceId } = await assertDatabaseAccess(databaseId);
 
   await db.transaction(async (tx) => {
     for (let i = 0; i < orderedIds.length; i++) {
@@ -154,13 +160,14 @@ export async function reorderPages(databaseId: string, orderedIds: string[]) {
     }
   });
   revalidatePath(`/db/${databaseId}`);
+  publish({ scope: 'database', workspaceId, resourceId: databaseId, actorId: userId });
 }
 
 export async function updatePageIcon(id: string, icon: string | null, iconColor: string | null) {
   const page = await db.select().from(pages).where(eq(pages.id, id));
   if (!page[0]) return;
 
-  await assertDatabaseAccess(page[0].databaseId);
+  const { userId, workspaceId } = await assertDatabaseAccess(page[0].databaseId);
 
   await db.update(pages)
     .set({ icon, iconColor, updatedAt: new Date() })
@@ -168,4 +175,5 @@ export async function updatePageIcon(id: string, icon: string | null, iconColor:
 
   revalidatePath(`/db/${page[0].databaseId}`);
   revalidatePath(`/db/${page[0].databaseId}/${id}`);
+  publish({ scope: 'database', workspaceId, resourceId: page[0].databaseId, actorId: userId });
 }

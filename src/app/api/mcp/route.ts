@@ -17,6 +17,7 @@ import {
   updatePageById,
   bulkUpdatePages,
 } from '@/lib/services/workspace';
+import { publish } from '@/lib/realtime/publish';
 
 const TOKEN_PREFIX = process.env.MCP_TOKEN_PREFIX ?? 'rmns';
 
@@ -307,6 +308,12 @@ async function handleMcpRequest(req: Request): Promise<Response> {
           properties,
         });
         await logActivity(ctx, 'create_page', 'success', result.type, result.id);
+        publish({
+          scope: databaseId ? 'database' : 'sidebar',
+          workspaceId: ctx.workspaceId,
+          resourceId: databaseId,
+          actorId: `mcp:${ctx.tokenId}`,
+        });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ id: result.id, type: result.type }) }],
         };
@@ -342,6 +349,12 @@ async function handleMcpRequest(req: Request): Promise<Response> {
       try {
         await updatePageById(ctx.workspaceId, pageId, { title, content, properties });
         await logActivity(ctx, 'update_page', 'success', 'page', pageId);
+        publish({
+          scope: 'page',
+          workspaceId: ctx.workspaceId,
+          resourceId: pageId,
+          actorId: `mcp:${ctx.tokenId}`,
+        });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ updated: true, id: pageId }) }],
         };
@@ -381,6 +394,11 @@ async function handleMcpRequest(req: Request): Promise<Response> {
       try {
         const results = await bulkUpdatePages(ctx.workspaceId, updates);
         await logActivity(ctx, 'bulk_update', 'success');
+        publish({
+          scope: 'database',
+          workspaceId: ctx.workspaceId,
+          actorId: `mcp:${ctx.tokenId}`,
+        });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(results) }],
         };

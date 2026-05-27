@@ -289,19 +289,19 @@ export async function createPageInWorkspace(
   },
 ) {
   if (input.databaseId) {
-    // Database row
-    await assertDatabaseInWorkspace(input.databaseId, workspaceId);
+    // Database row — resolve workspace_items.id → databases.id if needed
+    const resolvedDbId = await assertDatabaseInWorkspace(input.databaseId, workspaceId);
 
     const existing = await db
       .select({ sortOrder: pages.sortOrder })
       .from(pages)
-      .where(eq(pages.databaseId, input.databaseId));
+      .where(eq(pages.databaseId, resolvedDbId));
     const maxSort = existing.reduce((max, p) => (p.sortOrder > max ? p.sortOrder : max), 0);
 
     const id = crypto.randomUUID();
     await db.insert(pages).values({
       id,
-      databaseId: input.databaseId,
+      databaseId: resolvedDbId,
       title: input.title,
       content: input.content ?? '',
       properties: { title: input.title, ...input.properties },

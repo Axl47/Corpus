@@ -8,6 +8,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import type { SchemaColumn } from '@/lib/templates';
 import type { DatabaseView } from '@/lib/types/views';
 import { getTranslations } from 'next-intl/server';
+import { publish } from '@/lib/realtime/publish';
 
 export interface CreateDatabaseOptions {
   schema?: SchemaColumn[];
@@ -125,7 +126,7 @@ export async function createWorkspace(name: string) {
 }
 
 export async function deleteWorkspace(id: string) {
-  await assertWorkspaceAccess(id);
+  const userId = await assertWorkspaceAccess(id);
   const t = await getTranslations('Errors');
 
   const accessible = await getWorkspaces();
@@ -146,16 +147,18 @@ export async function deleteWorkspace(id: string) {
   }
 
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId: id, actorId: userId });
   return { success: true };
 }
 
 export async function renameWorkspace(id: string, name: string) {
-  await assertWorkspaceAccess(id);
+  const userId = await assertWorkspaceAccess(id);
   await db.update(workspaces)
     .set({ name: name.trim() || 'Untitled', updatedAt: new Date() })
     .where(eq(workspaces.id, id));
 
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId: id, actorId: userId });
   return { success: true };
 }
 
@@ -240,7 +243,7 @@ export async function createStandalonePage(
   parentId?: string,
   options?: { initialContent?: string; icon?: string | null; iconColor?: string | null },
 ) {
-  await assertWorkspaceAccess(workspaceId);
+  const userId = await assertWorkspaceAccess(workspaceId);
 
   const itemId = crypto.randomUUID();
   const pageId = crypto.randomUUID();
@@ -263,6 +266,7 @@ export async function createStandalonePage(
   });
 
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId, actorId: userId });
   return { itemId, pageId };
 }
 
@@ -271,7 +275,7 @@ export async function createWorkspaceDatabase(
   name: string,
   options?: CreateDatabaseOptions & { parentId?: string | null },
 ) {
-  await assertWorkspaceAccess(workspaceId);
+  const userId = await assertWorkspaceAccess(workspaceId);
 
   const itemId = crypto.randomUUID();
   const dbId = crypto.randomUUID();
@@ -299,6 +303,7 @@ export async function createWorkspaceDatabase(
   });
 
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId, actorId: userId });
   return { itemId, dbId };
 }
 
@@ -323,7 +328,8 @@ export async function updateStandalonePageContent(itemId: string, content: strin
 
 export async function updateWorkspaceItemTitle(itemId: string, title: string) {
   const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
-  if (item[0]) await assertWorkspaceAccess(item[0].workspaceId);
+  let userId: string | undefined;
+  if (item[0]) userId = await assertWorkspaceAccess(item[0].workspaceId);
 
   await db.update(workspaceItems)
     .set({ title, updatedAt: new Date() })
@@ -334,6 +340,7 @@ export async function updateWorkspaceItemTitle(itemId: string, title: string) {
     .where(eq(databases.itemId, itemId));
 
   revalidatePath('/', 'layout');
+  if (item[0] && userId) publish({ scope: 'sidebar', workspaceId: item[0].workspaceId, actorId: userId });
 }
 
 export async function getDatabaseByItemId(itemId: string) {
@@ -346,23 +353,27 @@ export async function getDatabaseByItemId(itemId: string) {
 
 export async function updateWorkspaceItemIcon(itemId: string, icon: string | null, iconColor: string | null) {
   const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
-  if (item[0]) await assertWorkspaceAccess(item[0].workspaceId);
+  let userId: string | undefined;
+  if (item[0]) userId = await assertWorkspaceAccess(item[0].workspaceId);
 
   await db.update(workspaceItems)
     .set({ icon, iconColor, updatedAt: new Date() })
     .where(eq(workspaceItems.id, itemId));
 
   revalidatePath('/', 'layout');
+  if (item[0] && userId) publish({ scope: 'sidebar', workspaceId: item[0].workspaceId, actorId: userId });
 }
 
 export async function deleteWorkspaceItem(itemId: string) {
   const item = await db.select().from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
   if (!item[0]) return;
 
-  await assertWorkspaceAccess(item[0].workspaceId);
+  const userId = await assertWorkspaceAccess(item[0].workspaceId);
+  const { workspaceId } = item[0];
 
   await deleteWorkspaceItemRecursive(itemId, item[0].type);
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId, actorId: userId });
 }
 
 export async function checkItemHasContent(itemId: string): Promise<boolean> {
@@ -473,7 +484,8 @@ export async function duplicateWorkspaceItem(itemId: string) {
   const item = await db.select().from(workspaceItems).where(eq(workspaceItems.id, itemId));
   if (!item[0]) return null;
 
-  await assertWorkspaceAccess(item[0].workspaceId);
+  const userId = await assertWorkspaceAccess(item[0].workspaceId);
+  const { workspaceId } = item[0];
 
   const newItemId = crypto.randomUUID();
   await db.insert(workspaceItems).values({
@@ -495,10 +507,11 @@ export async function duplicateWorkspaceItem(itemId: string) {
       content: sp[0]?.content ?? '',
     });
     revalidatePath('/', 'layout');
+    publish({ scope: 'sidebar', workspaceId, actorId: userId });
     return { type: 'page' as const, itemId: newItemId };
   } else {
     const dbRow = await db.select().from(databases).where(eq(databases.itemId, itemId));
-    if (!dbRow[0]) { revalidatePath('/', 'layout'); return null; }
+    if (!dbRow[0]) { revalidatePath('/', 'layout'); publish({ scope: 'sidebar', workspaceId, actorId: userId }); return null; }
 
     const newDbId = crypto.randomUUID();
     await db.insert(databases).values({
@@ -524,6 +537,7 @@ export async function duplicateWorkspaceItem(itemId: string) {
     }
 
     revalidatePath('/', 'layout');
+    publish({ scope: 'sidebar', workspaceId, actorId: userId });
     return { type: 'database' as const, dbId: newDbId };
   }
 }
@@ -568,6 +582,10 @@ export async function updateWorkspaceItemsOrder(itemIds: string[]) {
     }
   });
   revalidatePath('/', 'layout');
+  const userId = await getCurrentUser().then((u) => u.id);
+  for (const wsId of checkedWorkspaces) {
+    publish({ scope: 'sidebar', workspaceId: wsId, actorId: userId });
+  }
 }
 
 export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspaceId: string, itemIdsOrder: string[]) {
@@ -576,8 +594,8 @@ export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspa
     const t = await getTranslations('Errors');
     throw new Error(t('itemNotFound'));
   }
-  
-  await assertWorkspaceAccess(item[0].workspaceId);
+
+  const userId = await assertWorkspaceAccess(item[0].workspaceId);
   await assertWorkspaceAccess(targetWorkspaceId);
 
   await db.update(workspaceItems).set({ workspaceId: targetWorkspaceId }).where(eq(workspaceItems.id, itemId));
@@ -588,6 +606,8 @@ export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspa
   }
 
   revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId: item[0].workspaceId, actorId: userId });
+  publish({ scope: 'sidebar', workspaceId: targetWorkspaceId, actorId: userId });
 }
 
 export async function getAdminWorkspacesOverview() {

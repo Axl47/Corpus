@@ -5,12 +5,12 @@ import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth/session';
 import { createWorkspaceDatabase, getActiveWorkspaceId } from './workspace';
+import { publish } from '@/lib/realtime/publish';
 
-// Verify user has access to the workspace that owns this database
-async function assertDatabaseAccess(databaseId: string) {
+// Verify user has access to the workspace that owns this database.
+// Returns { userId, workspaceId } so callers can emit realtime events.
+async function assertDatabaseAccess(databaseId: string): Promise<{ userId: string; workspaceId: string }> {
   const user = await getCurrentUser();
-
-  if (user.role === 'admin') return user.id;
 
   const [row] = await db
     .select({ workspaceId: workspaceItems.workspaceId })
@@ -21,19 +21,22 @@ async function assertDatabaseAccess(databaseId: string) {
 
   if (!row) throw new Error('Database not found');
 
-  const [member] = await db
-    .select({ id: workspaceMembers.id })
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.workspaceId, row.workspaceId),
-        eq(workspaceMembers.userId, user.id),
-      ),
-    )
-    .limit(1);
+  if (user.role !== 'admin') {
+    const [member] = await db
+      .select({ id: workspaceMembers.id })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, row.workspaceId),
+          eq(workspaceMembers.userId, user.id),
+        ),
+      )
+      .limit(1);
 
-  if (!member) throw new Error('Unauthorized: no access to this database');
-  return user.id;
+    if (!member) throw new Error('Unauthorized: no access to this database');
+  }
+
+  return { userId: user.id, workspaceId: row.workspaceId };
 }
 
 export async function createDatabase(name: string) {
@@ -72,12 +75,14 @@ export async function getDatabase(id: string) {
 }
 
 export async function updateDatabaseSchema(id: string, newSchema: any[]) {
-  await assertDatabaseAccess(id);
+  const { userId, workspaceId } = await assertDatabaseAccess(id);
   await db.update(databases).set({ schema: newSchema, updatedAt: new Date() }).where(eq(databases.id, id));
   revalidatePath(`/db/${id}`);
+  publish({ scope: 'database', workspaceId, resourceId: id, actorId: userId });
 }
 
 export async function updateDatabaseViews(id: string, views: any[]) {
-  await assertDatabaseAccess(id);
+  const { userId, workspaceId } = await assertDatabaseAccess(id);
   await db.update(databases).set({ views, updatedAt: new Date() }).where(eq(databases.id, id));
+  publish({ scope: 'database', workspaceId, resourceId: id, actorId: userId });
 }

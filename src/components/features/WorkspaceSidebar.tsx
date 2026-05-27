@@ -38,6 +38,7 @@ import IconPicker from './IconPicker';
 import TemplatePickerModal from './TemplatePickerModal';
 import WorkspaceSettingsModal from './WorkspaceSettingsModal';
 import LanguageSwitcher from '@/components/features/LanguageSwitcher';
+import { useWorkspaceEvents } from '@/hooks/useWorkspaceEvents';
 
 function isDescendant(items: WorkspaceItemRow[], targetId: string, ancestorId: string): boolean {
   const target = items.find(i => i.id === targetId);
@@ -159,6 +160,25 @@ export default function WorkspaceSidebar({
   // Local state for optimistic UI during drag and drop
   const [localWorkspaces, setLocalWorkspaces] = useState<WorkspaceType[]>(workspaces);
   const [localItems, setLocalItems] = useState<WorkspaceItemRow[]>(items);
+
+  // Keep a ref so the sync effect can read latest localItems without depending on it
+  const localItemsRef = useRef(localItems);
+  localItemsRef.current = localItems;
+
+  // When router.refresh() delivers new server props, sync them into local state.
+  // Skip while an optimistic (temp-*) item is still in flight to avoid flickering.
+  useEffect(() => {
+    if (!localItemsRef.current.some((i) => i.id.startsWith('temp-'))) {
+      setLocalItems(items);
+    }
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setLocalWorkspaces(workspaces);
+  }, [workspaces]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Subscribe to real-time events from other users / MCP agents
+  useWorkspaceEvents(currentUser.id);
 
   // Remnus logo → first root-level item of the active workspace
   const logoHref = useMemo(() => {
