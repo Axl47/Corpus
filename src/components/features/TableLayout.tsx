@@ -9,6 +9,7 @@ import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
+import { ConfirmDialog } from './ConfirmDialog';
 
 function getPropertyIcon(type: string) {
   switch (type) {
@@ -93,6 +94,7 @@ export default function TableLayout({
   const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
 
   const [localWidths, setLocalWidths] = useState<Record<string, number>>(() => columnWidths ?? {});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalWidths(columnWidths ?? {});
@@ -409,9 +411,7 @@ export default function TableLayout({
   const handleDeleteConfirm = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!activeMenuRowId) return;
-    if (confirm(t('deletePageConfirm'))) {
-      onDeletePage(activeMenuRowId);
-    }
+    setConfirmDeleteId(activeMenuRowId);
     closeMenu();
   };
 
@@ -969,6 +969,15 @@ export default function TableLayout({
             </div>
           </div>
         </>
+      )}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title={t('deletePageConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('deleteCancel')}
+          onConfirm={() => { onDeletePage(confirmDeleteId); setConfirmDeleteId(null); }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </>
   );

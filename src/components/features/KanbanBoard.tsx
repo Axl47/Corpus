@@ -10,6 +10,7 @@ import InlineCellEditor from './InlineCellEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
+import { ConfirmDialog } from './ConfirmDialog';
 
 function getEffectiveGroupOrder(options: string[], groupOrder: string[]): string[] {
   if (!groupOrder || groupOrder.length === 0) return options;
@@ -115,6 +116,7 @@ export default function KanbanBoard({
   const [dragOverColumnName, setDragOverColumnName] = useState<string | null>(null);
   const [isCardDragReady, setIsCardDragReady] = useState(false);
   const [activeMenuCardId, setActiveMenuCardId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
 
   const handleGroupDragStart = (e: React.DragEvent, group: string) => {
@@ -369,9 +371,7 @@ export default function KanbanBoard({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(t('deletePageConfirm'))) {
-                                onDeletePage(page.id);
-                              }
+                              setConfirmDeleteId(page.id);
                               setActiveMenuCardId(null);
                               setMenuCoords(null);
                             }}
@@ -506,6 +506,15 @@ export default function KanbanBoard({
           </div>
         );
       })}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title={t('deletePageConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('deleteCancel')}
+          onConfirm={() => { onDeletePage(confirmDeleteId); setConfirmDeleteId(null); }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

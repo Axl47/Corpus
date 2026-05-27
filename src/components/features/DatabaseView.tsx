@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { updateDatabaseViews } from '@/lib/actions/database';
 import { updateWorkspaceItemIcon } from '@/lib/actions/workspace';
 import { Plus, Settings, Columns3, Filter, ArrowUpDown, X, Maximize2, Database, ArrowLeftRight, MoreHorizontal, Trash2, Copy, ChevronLeft } from 'lucide-react';
 import TableLayout from './TableLayout';
+import { ConfirmDialog } from './ConfirmDialog';
 import KanbanBoard from './KanbanBoard';
 import CalendarView from './CalendarView';
 import ViewsBar from './ViewsBar';
@@ -195,7 +196,9 @@ export default function DatabaseView({
   });
 
   const [activeViewId, setActiveViewId] = useState(() => views[0].id);
-  const [isAdding, setIsAdding] = useState(false);
+  const [pendingPageIds, setPendingPageIds] = useState<Set<string>>(() => new Set());
+  const [confirmDeletePageId, setConfirmDeletePageId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -321,6 +324,7 @@ export default function DatabaseView({
   };
 
   const handlePageClick = (pageId: string) => {
+    if (pendingPageIds.has(pageId)) return;
     const openBehavior = config.openBehavior ?? 'center';
     if (openBehavior === 'full') {
       router.push(`/db/${database.id}/${pageId}`);
@@ -329,12 +333,54 @@ export default function DatabaseView({
     }
   };
 
-  const handleAddRow = async (initialProperties?: Record<string, any>) => {
-    setIsAdding(true);
+  const handleAddRow = (initialProperties?: Record<string, any>) => {
+    const tempId = `temp-${crypto.randomUUID().slice(0, 8)}`;
+    const now = new Date();
     const defaultIcon = config.defaultPageIcon || null;
     const defaultIconColor = config.defaultPageIconColor || null;
-    await createPage(database.id, 'New Page', initialProperties, defaultIcon, defaultIconColor);
-    setIsAdding(false);
+
+    const maxSort = localPages.length > 0
+      ? Math.max(...localPages.map((p) => p.sortOrder ?? 0))
+      : 0;
+
+    const optimisticPage = {
+      id: tempId,
+      databaseId: database.id,
+      title: 'New Page',
+      content: '',
+      properties: { title: 'New Page', ...initialProperties },
+      sortOrder: maxSort + 1,
+      icon: defaultIcon,
+      iconColor: defaultIconColor,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setLocalPages((prev) => [...prev, optimisticPage]);
+    setPendingPageIds((prev) => new Set(prev).add(tempId));
+
+    startTransition(async () => {
+      try {
+        const realId = await createPage(
+          database.id,
+          'New Page',
+          initialProperties,
+          defaultIcon,
+          defaultIconColor,
+        );
+        setLocalPages((prev) =>
+          prev.map((p) => (p.id === tempId ? { ...p, id: realId } : p))
+        );
+      } catch {
+        setLocalPages((prev) => prev.filter((p) => p.id !== tempId));
+      } finally {
+        setPendingPageIds((prev) => {
+          const next = new Set(prev);
+          next.delete(tempId);
+          return next;
+        });
+      }
+    });
   };
 
   const handleDeletePage = async (pageId: string) => {
@@ -680,7 +726,7 @@ export default function DatabaseView({
           {/* New Page button — hidden on mobile (available via bottom nav) */}
           <button
             onClick={handleAddRow}
-            disabled={isAdding}
+            disabled={pendingPageIds.size > 0}
             className="hidden sm:flex items-center gap-1.5 bg-neutral-100 text-neutral-900 hover:bg-white px-4 py-1.5 transition-colors text-sm font-medium disabled:opacity-50 ml-1 cursor-pointer rounded"
           >
             <Plus size={14} /> {t('new')}
@@ -902,10 +948,7 @@ export default function DatabaseView({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOpenMenuId(null);
-                                if (confirm(t('deletePageConfirm'))) {
-                                  handleDeletePage(peekPageId!);
-                                  setPeekPageId(null);
-                                }
+                                setConfirmDeletePageId(peekPageId!);
                               }}
                               className="w-full px-3 py-2 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                             >
@@ -1002,15 +1045,12 @@ export default function DatabaseView({
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenMenuId(null);
-                              if (confirm(t('deletePageConfirm'))) {
-                                handleDeletePage(peekPageId!);
-                                setPeekPageId(null);
-                              }
+                              setConfirmDeletePageId(peekPageId!);
                             }}
                             className="w-full px-3 py-2 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                           >
                             <Trash2 size={13} />
-                            <span>Delete page</span>
+                            <span>{tPage('deletePage')}</span>
                           </button>
                         </div>
                       </>
@@ -1041,6 +1081,15 @@ export default function DatabaseView({
             </div>
           )}
         </>
+      )}
+      {confirmDeletePageId && (
+        <ConfirmDialog
+          title={t('deletePageConfirm')}
+          confirmLabel={tPage('deletePage')}
+          cancelLabel={tPage('deleteCancel')}
+          onConfirm={() => { handleDeletePage(confirmDeletePageId); setPeekPageId(null); setConfirmDeletePageId(null); }}
+          onCancel={() => setConfirmDeletePageId(null)}
+        />
       )}
     </div>
   );

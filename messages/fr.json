@@ -270,7 +270,9 @@
     "toggleOptions": "Activer/désactiver les options",
     "openInFullPage": "Ouvrir en pleine page",
     "duplicatePage": "Dupliquer la page",
-    "deletePageConfirm": "Êtes-vous sûr de vouloir supprimer cette page ?"
+    "deletePageConfirm": "Êtes-vous sûr de vouloir supprimer cette page ?",
+    "delete": "Supprimer",
+    "deleteCancel": "Annuler"
   },
   "Editor": {
     "placeholder": "Appuyez sur '/' pour les commandes ou commencez à écrire…",
@@ -315,6 +317,8 @@
     "changeIcon": "Changer l'icône",
     "deletePage": "Supprimer la page",
     "deleteConfirm": "Supprimer \"{title}\" ?",
+    "delete": "Supprimer",
+    "deleteCancel": "Annuler",
     "narrow": "Étroit",
     "wide": "Large",
     "full": "Complet",

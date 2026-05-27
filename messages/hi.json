@@ -270,7 +270,9 @@
     "toggleOptions": "विकल्प टॉगल करें",
     "openInFullPage": "पूरे पृष्ठ में खोलें",
     "duplicatePage": "पृष्ठ की प्रतिलिपि बनाएँ",
-    "deletePageConfirm": "क्या आप वाकई इस पृष्ठ को हटाना चाहते हैं?"
+    "deletePageConfirm": "क्या आप वाकई इस पृष्ठ को हटाना चाहते हैं?",
+    "delete": "हटाएं",
+    "deleteCancel": "रद्द करें"
   },
   "Editor": {
     "placeholder": "कमांड के लिए '/' दबाएं या लिखना शुरू करें…",
@@ -315,6 +317,8 @@
     "changeIcon": "आइकन बदलें",
     "deletePage": "पेज हटाएं",
     "deleteConfirm": "\"{title}\" हटाएं?",
+    "delete": "हटाएं",
+    "deleteCancel": "रद्द करें",
     "narrow": "संकीर्ण",
     "wide": "चौड़ा",
     "full": "पूर्ण",

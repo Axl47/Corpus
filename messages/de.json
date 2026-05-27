@@ -270,7 +270,9 @@
     "toggleOptions": "Optionen umschalten",
     "openInFullPage": "In voller Seite öffnen",
     "duplicatePage": "Seite duplizieren",
-    "deletePageConfirm": "Möchten Sie diese Seite wirklich löschen?"
+    "deletePageConfirm": "Möchten Sie diese Seite wirklich löschen?",
+    "delete": "Löschen",
+    "deleteCancel": "Abbrechen"
   },
   "Editor": {
     "placeholder": "Drücken Sie '/' für Befehle oder beginnen Sie zu schreiben…",
@@ -315,6 +317,8 @@
     "changeIcon": "Symbol ändern",
     "deletePage": "Seite löschen",
     "deleteConfirm": "\"{title}\" löschen?",
+    "delete": "Löschen",
+    "deleteCancel": "Abbrechen",
     "narrow": "Schmal",
     "wide": "Breit",
     "full": "Vollständig",

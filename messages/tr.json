@@ -270,7 +270,9 @@
     "toggleOptions": "Seçenekleri değiştir",
     "openInFullPage": "Tam sayfada aç",
     "duplicatePage": "Sayfayı çoğalt",
-    "deletePageConfirm": "Bu sayfayı silmek istediğinizden emin misiniz?"
+    "deletePageConfirm": "Bu sayfayı silmek istediğinizden emin misiniz?",
+    "delete": "Sil",
+    "deleteCancel": "İptal"
   },
   "Editor": {
     "placeholder": "Komutlar için '/' tuşuna basın veya yazmaya başlayın…",
@@ -315,6 +317,8 @@
     "changeIcon": "Simgeyi değiştir",
     "deletePage": "Sayfayı sil",
     "deleteConfirm": "\"{title}\" silinsin mi?",
+    "delete": "Sil",
+    "deleteCancel": "İptal",
     "narrow": "Dar",
     "wide": "Geniş",
     "full": "Tam",

@@ -270,7 +270,9 @@
     "toggleOptions": "Toggle options",
     "openInFullPage": "Open in full page",
     "duplicatePage": "Duplicate page",
-    "deletePageConfirm": "Are you sure you want to delete this page?"
+    "deletePageConfirm": "Are you sure you want to delete this page?",
+    "delete": "Delete",
+    "deleteCancel": "Cancel"
   },
   "Editor": {
     "placeholder": "Press '/' for commands or start writing…",
@@ -315,6 +317,8 @@
     "changeIcon": "Change icon",
     "deletePage": "Delete page",
     "deleteConfirm": "Delete \"{title}\"?",
+    "delete": "Delete",
+    "deleteCancel": "Cancel",
     "narrow": "Narrow",
     "wide": "Wide",
     "full": "Full",

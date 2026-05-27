@@ -9,6 +9,7 @@ import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import SaveStatus, { type SaveState } from './SaveStatus';
+import { ConfirmDialog } from './ConfirmDialog';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
 import {
   type SelectOption,
@@ -71,6 +72,7 @@ export default function PageEditor({
 
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const menuDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,13 +224,10 @@ export default function PageEditor({
                     <span>Duplicate</span>
                   </button>
                   <button
-                    onClick={async (e) => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       setOpenMenu(false);
-                      if (confirm(t('deleteConfirm', { title: properties['title'] || t('untitled') }))) {
-                        await deletePage(initialPage.id, database.id);
-                        router.push(`/db/${database.id}`);
-                      }
+                      setShowDeleteConfirm(true);
                     }}
                     className="w-full px-3 py-2 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                   >
@@ -420,6 +419,19 @@ export default function PageEditor({
         initialSubItems={subItems}
         onImmediateSave={saveContent}
       />
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title={t('deleteConfirm', { title: properties['title'] || t('untitled') })}
+          confirmLabel={t('delete')}
+          cancelLabel={t('deleteCancel')}
+          onConfirm={async () => {
+            setShowDeleteConfirm(false);
+            await deletePage(initialPage.id, database.id);
+            router.push(`/db/${database.id}`);
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updatePageIcon } from '@/lib/actions/page';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface CalendarViewProps {
   database: any;
@@ -136,6 +137,7 @@ export default function CalendarView({
   const [dragOverDayStr, setDragOverDayStr] = useState<string | null>(null);
   const [activeMenuCardId, setActiveMenuCardId] = useState<string | null>(null);
   const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const schema = database.schema as any[];
   const dateProperty = schema.find((c) => c.id === dateCol);
@@ -446,9 +448,7 @@ export default function CalendarView({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(t('deletePageConfirm'))) {
-                                  onDeletePage(page.id);
-                                }
+                                setConfirmDeleteId(page.id);
                                 setActiveMenuCardId(null);
                                 setMenuCoords(null);
                               }}
@@ -562,6 +562,15 @@ export default function CalendarView({
           })}
         </div>
       </div>
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title={t('deletePageConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('deleteCancel')}
+          onConfirm={() => { onDeletePage(confirmDeleteId); setConfirmDeleteId(null); }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }
