@@ -127,6 +127,7 @@ export const agentTokens = sqliteTable('agent_tokens', {
   id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   name:        text('name').notNull(),
+  agentName:   text('agent_name'),
   tokenPrefix: text('token_prefix').notNull(),
   tokenHash:   text('token_hash').notNull(),
   scope:       text('scope', { enum: ['read', 'write'] }).notNull(),

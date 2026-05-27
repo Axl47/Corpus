@@ -50,6 +50,20 @@ export const metadata: Metadata = {
     shortcut: '/logo-square-dark.ico',
     apple: '/logo-square-dark.png',
   },
+  openGraph: {
+    title: 'Remnus',
+    description: 'Customizable database and pages',
+    url: 'https://remnus.com',
+    siteName: 'Remnus',
+    images: [{ url: 'https://remnus.com/OG_1200x630.png', width: 1200, height: 630, alt: 'Remnus' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Remnus',
+    description: 'Customizable database and pages',
+    images: ['https://remnus.com/OG_1200x630.png'],
+  },
 };
 
 export default async function LocaleLayout({

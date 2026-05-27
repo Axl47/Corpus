@@ -34,6 +34,7 @@ export async function mintAgentToken(
   workspaceId: string,
   name: string,
   scope: 'read' | 'write',
+  agentName?: string,
 ): Promise<{ token: string }> {
   const userId = await assertOwnerAccess(workspaceId);
 
@@ -45,6 +46,7 @@ export async function mintAgentToken(
   await db.insert(agentTokens).values({
     workspaceId,
     name,
+    agentName: agentName || null,
     tokenPrefix: prefix8,
     tokenHash: hash,
     scope,
@@ -62,6 +64,7 @@ export async function getAgentTokens(workspaceId: string) {
     .select({
       id: agentTokens.id,
       name: agentTokens.name,
+      agentName: agentTokens.agentName,
       tokenPrefix: agentTokens.tokenPrefix,
       scope: agentTokens.scope,
       createdAt: agentTokens.createdAt,

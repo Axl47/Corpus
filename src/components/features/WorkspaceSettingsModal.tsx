@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Trash, UserPlus, Check, AlertCircle, Copy, KeyRound, Plus, Terminal, Wind, Zap, Crosshair, ChevronDown } from 'lucide-react';
+import { X, Trash, UserPlus, Check, AlertCircle, Copy, KeyRound, Plus, ChevronDown } from 'lucide-react';
+import AIMark from '@/components/marketing/AIMark';
 import { renameWorkspace, deleteWorkspace } from '@/lib/actions/workspace';
 import {
   getWorkspaceMembers,
@@ -31,12 +32,24 @@ type WorkspaceMember = {
 type AgentToken = {
   id: string;
   name: string;
+  agentName: string | null;
   tokenPrefix: string;
   scope: 'read' | 'write';
   createdAt: Date | null;
   lastUsedAt: Date | null;
   revokedAt: Date | null;
 };
+
+const AGENT_OPTIONS = [
+  { id: 'claude-code',  label: 'Claude Code',  aiMarkName: 'claude'   as const },
+  { id: 'cursor',       label: 'Cursor',        aiMarkName: 'cursor'   as const },
+  { id: 'windsurf',     label: 'Windsurf',      aiMarkName: 'windsurf' as const },
+  { id: 'continue',     label: 'Continue',      aiMarkName: 'continue' as const },
+  { id: 'codex',        label: 'Codex',         aiMarkName: 'chatgpt'  as const },
+  { id: 'antigravity',  label: 'Antigravity',   aiMarkName: 'antigravity' as const },
+] as const;
+
+type AgentId = typeof AGENT_OPTIONS[number]['id'];
 
 interface WorkspaceSettingsModalProps {
   workspaceId: string;
@@ -82,6 +95,7 @@ export default function WorkspaceSettingsModal({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [tokenName, setTokenName] = useState('');
   const [tokenScope, setTokenScope] = useState<'read' | 'write'>('read');
+  const [tokenAgent, setTokenAgent] = useState<AgentId | null>(null);
   const [isMinting, startMintTransition] = useTransition();
   const [newTokenValue, setNewTokenValue] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -237,10 +251,11 @@ export default function WorkspaceSettingsModal({
     setTokenError('');
     startMintTransition(async () => {
       try {
-        const res = await mintAgentToken(workspaceId, name, tokenScope);
+        const res = await mintAgentToken(workspaceId, name, tokenScope, tokenAgent ?? undefined);
         setNewTokenValue(res.token);
         setTokenName('');
         setTokenScope('read');
+        setTokenAgent(null);
         setShowCreateForm(false);
         loadTokens();
       } catch (err) {
@@ -305,10 +320,10 @@ export default function WorkspaceSettingsModal({
   );
 
   const guides = [
-    { id: 'claude' as const, label: 'Claude Code', Icon: Terminal },
-    { id: 'cursor' as const, label: 'Cursor', Icon: Crosshair },
-    { id: 'windsurf' as const, label: 'Windsurf', Icon: Wind },
-    { id: 'continue' as const, label: 'Continue', Icon: Zap },
+    { id: 'claude'   as const, label: 'Claude Code' },
+    { id: 'cursor'   as const, label: 'Cursor'       },
+    { id: 'windsurf' as const, label: 'Windsurf'     },
+    { id: 'continue' as const, label: 'Continue'     },
   ];
 
   const filePaths: Record<Exclude<typeof guides[number]['id'], 'claude'>, Record<'mac' | 'linux' | 'windows', string>> = {
@@ -613,7 +628,7 @@ export default function WorkspaceSettingsModal({
                               <div key={token.id} className="flex flex-col">
                                 <div className="flex items-center justify-between p-3 gap-3">
                                   <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className={`text-xs font-semibold truncate ${isRevoked ? 'text-neutral-500 line-through' : 'text-neutral-200'}`}>
                                         {token.name}
                                       </span>
@@ -626,6 +641,16 @@ export default function WorkspaceSettingsModal({
                                       }`}>
                                         {isRevoked ? t('revoked') : token.scope === 'write' ? t('tokenScopeWrite') : t('tokenScopeRead')}
                                       </span>
+                                      {token.agentName && !isRevoked && (() => {
+                                        const agent = AGENT_OPTIONS.find(a => a.id === token.agentName);
+                                        if (!agent) return null;
+                                        return (
+                                          <span className="flex items-center gap-1 text-[9px] font-semibold text-neutral-400 bg-neutral-800 border border-neutral-700 px-1.5 py-0.5 rounded-full shrink-0">
+                                            <AIMark name={agent.aiMarkName} size={10} />
+                                            {agent.label}
+                                          </span>
+                                        );
+                                      })()}
                                     </div>
                                     <p className="text-[10px] text-neutral-500 mt-0.5 font-mono">
                                       {token.tokenPrefix}… · {t('lastUsed')}: {formatDate(token.lastUsedAt)}
@@ -695,6 +720,30 @@ export default function WorkspaceSettingsModal({
                               <option value="write">{t('tokenScopeWrite')}</option>
                             </select>
                           </div>
+                          {/* Agent selector */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+                              {t('tokenAgent')}
+                            </label>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {AGENT_OPTIONS.map(({ id, label, aiMarkName }) => (
+                                <button
+                                  key={id}
+                                  type="button"
+                                  onClick={() => setTokenAgent(tokenAgent === id ? null : id)}
+                                  disabled={isMinting}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] font-semibold transition-colors ${
+                                    tokenAgent === id
+                                      ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                                      : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-neutral-200 hover:border-neutral-600'
+                                  }`}
+                                >
+                                  <AIMark name={aiMarkName} size={12} />
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                           {tokenError && (
                             <p className="text-xs text-red-400 flex items-center gap-1">
                               <AlertCircle size={12} /> {tokenError}
@@ -703,7 +752,7 @@ export default function WorkspaceSettingsModal({
                           <div className="flex gap-2 justify-end">
                             <button
                               type="button"
-                              onClick={() => { setShowCreateForm(false); setTokenName(''); setTokenScope('read'); setTokenError(''); }}
+                              onClick={() => { setShowCreateForm(false); setTokenName(''); setTokenScope('read'); setTokenAgent(null); setTokenError(''); }}
                               disabled={isMinting}
                               className="text-xs text-neutral-400 hover:text-neutral-200 px-3 py-1.5 rounded-md border border-neutral-700 hover:border-neutral-600 transition-colors"
                             >
@@ -774,7 +823,7 @@ export default function WorkspaceSettingsModal({
 
                     {/* Agent tabs */}
                     <div className="flex gap-1 bg-neutral-900 border border-neutral-800 rounded-lg p-1">
-                      {guides.map(({ id, label, Icon }) => (
+                      {guides.map(({ id, label }) => (
                         <button
                           key={id}
                           onClick={() => setActiveGuide(id)}
@@ -784,7 +833,7 @@ export default function WorkspaceSettingsModal({
                               : 'text-neutral-400 hover:text-neutral-200'
                           }`}
                         >
-                          <Icon size={12} className="shrink-0" />
+                          <AIMark name={id} size={12} />
                           <span className="hidden sm:inline">{label}</span>
                         </button>
                       ))}

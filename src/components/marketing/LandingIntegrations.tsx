@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import AIMark from './AIMark';
 import SetupGuideModal from './SetupGuideModal';
 
-type AIId = 'claude' | 'cursor' | 'windsurf' | 'chatgpt' | 'continue' | 'zed';
+type AIId = 'claude' | 'cursor' | 'windsurf' | 'chatgpt' | 'continue' | 'antigravity';
 
 const CLIENTS: { id: AIId; name: string; sub: string; descKey: string; status: 'native' | 'beta' }[] = [
   { id: 'claude',   name: 'Claude',   sub: 'Desktop · Claude Code', descKey: 'bridgeIntClaudeDesc',   status: 'native' },
@@ -10,7 +10,7 @@ const CLIENTS: { id: AIId; name: string; sub: string; descKey: string; status: '
   { id: 'windsurf', name: 'Windsurf', sub: 'IDE · Cascade',         descKey: 'bridgeIntWindsurfDesc', status: 'native' },
   { id: 'chatgpt',  name: 'ChatGPT',  sub: 'Desktop · OAuth',       descKey: 'bridgeIntChatgptDesc',  status: 'beta'   },
   { id: 'continue', name: 'Continue', sub: 'VS Code · open source', descKey: 'bridgeIntContinueDesc', status: 'native' },
-  { id: 'zed',      name: 'Zed',      sub: 'Editor · Zed AI',       descKey: 'bridgeIntZedDesc',      status: 'native' },
+  { id: 'antigravity', name: 'Antigravity', sub: 'IDE · Gemini 3.1 Pro', descKey: 'bridgeIntAntigravityDesc', status: 'native' },
 ];
 
 export default async function LandingIntegrations() {

@@ -27,6 +27,7 @@ type TokenContext = {
   tokenId: string;
   workspaceId: string;
   scope: 'read' | 'write';
+  agentName: string | null;
 };
 
 async function verifyBearerToken(authHeader: string | null): Promise<TokenContext | null> {
@@ -57,7 +58,7 @@ async function verifyBearerToken(authHeader: string | null): Promise<TokenContex
     .where(eq(agentTokens.id, row.id))
     .catch(() => {});
 
-  return { tokenId: row.id, workspaceId: row.workspaceId, scope: row.scope as 'read' | 'write' };
+  return { tokenId: row.id, workspaceId: row.workspaceId, scope: row.scope as 'read' | 'write', agentName: row.agentName ?? null };
 }
 
 // ── Audit logging (best-effort) ───────────────────────────────────────────────
@@ -312,7 +313,7 @@ async function handleMcpRequest(req: Request): Promise<Response> {
           scope: databaseId ? 'database' : 'sidebar',
           workspaceId: ctx.workspaceId,
           resourceId: databaseId,
-          actorId: `mcp:${ctx.tokenId}`,
+          actorId: ctx.agentName ? `mcp:${ctx.agentName}:${ctx.tokenId}` : `mcp:${ctx.tokenId}`,
         });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ id: result.id, type: result.type }) }],
@@ -353,7 +354,7 @@ async function handleMcpRequest(req: Request): Promise<Response> {
           scope: 'page',
           workspaceId: ctx.workspaceId,
           resourceId: pageId,
-          actorId: `mcp:${ctx.tokenId}`,
+          actorId: ctx.agentName ? `mcp:${ctx.agentName}:${ctx.tokenId}` : `mcp:${ctx.tokenId}`,
         });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ updated: true, id: pageId }) }],
@@ -397,7 +398,7 @@ async function handleMcpRequest(req: Request): Promise<Response> {
         publish({
           scope: 'database',
           workspaceId: ctx.workspaceId,
-          actorId: `mcp:${ctx.tokenId}`,
+          actorId: ctx.agentName ? `mcp:${ctx.agentName}:${ctx.tokenId}` : `mcp:${ctx.tokenId}`,
         });
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(results) }],

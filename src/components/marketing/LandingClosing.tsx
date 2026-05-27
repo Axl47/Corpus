@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import AIMark from './AIMark';
 
-type AIId = 'claude' | 'cursor' | 'windsurf' | 'chatgpt' | 'continue' | 'zed';
+type AIId = 'claude' | 'cursor' | 'windsurf' | 'chatgpt' | 'continue' | 'antigravity';
 
 const AI_CLIENTS: { id: AIId; name: string }[] = [
   { id: 'claude',   name: 'Claude'   },
@@ -10,7 +10,7 @@ const AI_CLIENTS: { id: AIId; name: string }[] = [
   { id: 'windsurf', name: 'Windsurf' },
   { id: 'chatgpt',  name: 'ChatGPT'  },
   { id: 'continue', name: 'Continue' },
-  { id: 'zed',      name: 'Zed'      },
+  { id: 'antigravity', name: 'Antigravity' },
 ];
 
 export default async function LandingClosing() {
