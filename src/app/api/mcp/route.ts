@@ -23,6 +23,36 @@ import {
 } from '@/lib/services/workspace';
 import { publish } from '@/lib/realtime/publish';
 
+const activeSseConnections = new Map<string, {
+  controller: ReadableStreamDefaultController;
+  encoder: TextEncoder;
+}>();
+
+class SseCustomTransport {
+  onclose?: () => void;
+  onerror?: (error: Error) => void;
+  onmessage?: (message: any) => void;
+
+  constructor(
+    private controller: ReadableStreamDefaultController,
+    private encoder: TextEncoder
+  ) {}
+
+  async start() {}
+  async close() {
+    this.onclose?.();
+  }
+
+  async send(message: any) {
+    try {
+      const data = `event: message\ndata: ${JSON.stringify(message)}\n\n`;
+      this.controller.enqueue(this.encoder.encode(data));
+    } catch (err) {
+      this.onerror?.(err as Error);
+    }
+  }
+}
+
 const TOKEN_PREFIX = process.env.MCP_TOKEN_PREFIX ?? 'rmns';
 
 // ── Token verification ────────────────────────────────────────────────────────
@@ -141,6 +171,34 @@ async function handleMcpRequest(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Too many requests' }), {
       status: 429,
       headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // ── Handle standard SSE GET request ──────────────────────────────────────────
+  const url = new URL(req.url);
+  const acceptHeader = req.headers.get('accept');
+  if (req.method === 'GET' && acceptHeader?.includes('text/event-stream')) {
+    const sessionId = crypto.randomUUID();
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        activeSseConnections.set(sessionId, { controller, encoder });
+        // Send the endpoint event containing the URL to POST to
+        // (Cursor, Windsurf, Continue and Antigravity expect this event!)
+        const relativeEndpoint = `/api/mcp?sessionId=${sessionId}`;
+        controller.enqueue(encoder.encode(`event: endpoint\ndata: ${relativeEndpoint}\n\n`));
+      },
+      cancel() {
+        activeSseConnections.delete(sessionId);
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+      }
     });
   }
 
@@ -599,6 +657,35 @@ async function handleMcpRequest(req: Request): Promise<Response> {
   );
 
   // ── Connect transport and handle request ────────────────────────────────────
+
+  const sessionId = url.searchParams.get('sessionId');
+  if (sessionId) {
+    const conn = activeSseConnections.get(sessionId);
+    if (!conn) {
+      return new Response(JSON.stringify({ error: 'Session expired' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const transport = new SseCustomTransport(conn.controller, conn.encoder);
+    await server.connect(transport);
+
+    let message;
+    try {
+      message = await req.clone().json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (transport.onmessage) {
+      transport.onmessage(message);
+    }
+
+    return new Response(null, { status: 202 });
+  }
 
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless mode
