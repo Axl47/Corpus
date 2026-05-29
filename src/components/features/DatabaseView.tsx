@@ -522,6 +522,20 @@ export default function DatabaseView({
     mutateViews(() => nextViews);
   };
 
+  const handleUpdateViewIcon = (id: string, icon: string | null, iconColor: string | null) => {
+    mutateViews((vs) =>
+      vs.map((v) =>
+        v.id === id
+          ? {
+              ...v,
+              icon: icon || undefined,
+              iconColor: iconColor || undefined,
+            }
+          : v
+      )
+    );
+  };
+
   // --- Config mutations ---
   const handleFiltersChange = (filters: ViewFilter[]) =>
     mutateConfig((cfg) => ({ ...cfg, filters }));
@@ -637,7 +651,7 @@ export default function DatabaseView({
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
-      <div className={`flex flex-col w-full pt-6 sm:pt-8 ${widthMode === 'full' ? 'px-4 sm:px-8 lg:px-16' : 'px-4 sm:px-8'} ${widthMode === 'full' ? '' : widthMode === 'wide' ? 'max-w-screen-2xl mx-auto' : 'max-w-6xl mx-auto'}`}>
+      <div className={`flex-1 flex flex-col w-full pt-6 sm:pt-8 ${widthMode === 'full' ? 'px-4 sm:px-8 lg:px-16' : 'px-4 sm:px-8'} ${widthMode === 'full' ? '' : widthMode === 'wide' ? 'max-w-screen-2xl mx-auto' : 'max-w-6xl mx-auto'}`}>
       {/* Back button for nested databases */}
       {database.parentId && (
         <div className="mb-4 shrink-0">
@@ -699,6 +713,7 @@ export default function DatabaseView({
           onRename={handleRenameView}
           onDelete={handleDeleteView}
           onReorder={handleReorderViews}
+          onUpdateIcon={handleUpdateViewIcon}
         />
 
         <div className="flex items-center gap-0 pb-1.5">
@@ -735,7 +750,7 @@ export default function DatabaseView({
       </div>
 
       {/* Content + Sidebar Area */}
-      <div className="flex gap-4 relative pt-4">
+      <div className="flex-1 flex gap-4 relative pt-4 pb-8">
         <div className="flex-1">
           {isTableView && tableConfig ? (
             <TableLayout
@@ -785,6 +800,7 @@ export default function DatabaseView({
               defaultPageIcon={config.defaultPageIcon}
               defaultPageIconColor={config.defaultPageIconColor}
               onPageIconChange={handlePageIconChange}
+              hiddenGroups={kanbanConfig.hiddenGroups ?? []}
             />
           ) : calendarConfig ? (
             <CalendarView
@@ -871,6 +887,10 @@ export default function DatabaseView({
                   defaultPageIcon: icon || undefined,
                   defaultPageIconColor: color || undefined,
                 }))
+              }
+              hiddenGroups={kanbanConfig?.hiddenGroups}
+              onHiddenGroupsChange={(hidden) =>
+                mutateConfig((cfg) => ({ ...cfg, hiddenGroups: hidden }))
               }
             />
           </div>

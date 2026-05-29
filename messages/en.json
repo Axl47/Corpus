@@ -86,6 +86,7 @@
   },
   "Workspace": {
     "saving": "Saving...",
+    "save": "Save",
     "creating": "Creating...",
     "create": "Create",
     "cancel": "Cancel",
@@ -257,7 +258,7 @@
     "dateFormatRelative": "Relative",
     "propertyName": "Property name",
     "addOption": "Add option…",
-    "renameView": "Rename view",
+    "renameView": "Rename",
     "deleteView": "Delete view",
     "viewName": "View name",
     "empty": "Empty",
@@ -295,7 +296,9 @@
     "duplicatePage": "Duplicate page",
     "deletePageConfirm": "Are you sure you want to delete this page?",
     "delete": "Delete",
-    "deleteCancel": "Cancel"
+    "deleteCancel": "Cancel",
+    "visibleGroups": "Visible Groups",
+    "changeIcon": "Change icon"
   },
   "Editor": {
     "placeholder": "Press '/' for commands or start writing…",

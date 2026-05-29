@@ -48,6 +48,7 @@ export interface KanbanViewConfig {
   groupColBg?: boolean;                   // tint each column background with the group option's color
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
+  hiddenGroups?: string[];
 }
 
 export interface CalendarViewConfig {
@@ -70,6 +71,8 @@ export interface DatabaseView {
   id: string;
   name: string;
   config: TableViewConfig | KanbanViewConfig | CalendarViewConfig;
+  icon?: string;
+  iconColor?: string;
 }
 
 

@@ -41,6 +41,7 @@ export default function KanbanBoard({
   defaultPageIcon,
   defaultPageIconColor,
   onPageIconChange,
+  hiddenGroups = [],
 }: {
   database: any;
   pages: any[];
@@ -62,6 +63,7 @@ export default function KanbanBoard({
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
   onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
+  hiddenGroups?: string[];
 }) {
   const t = useTranslations('Database');
   const tPage = useTranslations('Page');
@@ -93,7 +95,9 @@ export default function KanbanBoard({
 
   const textClass = propertyTextClamp === 'wrap' ? 'break-words whitespace-pre-wrap' : 'truncate';
   const orderedOptions = getEffectiveGroupOrder(options, groupOrder);
-  const allColumns = [...orderedOptions, 'Uncategorized'];
+  const allColumns = [...orderedOptions, 'Uncategorized'].filter(
+    (colName) => !hiddenGroups.includes(colName)
+  );
 
   const groupedPages: Record<string, any[]> = {};
   allColumns.forEach((col) => { groupedPages[col] = []; });
@@ -231,11 +235,13 @@ export default function KanbanBoard({
         const isUncategorized = columnName === 'Uncategorized';
         const isDraggingThis = draggedGroup === columnName;
         const isOver = dragOverGroup === columnName;
-        const groupBgStyle = groupColBg && !isUncategorized
-          ? { backgroundColor: getOptionColorByValue(groupColumn?.options || [], columnName).groupBg }
+        const groupBgStyle = groupColBg
+          ? (isUncategorized
+              ? { backgroundColor: 'rgba(56, 59, 65, 0.08)' }
+              : { backgroundColor: getOptionColorByValue(groupColumn?.options || [], columnName).groupBg })
           : undefined;
 
-        const hasBg = groupColBg && !isUncategorized;
+        const hasBg = groupColBg;
 
         return (
           <div
@@ -470,11 +476,10 @@ export default function KanbanBoard({
                           return (
                             <div
                               key={c.id}
-                              onClick={handlePropClick}
-                              className={`text-xs leading-relaxed flex gap-1.5 ${propertyTextClamp === 'wrap' ? 'items-start' : 'items-center'} overflow-visible relative cursor-pointer`}
+                              className={`text-xs leading-relaxed flex gap-1.5 ${propertyTextClamp === 'wrap' ? 'items-start' : 'items-center'} overflow-visible relative`}
                             >
                               {showPropertyLabels && (
-                                <span className="text-neutral-300 shrink-0">{c.name}</span>
+                                <span className="text-neutral-300 shrink-0 select-none">{c.name}</span>
                               )}
                               {isEditing ? (
                                 <InlineCellEditor
@@ -484,7 +489,12 @@ export default function KanbanBoard({
                                   onClose={() => setEditingCell(null)}
                                 />
                               ) : (
-                                display
+                                <div
+                                  onClick={handlePropClick}
+                                  className="inline-flex items-center cursor-pointer max-w-full hover:brightness-110"
+                                >
+                                  {display}
+                                </div>
                               )}
                             </div>
                           );

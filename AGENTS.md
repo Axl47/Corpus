@@ -186,7 +186,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 **Server Actions (`src/lib/actions/`)**
 - `workspace.ts` — Workspace + sidebar item CRUD (all auth-gated via `assertWorkspaceAccess`). Includes `updateWorkspaceIcon(id, icon, iconColor)`.
-- `database.ts` — Database schema + view mutations (`assertDatabaseAccess`).
+- `database.ts` — Database schema + view mutations (`assertDatabaseAccess`). `updateDatabaseSchema` automatically propagates renamed select/multi-select options to all workspace pages to prevent data loss.
 - `page.ts` — Database row CRUD (`assertDatabaseAccess`).
 - `auth.ts` — User auth, registration, role management, workspace membership, admin user ops.
 - `demo.ts` — `loginAsDemo()` — reset + reseed demo workspace and sign in.
@@ -194,7 +194,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `agentToken.ts` — MCP token mint / list / revoke.
 
 **Types (`src/lib/types/`)**
-- `views.ts` — `DatabaseView`, `TableViewConfig`, `KanbanViewConfig`, `CalendarViewConfig`, `ViewFilter`, `ViewSort`, `OpenBehavior`.
+- `views.ts` — `DatabaseView` (added `icon` and `iconColor`), `TableViewConfig`, `KanbanViewConfig` (added `hiddenGroups`), `CalendarViewConfig`, `ViewFilter`, `ViewSort`, `OpenBehavior`.
 - `properties.ts` — `SelectOption`, `SELECT_COLORS` (9-color palette), helpers: `getOptionColorByValue`, `getCardBorderDots`, `formatDateValue`.
 
 **Core feature components (`src/components/features/`)**

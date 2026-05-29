@@ -85,7 +85,9 @@ export default function BlockEditor({
         heading: false,
       }),
       CollapsibleHeading,
-      HeadingCollapsePlugin,
+      HeadingCollapsePlugin.configure({
+        pageId: parentId ?? null,
+      }),
       Markdown,
       Placeholder.configure({
         placeholder: ({ node }) => {

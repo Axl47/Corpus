@@ -169,6 +169,35 @@ export default function WorkspaceSidebar({
     }));
   };
 
+  // Load expanded states from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedWorkspaces = localStorage.getItem('remnus_expanded_workspaces');
+      if (savedWorkspaces) {
+        setExpandedWorkspaces(JSON.parse(savedWorkspaces));
+      }
+      const savedItems = localStorage.getItem('remnus_expanded_items');
+      if (savedItems) {
+        setExpandedItems(JSON.parse(savedItems));
+      }
+    } catch (e) {
+      console.error('Error loading expanded states from localStorage:', e);
+    }
+  }, []);
+
+  // Save expanded states to localStorage when they change
+  useEffect(() => {
+    if (Object.keys(expandedWorkspaces).length > 0) {
+      localStorage.setItem('remnus_expanded_workspaces', JSON.stringify(expandedWorkspaces));
+    }
+  }, [expandedWorkspaces]);
+
+  useEffect(() => {
+    if (Object.keys(expandedItems).length > 0) {
+      localStorage.setItem('remnus_expanded_items', JSON.stringify(expandedItems));
+    }
+  }, [expandedItems]);
+
   // Local state for optimistic UI during drag and drop
   const [localWorkspaces, setLocalWorkspaces] = useState<WorkspaceType[]>(workspaces);
   const [localItems, setLocalItems] = useState<WorkspaceItemRow[]>(items);
@@ -189,8 +218,18 @@ export default function WorkspaceSidebar({
     setLocalWorkspaces(workspaces);
   }, [workspaces]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isAnyModalOrPickerOpen = !!(
+    settingsModalWorkspace ||
+    templatePickerWorkspaceId ||
+    activeIconPickerId ||
+    activeWorkspaceIconPickerId ||
+    renamingItemId ||
+    openMenuItemId ||
+    confirmDeleteItemId
+  );
+
   // Subscribe to real-time events from other users / MCP agents
-  useWorkspaceEvents(currentUser.id);
+  useWorkspaceEvents(currentUser.id, isAnyModalOrPickerOpen);
 
   // Remnus logo → first root-level item of the active workspace
   const logoHref = useMemo(() => {

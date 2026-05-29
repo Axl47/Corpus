@@ -86,6 +86,7 @@
   },
   "Workspace": {
     "saving": "Kaydediliyor...",
+    "save": "Kaydet",
     "creating": "Oluşturuluyor...",
     "create": "Oluştur",
     "cancel": "İptal",
@@ -257,7 +258,7 @@
     "dateFormatRelative": "Göreli",
     "propertyName": "Özellik adı",
     "addOption": "Seçenek ekle…",
-    "renameView": "Görünümü yeniden adlandır",
+    "renameView": "Yeniden adlandır",
     "deleteView": "Görünümü sil",
     "viewName": "Görünüm adı",
     "empty": "Boş",
@@ -295,7 +296,9 @@
     "duplicatePage": "Sayfayı çoğalt",
     "deletePageConfirm": "Bu sayfayı silmek istediğinizden emin misiniz?",
     "delete": "Sil",
-    "deleteCancel": "İptal"
+    "deleteCancel": "İptal",
+    "visibleGroups": "Görünür Gruplar",
+    "changeIcon": "Simgeyi değiştir"
   },
   "Editor": {
     "placeholder": "Komutlar için '/' tuşuna basın veya yazmaya başlayın…",

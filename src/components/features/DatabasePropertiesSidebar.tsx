@@ -73,6 +73,8 @@ interface DatabasePropertiesSidebarProps {
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
   onDefaultPageIconChange?: (icon: string | null, color: string | null) => void;
+  hiddenGroups?: string[];
+  onHiddenGroupsChange?: (hidden: string[]) => void;
 }
 
 const OPERATOR_KEYS: { value: FilterOperator; key: string; needsValue: boolean }[] = [
@@ -141,11 +143,13 @@ export default function DatabasePropertiesSidebar({
   onCardColorColChange,
   rowColorCol,
   onRowColorColChange,
-  groupColBg = false,
+  groupColBg,
   onGroupColBgChange,
   defaultPageIcon,
   defaultPageIconColor,
   onDefaultPageIconChange,
+  hiddenGroups = [],
+  onHiddenGroupsChange,
 }: DatabasePropertiesSidebarProps) {
   const t = useTranslations('Database');
   const tWs = useTranslations('Workspace');
@@ -179,6 +183,8 @@ export default function DatabasePropertiesSidebar({
   const selectColumns = schema.filter((c: any) => c.type === 'select');
   const colorColumns = schema.filter((c: any) => c.type === 'select' || c.type === 'multi_select');
   const dateColumns = schema.filter((c: any) => c.type === 'date' || c.type === 'datetime');
+  const groupColumn = schema.find((c: any) => c.id === groupByCol);
+  const options = groupColumn?.options ? groupColumn.options.map((o: any) => normalizeOption(o).value) : [];
 
   const addColumn = () =>
     setSchema([...schema, { id: `col_${crypto.randomUUID().slice(0, 8)}`, name: 'New Column', type: 'text', options: [] }]);
@@ -311,11 +317,11 @@ export default function DatabasePropertiesSidebar({
   };
 
   return (
-    <div className="w-full sm:w-72 sm:shrink-0 bg-neutral-900 sm:border-l border-neutral-800 flex flex-col sm:h-full overflow-y-auto sm:overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
+    <div className="w-full sm:w-72 sm:shrink-0 bg-neutral-850 sm:border-l border-neutral-800 flex flex-col sm:h-full overflow-y-auto sm:overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-800 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-semibold text-neutral-200">Settings</span>
+          <span className="text-xs font-semibold text-neutral-200">{t('settings')}</span>
           <span className="text-[10px] text-neutral-500 border border-neutral-800 px-1.5 py-0.5 shrink-0 rounded">
             {activeView.name}
           </span>
@@ -432,7 +438,25 @@ export default function DatabasePropertiesSidebar({
                                 className="w-2.5 h-2.5 rounded-full shrink-0 mr-0.5 cursor-pointer border border-white/10 hover:scale-110 transition-transform"
                                 style={{ backgroundColor: c.dot }}
                               />
-                              {opt.value}
+                              <input
+                                type="text"
+                                value={opt.value}
+                                onChange={(e) => {
+                                  const newVal = e.target.value;
+                                  const newOpts = [...(col.options || [])].map((o: string | SelectOption, i: number) =>
+                                    i === optIdx
+                                      ? { ...normalizeOption(o), value: newVal }
+                                      : o,
+                                  );
+                                  updateColumn(idx, { options: newOpts });
+                                }}
+                                className="bg-transparent border-none focus:outline-none focus:bg-white/10 px-0.5 rounded text-[10px] py-0 font-medium cursor-text"
+                                style={{
+                                  color: c.text,
+                                  width: `${Math.max(30, opt.value.length * 6 + 8)}px`,
+                                  minWidth: '24px'
+                                }}
+                              />
                               <button
                                 onClick={() => {
                                   const newOpts = [...(col.options || [])];
@@ -511,7 +535,7 @@ export default function DatabasePropertiesSidebar({
             </button>
 
             {isSchemaDirty && (
-              <div className="sticky bottom-0 flex items-center justify-end gap-2 px-4 py-2.5 bg-neutral-900 border-t border-neutral-800">
+              <div className="sticky bottom-0 flex items-center justify-end gap-2 px-4 py-2.5 bg-neutral-850 border-t border-neutral-800">
                 <button
                   onClick={() => setSchema(database.schema || [])}
                   disabled={isSavingSchema}
@@ -524,7 +548,7 @@ export default function DatabasePropertiesSidebar({
                   disabled={isSavingSchema}
                   className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  {isSavingSchema ? tWs('saving') : tWs('create')}
+                  {isSavingSchema ? tWs('saving') : tWs('save')}
                 </button>
               </div>
             )}
@@ -667,7 +691,7 @@ export default function DatabasePropertiesSidebar({
                         onClick={() => toggleCardProp(col.id)}
                         className="flex items-center gap-2 px-4 py-2 border-b border-neutral-800/30 hover:bg-neutral-800/10 transition-colors cursor-pointer text-left"
                       >
-                        <span className="w-[11px] shrink-0" />
+                        <span className="w-2.75 shrink-0" />
                         {getPropertyIcon(col.type)}
                         <span className="flex-1 text-xs text-neutral-500 truncate">{col.name}</span>
                         <Checkbox checked={false} />
@@ -732,8 +756,42 @@ export default function DatabasePropertiesSidebar({
                 className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30"
               >
                 <span className="text-xs text-neutral-300">{t('groupBackground')}</span>
-                <Checkbox checked={groupColBg} />
+                <Checkbox checked={!!groupColBg} />
               </button>
+            )}
+
+            {/* Kanban: Hide/Show groups */}
+            {activeView.config.type === 'kanban' && groupColumn && (
+              <div>
+                <div className="px-4 py-2.5">
+                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('visibleGroups')}</span>
+                </div>
+                <div className="flex flex-col">
+                  {[...options, 'Uncategorized'].map((colName) => {
+                    const isHidden = hiddenGroups.includes(colName);
+                    const isUnc = colName === 'Uncategorized';
+                    const displayLabel = isUnc ? t('uncategorized') : colName;
+
+                    const toggleGroup = () => {
+                      const nextHidden = isHidden
+                        ? hiddenGroups.filter((g) => g !== colName)
+                        : [...hiddenGroups, colName];
+                      onHiddenGroupsChange?.(nextHidden);
+                    };
+
+                    return (
+                      <button
+                        key={colName}
+                        onClick={toggleGroup}
+                        className="w-full flex items-center justify-between px-4 py-2 border-b border-neutral-800/30 hover:bg-neutral-800/10 transition-colors cursor-pointer text-left"
+                      >
+                        <span className="text-xs text-neutral-300 truncate">{displayLabel}</span>
+                        <Checkbox checked={!isHidden} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             {/* Calendar settings */}

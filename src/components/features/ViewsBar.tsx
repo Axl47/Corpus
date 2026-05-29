@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LayoutList, KanbanSquare, Calendar as CalendarIcon, Plus, ChevronDown } from 'lucide-react';
+import { LayoutList, KanbanSquare, Calendar as CalendarIcon, Plus, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import type { DatabaseView } from '@/lib/types/views';
 import { useTranslations } from 'next-intl';
+import IconPicker from './IconPicker';
+import PageIcon from './PageIcon';
 
 interface ViewsBarProps {
   views: DatabaseView[];
@@ -13,6 +15,7 @@ interface ViewsBarProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onReorder: (views: DatabaseView[]) => void;
+  onUpdateIcon?: (id: string, icon: string | null, color: string | null) => void;
 }
 
 export default function ViewsBar({
@@ -23,13 +26,17 @@ export default function ViewsBar({
   onRename,
   onDelete,
   onReorder,
+  onUpdateIcon,
 }: ViewsBarProps) {
   const t = useTranslations('Database');
   const [addOpen, setAddOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [mobileAddOpen, setMobileAddOpen] = useState(false);
+  const [activeIconPickerViewId, setActiveIconPickerViewId] = useState<string | null>(null);
+  const viewRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const [draggedViewId, setDraggedViewId] = useState<string | null>(null);
   const [dragOverViewId, setDragOverViewId] = useState<string | null>(null);
@@ -133,7 +140,11 @@ export default function ViewsBar({
             onClick={() => setMobileDropOpen(o => !o)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-100 border-b-2 border-neutral-300 -mb-px cursor-pointer"
           >
-            {(() => { const Icon = getIcon(activeView); return <Icon size={14} />; })()}
+            {activeView.icon ? (
+              <PageIcon icon={activeView.icon} iconColor={activeView.iconColor} size={14} fallbackType="page" />
+            ) : (
+              (() => { const Icon = getIcon(activeView); return <Icon size={14} />; })()
+            )}
             <span>{activeView.name}</span>
             <ChevronDown size={13} className={`text-neutral-400 transition-transform duration-150 ${mobileDropOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -150,7 +161,11 @@ export default function ViewsBar({
                       isActive ? 'text-neutral-100 bg-neutral-800/40' : 'text-neutral-400 hover:bg-neutral-800/20 hover:text-neutral-200'
                     }`}
                   >
-                    <Icon size={13} />
+                    {view.icon ? (
+                      <PageIcon icon={view.icon} iconColor={view.iconColor} size={13} fallbackType="page" />
+                    ) : (
+                      <Icon size={13} />
+                    )}
                     <span>{view.name}</span>
                     {isActive && <span className="ml-auto text-blue-400 text-[10px]">✓</span>}
                   </button>
@@ -187,8 +202,8 @@ export default function ViewsBar({
     )}
 
     {/* Desktop full tab list */}
-    <div className="hidden sm:flex items-center gap-0">
-    <div className="flex items-center gap-0 overflow-x-auto scrollbar-hide min-w-0"
+    <div className="hidden sm:flex items-end gap-0">
+    <div className="flex items-end gap-0 overflow-x-auto scrollbar-hide min-w-0"
       style={{ scrollbarWidth: 'none' }}
     >
       {views.map((view) => {
@@ -204,7 +219,7 @@ export default function ViewsBar({
         return (
           <div
             key={view.id}
-            className={`relative shrink-0 flex items-center group cursor-grab active:cursor-grabbing transition-all
+            className={`relative shrink-0 flex items-end group cursor-grab active:cursor-grabbing transition-all
               ${draggedViewId === view.id ? 'opacity-25' : ''}
               ${dragOverViewId === view.id ? 'border-l-2 border-l-blue-500/60' : ''}
             `}
@@ -217,20 +232,40 @@ export default function ViewsBar({
             onDragEnd={handleDragEnd}
           >
             <button
-              onClick={() => {
+              ref={(el) => { viewRefs.current[view.id] = el; }}
+              onClick={(e) => {
                 if (isActive) {
-                  setMenuOpenId(menuOpenId === view.id ? null : view.id);
+                  if (menuOpenId === view.id) {
+                    setMenuOpenId(null);
+                  } else {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setMenuPos({ top: r.bottom + 4, left: r.left });
+                    setMenuOpenId(view.id);
+                  }
                 } else {
                   onActivate(view.id);
                 }
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px cursor-pointer ${
+              className={`relative flex items-center gap-1.5 px-3 pt-2 pb-2.5 text-sm font-medium transition-colors cursor-pointer ${
                 isActive
-                  ? 'border-neutral-300 text-neutral-100'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                  ? 'text-neutral-100 bg-neutral-800/20'
+                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/10'
               }`}
             >
-              <Icon size={14} />
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIconPickerViewId(view.id);
+                }}
+                className="flex items-center justify-center p-0.5 hover:bg-neutral-850/60 rounded cursor-pointer transition-colors"
+                title={t('changeIcon')}
+              >
+                {view.icon ? (
+                  <PageIcon icon={view.icon} iconColor={view.iconColor} size={14} fallbackType="page" />
+                ) : (
+                  <Icon size={14} />
+                )}
+              </span>
               {isRenaming ? (
                 <input
                   autoFocus
@@ -247,15 +282,23 @@ export default function ViewsBar({
               ) : (
                 <span>{view.name}</span>
               )}
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.75 bg-blue-500 rounded-t-sm" />
+              )}
             </button>
 
             {isActive && !isRenaming && menuOpenId === view.id && (
-              <div className="absolute top-full left-0 mt-1 w-36 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100">
+              <div
+                className="fixed w-36 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100"
+                style={{ top: menuPos?.top, left: menuPos?.left }}
+              >
+
                 <button
                   onClick={() => startRename(view)}
-                  className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 transition-colors rounded-none border-b border-neutral-850/60 cursor-pointer"
+                  className="w-full text-left px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-neutral-800/20 transition-colors rounded-none border-b border-neutral-850/60 cursor-pointer flex items-center gap-2"
                 >
-                  {t('renameView')}
+                  <Pencil size={13} className="text-neutral-500 shrink-0" />
+                  <span>{t('renameView')}</span>
                 </button>
                 {views.length > 1 && (
                   <button
@@ -263,12 +306,25 @@ export default function ViewsBar({
                       onDelete(view.id);
                       setMenuOpenId(null);
                     }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-neutral-800/20 transition-colors rounded-none cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-medium text-red-400 hover:bg-neutral-800/20 transition-colors rounded-none cursor-pointer flex items-center gap-2"
                   >
-                    {t('deleteView')}
+                    <Trash2 size={13} className="text-red-400/80 shrink-0" />
+                    <span>{t('deleteView')}</span>
                   </button>
                 )}
               </div>
+            )}
+            {activeIconPickerViewId === view.id && (
+              <IconPicker
+                currentIcon={view.icon || null}
+                currentIconColor={view.iconColor || null}
+                onSelect={(icon, color) => {
+                  onUpdateIcon?.(view.id, icon, color);
+                  setActiveIconPickerViewId(null);
+                }}
+                onClose={() => setActiveIconPickerViewId(null)}
+                anchorRef={{ current: viewRefs.current[view.id] }}
+              />
             )}
           </div>
         );

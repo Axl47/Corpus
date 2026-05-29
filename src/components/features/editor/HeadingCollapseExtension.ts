@@ -56,6 +56,12 @@ export const CollapsibleHeading = Heading.configure({ levels: [1, 2, 3] }).exten
 export const HeadingCollapsePlugin = Extension.create({
   name: 'headingCollapse',
 
+  addOptions() {
+    return {
+      pageId: null as string | null,
+    };
+  },
+
   addCommands() {
     return {
       toggleHeadingCollapse:
@@ -71,11 +77,33 @@ export const HeadingCollapsePlugin = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    const pageId = this.options.pageId;
     return [
       new Plugin({
         key: headingCollapseKey,
         state: {
-          init: () => ({ collapsed: new Set<number>(), decorations: DecorationSet.empty }),
+          init(config, state) {
+            const collapsed = new Set<number>();
+            if (pageId && typeof window !== 'undefined') {
+              try {
+                const saved = localStorage.getItem(`remnus_collapsed_headings_${pageId}`);
+                if (saved) {
+                  const savedTitles = JSON.parse(saved) as string[];
+                  state.doc.forEach((node, offset) => {
+                    if (node.type.name === 'heading') {
+                      const headingKey = `${node.attrs.level}:${node.textContent}`;
+                      if (savedTitles.includes(headingKey)) {
+                        collapsed.add(offset);
+                      }
+                    }
+                  });
+                }
+              } catch (e) {
+                console.error('Error loading collapsed headings from localStorage:', e);
+              }
+            }
+            return { collapsed, decorations: buildDecorations(state.doc, collapsed) };
+          },
           apply(tr, prev) {
             // Map existing positions through the transaction to keep them stable during edits
             const mapped = new Set<number>();
@@ -88,6 +116,22 @@ export const HeadingCollapsePlugin = Extension.create({
               if (mapped.has(meta.toggle)) mapped.delete(meta.toggle);
               else mapped.add(meta.toggle);
             }
+
+            // Save collapsed headings to localStorage
+            if (pageId && typeof window !== 'undefined') {
+              try {
+                const savedTitles: string[] = [];
+                tr.doc.forEach((node, offset) => {
+                  if (node.type.name === 'heading' && mapped.has(offset)) {
+                    savedTitles.push(`${node.attrs.level}:${node.textContent}`);
+                  }
+                });
+                localStorage.setItem(`remnus_collapsed_headings_${pageId}`, JSON.stringify(savedTitles));
+              } catch (e) {
+                console.error('Error saving collapsed headings to localStorage:', e);
+              }
+            }
+
             return { collapsed: mapped, decorations: buildDecorations(tr.doc, mapped) };
           },
         },

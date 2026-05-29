@@ -86,6 +86,7 @@
   },
   "Workspace": {
     "saving": "सहेजा जा रहा है...",
+    "save": "सहेजें",
     "creating": "बन रहा है...",
     "create": "बनाएं",
     "cancel": "रद्द करें",
@@ -257,7 +258,7 @@
     "dateFormatRelative": "सापेक्ष",
     "propertyName": "गुण नाम",
     "addOption": "विकल्प जोड़ें…",
-    "renameView": "दृश्य का नाम बदलें",
+    "renameView": "नाम बदलें",
     "deleteView": "दृश्य हटाएं",
     "viewName": "दृश्य नाम",
     "empty": "खाली",
@@ -295,7 +296,9 @@
     "duplicatePage": "पृष्ठ की प्रतिलिपि बनाएँ",
     "deletePageConfirm": "क्या आप वाकई इस पृष्ठ को हटाना चाहते हैं?",
     "delete": "हटाएं",
-    "deleteCancel": "रद्द करें"
+    "deleteCancel": "रद्द करें",
+    "visibleGroups": "दृश्यमान समूह",
+    "changeIcon": "आइकन बदलें"
   },
   "Editor": {
     "placeholder": "कमांड के लिए '/' दबाएं या लिखना शुरू करें…",

@@ -86,6 +86,7 @@
   },
   "Workspace": {
     "saving": "Enregistrement...",
+    "save": "Enregistrer",
     "creating": "Création...",
     "create": "Créer",
     "cancel": "Annuler",
@@ -257,7 +258,7 @@
     "dateFormatRelative": "Relatif",
     "propertyName": "Nom de propriété",
     "addOption": "Ajouter une option…",
-    "renameView": "Renommer la vue",
+    "renameView": "Renommer",
     "deleteView": "Supprimer la vue",
     "viewName": "Nom de la vue",
     "empty": "Vide",
@@ -295,7 +296,9 @@
     "duplicatePage": "Dupliquer la page",
     "deletePageConfirm": "Êtes-vous sûr de vouloir supprimer cette page ?",
     "delete": "Supprimer",
-    "deleteCancel": "Annuler"
+    "deleteCancel": "Annuler",
+    "visibleGroups": "Groupes visibles",
+    "changeIcon": "Changer l'icône"
   },
   "Editor": {
     "placeholder": "Appuyez sur '/' pour les commandes ou commencez à écrire…",
