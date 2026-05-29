@@ -3,6 +3,9 @@
   "identifier": "default",
   "description": "Default capabilities for Remnus desktop app",
   "windows": ["main"],
+  "remote": {
+    "urls": ["https://remnus.com/*"]
+  },
   "permissions": [
     "core:default",
     "opener:default",
