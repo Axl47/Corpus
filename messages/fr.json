@@ -136,7 +136,7 @@
     "transferConfirm": "Êtes-vous absolument sûr de vouloir transférer la propriété de cet espace à {name} ? Vous serez rétrogradé en membre ordinaire.",
     "removeConfirm": "Êtes-vous sûr de vouloir retirer {name} de cet espace ?",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement cet espace et toutes ses pages/bases de données ? Cette action est irréversible.",
-    "tabTokens": "Tokens API / MCP",
+    "tabTokens": "MCP",
     "tokensSectionHint": "Les tokens donnent aux agents IA accès à cet espace de travail via MCP.",
     "ownerOnlyTokens": "Seuls les propriétaires de l'espace de travail peuvent gérer les tokens.",
     "tokenName": "Nom du token",
@@ -182,7 +182,10 @@
     "tokenExpiry60d": "60 jours",
     "tokenExpiry90d": "90 jours",
     "tokenExpiresInDays": "{days}j restants",
-    "tokenExpired": "Expiré"
+    "tokenExpired": "Expiré",
+    "workspaceIcon": "Icône de l'espace de travail",
+    "workspaceIconHint": "Choisissez un emoji, une icône ou importez une image personnalisée.",
+    "changeIcon": "Changer l'icône"
   },
   "Templates": {
     "modalTitle": "Nouvel Élément",
@@ -354,7 +357,12 @@
     "customEmojiPlaceholder": "Coller un emoji personnalisé...",
     "searchPlaceholder": "Rechercher des icônes…",
     "colorLabel": "Couleur",
-    "remove": "Retirer"
+    "remove": "Retirer",
+    "tabUpload": "Importer",
+    "uploadHint": "Cliquez pour sélectionner une image",
+    "uploadLimit": "Formats acceptés : JPG, PNG, GIF, WebP, SVG",
+    "uploadError": "Échec de l'importation. Veuillez réessayer.",
+    "add": "Ajouter"
   },
   "Errors": {
     "emailRequired": "L'e-mail et le mot de passe sont obligatoires",

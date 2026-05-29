@@ -136,7 +136,7 @@
     "transferConfirm": "Sind Sie absolut sicher, dass Sie die Eigentümerschaft dieses Arbeitsbereichs an {name} übertragen möchten? Sie werden zu einem normalen Mitglied herabgestuft.",
     "removeConfirm": "Sind Sie sicher, dass Sie {name} aus diesem Arbeitsbereich entfernen möchten?",
     "deleteConfirm": "Sind Sie sicher, dass Sie diesen Arbeitsbereich und alle seine Seiten/Datenbanken dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "tabTokens": "API / MCP Tokens",
+    "tabTokens": "MCP",
     "tokensSectionHint": "Tokens ermöglichen KI-Agenten den Zugriff auf diesen Arbeitsbereich über MCP.",
     "ownerOnlyTokens": "Nur Arbeitsbereich-Eigentümer können Tokens verwalten.",
     "tokenName": "Token-Name",
@@ -182,7 +182,10 @@
     "tokenExpiry60d": "60 Tage",
     "tokenExpiry90d": "90 Tage",
     "tokenExpiresInDays": "{days}T übrig",
-    "tokenExpired": "Abgelaufen"
+    "tokenExpired": "Abgelaufen",
+    "workspaceIcon": "Arbeitsbereich-Symbol",
+    "workspaceIconHint": "Wählen Sie ein Emoji, Symbol oder laden Sie ein benutzerdefiniertes Bild hoch.",
+    "changeIcon": "Symbol ändern"
   },
   "Templates": {
     "modalTitle": "Neues Element",
@@ -354,7 +357,12 @@
     "customEmojiPlaceholder": "Benutzerdefiniertes Emoji einfügen...",
     "searchPlaceholder": "Symbole suchen…",
     "colorLabel": "Farbe",
-    "remove": "Entfernen"
+    "remove": "Entfernen",
+    "tabUpload": "Hochladen",
+    "uploadHint": "Klicken, um ein Bild auszuwählen",
+    "uploadLimit": "JPG, PNG, GIF, WebP, SVG unterstützt",
+    "uploadError": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+    "add": "Hinzufügen"
   },
   "Errors": {
     "emailRequired": "E-Mail und Passwort sind erforderlich",

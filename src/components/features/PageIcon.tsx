@@ -134,6 +134,18 @@ export default function PageIcon({
     return <LucideIcons.FileText size={size} className={`${colorClass} shrink-0 ${className}`} />;
   }
 
+  // Check if it's an uploaded image URL
+  if (icon.startsWith('http://') || icon.startsWith('https://')) {
+    return (
+      <img
+        src={icon}
+        alt=""
+        className={`shrink-0 object-cover rounded-sm ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   // Check if it's a Lucide icon
   if (icon.startsWith('lucide:')) {
     const iconName = icon.replace('lucide:', '');

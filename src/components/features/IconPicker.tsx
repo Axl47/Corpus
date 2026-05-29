@@ -1,14 +1,14 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { CURATED_ICONS, ICON_COLORS, ICON_COLOR_HEX } from './PageIcon';
-import { X, Smile, Star, Trash2 } from 'lucide-react';
+import { X, Smile, Star, Trash2, Upload, ImageIcon, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const POPULAR_EMOJIS = [
-  '😊', '🚀', '📝', '📅', '💻', '🎨', 
-  '🍕', '💡', '🔒', '🔑', '🏠', '📈', 
-  '📁', '⚙️', '🔔', '✉️', '🌟', '❤️', 
-  '👍', '🎉', '🔥', '⚡', '🏆', '☕', 
+  '😊', '🚀', '📝', '📅', '💻', '🎨',
+  '🍕', '💡', '🔒', '🔑', '🏠', '📈',
+  '📁', '⚙️', '🔔', '✉️', '🌟', '❤️',
+  '👍', '🎉', '🔥', '⚡', '🏆', '☕',
   '🎯', '🗺️', '🎵', '🌐', '💼', '📌',
   '😍', '😎', '🤔', '🥳', '🙌', '👏',
   '🎈', '🎁', '💎', '🛒', '💰', '💵',
@@ -33,47 +33,58 @@ export default function IconPicker({
   anchorRef,
 }: IconPickerProps) {
   const t = useTranslations('IconPicker');
-  const [activeTab, setActiveTab] = useState<'emoji' | 'lucide'>(
-    currentIcon?.startsWith('lucide:') ? 'lucide' : 'emoji'
-  );
+
+  const initialTab = (): 'emoji' | 'lucide' | 'upload' => {
+    if (currentIcon?.startsWith('lucide:')) return 'lucide';
+    if (currentIcon?.startsWith('http')) return 'upload';
+    return 'emoji';
+  };
+
+  const [activeTab, setActiveTab] = useState<'emoji' | 'lucide' | 'upload'>(initialTab());
   const [selectedColor, setSelectedColor] = useState<string>(currentIconColor || 'default');
   const [customEmoji, setCustomEmoji] = useState<string>('');
   const pickerRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
+  // Upload tab state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    currentIcon?.startsWith('http') ? currentIcon : null
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!anchorRef?.current) return;
-    
+
     const updatePosition = () => {
       const rect = anchorRef.current!.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
-      const pickerHeight = 280; // approximate height
-      const pickerWidth = 288;  // w-72 is 288px
-      
+      const pickerHeight = 320;
+      const pickerWidth = 288;
+
       let fixedTop = rect.bottom + 4;
       let fixedLeft = rect.left;
-      
-      // Flip up if there's no room below
+
       if (fixedTop + pickerHeight > viewportHeight && rect.top - pickerHeight > 0) {
         fixedTop = rect.top - pickerHeight - 4;
       }
-      
-      // Clamp horizontally
+
       if (fixedLeft + pickerWidth > viewportWidth) {
         fixedLeft = viewportWidth - pickerWidth - 16;
       }
       if (fixedLeft < 16) {
         fixedLeft = 16;
       }
-      
+
       setCoords({ top: fixedTop, left: fixedLeft });
     };
-    
+
     updatePosition();
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
-    
+
     return () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
@@ -108,7 +119,6 @@ export default function IconPicker({
 
   const handleColorClick = (colorKey: string) => {
     setSelectedColor(colorKey);
-    // If a Lucide icon is currently selected, update its color immediately
     if (currentIcon?.startsWith('lucide:')) {
       onSelect(currentIcon, colorKey);
     }
@@ -119,12 +129,77 @@ export default function IconPicker({
     onClose();
   };
 
-  const pickerStyle: React.CSSProperties = coords 
+  const resizeImage = (file: File, maxDimension = 512): Promise<File> =>
+    new Promise((resolve) => {
+      if (file.type === 'image/svg+xml') { resolve(file); return; }
+
+      // Preserve alpha channel for formats that support it
+      const hasAlpha = file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif';
+      const outputType = hasAlpha ? 'image/png' : 'image/jpeg';
+      const outputExt  = hasAlpha ? '.png' : '.jpg';
+      const quality    = hasAlpha ? undefined : 0.85;
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, outputExt), { type: outputType }));
+          },
+          outputType,
+          quality
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+      img.src = objectUrl;
+    });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.files?.[0];
+    if (!raw) return;
+
+    // Show local preview immediately (original file, before resize)
+    const objectUrl = URL.createObjectURL(raw);
+    setPreviewUrl(objectUrl);
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      const file = await resizeImage(raw);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t('uploadError'));
+      }
+      const { url } = await res.json();
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(url);
+      onSelect(url, null);
+    } catch (err: unknown) {
+      URL.revokeObjectURL(objectUrl);
+      setUploadError(err instanceof Error ? err.message : t('uploadError'));
+      setPreviewUrl(currentIcon?.startsWith('http') ? currentIcon : null);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const pickerStyle: React.CSSProperties = coords
     ? { position: 'fixed', top: coords.top, left: coords.left, zIndex: 100 }
     : {};
 
   return (
-    <div 
+    <div
       ref={pickerRef}
       style={pickerStyle}
       onClick={(e) => e.stopPropagation()}
@@ -175,6 +250,17 @@ export default function IconPicker({
           <Star size={13} />
           <span>{t('tabIcon')}</span>
         </button>
+        <button
+          onClick={() => setActiveTab('upload')}
+          className={`flex-1 pb-2 flex items-center justify-center gap-1.5 transition-colors font-medium border-b-2 cursor-pointer ${
+            activeTab === 'upload'
+              ? 'border-blue-500 text-white'
+              : 'border-transparent text-neutral-500 hover:text-neutral-300'
+          }`}
+        >
+          <Upload size={13} />
+          <span>{t('tabUpload')}</span>
+        </button>
       </div>
 
       {/* Emoji Panel */}
@@ -206,7 +292,7 @@ export default function IconPicker({
               disabled={!customEmoji.trim()}
               className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-750 disabled:opacity-40 text-xs font-medium text-white rounded transition-colors cursor-pointer"
             >
-              Add
+              {t('add')}
             </button>
           </form>
         </div>
@@ -223,8 +309,8 @@ export default function IconPicker({
                 onClick={() => handleColorClick(colorKey)}
                 style={{ backgroundColor: ICON_COLOR_HEX[colorKey] }}
                 className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
-                  selectedColor === colorKey 
-                    ? 'border-white scale-110 shadow-sm' 
+                  selectedColor === colorKey
+                    ? 'border-white scale-110 shadow-sm'
                     : 'border-transparent hover:scale-105'
                 }`}
                 title={colorKey}
@@ -248,6 +334,51 @@ export default function IconPicker({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Upload Panel */}
+      {activeTab === 'upload' && (
+        <div className="space-y-3">
+          {/* Preview / drop zone */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-full h-28 border border-dashed border-neutral-700 hover:border-neutral-500 rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden relative"
+          >
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt=""
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <>
+                <ImageIcon size={22} className="text-neutral-600" />
+                <span className="text-xs text-neutral-500">{t('uploadHint')}</span>
+              </>
+            )}
+            {isUploading && (
+              <div className="absolute inset-0 bg-neutral-900/70 flex items-center justify-center rounded-lg">
+                <Loader2 size={20} className="text-blue-400 animate-spin" />
+              </div>
+            )}
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          {uploadError && (
+            <p className="text-[11px] text-red-400 leading-tight">{uploadError}</p>
+          )}
+
+          <p className="text-[10px] text-neutral-600 leading-tight">{t('uploadLimit')}</p>
         </div>
       )}
     </div>

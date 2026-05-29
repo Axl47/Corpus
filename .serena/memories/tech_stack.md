@@ -2,7 +2,7 @@
 
 - **Framework:** Next.js 16.2.6 (App Router) — React 19, TypeScript 5
 - **Styling:** TailwindCSS v4 (`@tailwindcss/postcss`), Lucide React v1.16
-- **Database:** SQLite local (`file:local.db`) via `@libsql/client` v0.17; Drizzle ORM v0.45
+- **Database:** SQLite local (`file:local.db`) via `@libsql/client` v0.17; Drizzle ORM + Cloudinary (image uploads, `POST /api/upload`, env: CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET) v0.45
 - **Auth:** Auth.js v5 beta (`next-auth@^5.0.0-beta.31`) + `@auth/drizzle-adapter`; bcryptjs v3
 - **i18n:** next-intl v4 (App Router native); localePrefix:'never'; 6 locales (en/tr/hi/es/fr/de)
 - **Editor:** Tiptap v3 (StarterKit, Markdown, TaskList, Table, Suggestion, BubbleMenu, Placeholder)

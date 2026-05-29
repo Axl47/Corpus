@@ -136,7 +136,7 @@
     "transferConfirm": "Bu çalışma alanının sahipliğini {name} kişiye devretmek istediğinizden emin misiniz? Sıradan bir üye olarak düşürüleceksiniz.",
     "removeConfirm": "{name} kişisini bu çalışma alanından kaldırmak istediğinizden emin misiniz?",
     "deleteConfirm": "Bu çalışma alanını ve tüm sayfa/veritabanlarını kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
-    "tabTokens": "API / MCP Token'ları",
+    "tabTokens": "MCP",
     "tokensSectionHint": "Token'lar, yapay zeka ajanlarına MCP üzerinden bu çalışma alanına erişim sağlar.",
     "ownerOnlyTokens": "Yalnızca çalışma alanı sahipleri token yönetebilir.",
     "tokenName": "Token Adı",
@@ -182,7 +182,10 @@
     "tokenExpiry60d": "60 gün",
     "tokenExpiry90d": "90 gün",
     "tokenExpiresInDays": "{days}g kaldı",
-    "tokenExpired": "Süresi Doldu"
+    "tokenExpired": "Süresi Doldu",
+    "workspaceIcon": "Workspace İkonu",
+    "workspaceIconHint": "Emoji, simge seçin veya özel görsel yükleyin.",
+    "changeIcon": "İkonu değiştir"
   },
   "Templates": {
     "modalTitle": "Yeni Öğe",
@@ -354,7 +357,12 @@
     "customEmojiPlaceholder": "Özel emoji yapıştır...",
     "searchPlaceholder": "Simge ara…",
     "colorLabel": "Renk",
-    "remove": "Kaldır"
+    "remove": "Kaldır",
+    "tabUpload": "Yükle",
+    "uploadHint": "Bir görsel seçmek için tıklayın",
+    "uploadLimit": "JPG, PNG, GIF, WebP, SVG desteklenir",
+    "uploadError": "Yükleme başarısız. Lütfen tekrar deneyin.",
+    "add": "Ekle"
   },
   "Errors": {
     "emailRequired": "E-posta ve şifre gereklidir",

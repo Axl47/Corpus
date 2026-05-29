@@ -102,6 +102,7 @@ Tokens defined via `@theme` overrides in `src/app/globals.css`.
 - **Styling:** TailwindCSS, Lucide React icons
 - **Database:** SQLite (`file:local.db`), Turso/Serverless compatible target.
 - **ORM & Driver:** Drizzle ORM + `@libsql/client`.
+- **Image Uploads:** Cloudinary (`cloudinary` npm). Upload API at `POST /api/upload`. Env vars: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. Images stored in `remnus/icons/` folder, auto-resized to 256×256.
 - **Auth:** Auth.js v5 (`next-auth@beta`) + `@auth/drizzle-adapter` + `bcryptjs`.
 - **Desktop:** Tauri v2 (Rust shell, loads `remnus.com` in system WebView).
 - **Mobile:** Capacitor v8 (iOS + Android, loads `remnus.com` via `server.url`).
@@ -115,7 +116,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 | Table | Purpose |
 | ----- | ------- |
-| `workspaces` | Workspace list |
+| `workspaces` | Workspace list — `icon` (emoji/lucide/https URL), `icon_color` |
 | `workspace_items` | Sidebar items (pages + databases), recursive `parent_id` nesting |
 | `standalone_pages` | Markdown content for page-type items (1:1 with `workspace_items`) |
 | `databases` | `schema` JSON (columns) + `views` JSON (named view configs) |
@@ -149,7 +150,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 ### Migration Notes
 
-- New migration `when` values must be **greater than** all existing values. Last: `0014` → `1780500000000`. **Next migration: `when` > `1780500000000`.**
+- New migration `when` values must be **greater than** all existing values. Last: `0015` → `1780600000000`. **Next migration: `when` > `1780600000000`.**
 - Apply with: `npx tsx src/db/migrate.ts`
 
 ### Project Structure
@@ -177,12 +178,13 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `api/auth/client-bridge/route.ts` — GET. Called after browser-side login (as callbackUrl). Requires `device_id` query param. Creates a 5-min JWT signed with AUTH_SECRET, stores it in the in-memory `client-auth-store` keyed by `device_id`, and returns a "Close this tab" HTML page.
 - `api/auth/client-poll/route.ts` — GET. Polled by the Tauri WebView every 2 s. Accepts `device_id`; returns `{ ready: false }` while waiting, `{ ready: true, token }` once the browser completes login (one-time consume).
 - `api/auth/client-activate/route.ts` — GET. Tauri WebView navigates here with the token from the poll response. Signs in via `client-token` provider, redirects to `/app`.
+- `api/upload/route.ts` — `POST`. Cloudinary image upload. Auth-gated (session required). Accepts `multipart/form-data` with `file` field (max 5 MB, image types only). Returns `{ url }`. Images stored in `remnus/icons/`, cropped to 256×256.
 - `api/mcp/route.ts` — MCP Streamable HTTP + Standard SSE: supports dual mode (stateless Streamable HTTP for Claude Code, and standard stateful SSE for Cursor, Windsurf, Continue, and Antigravity IDE via sessionId query param). Bearer auth, rate limit (60 req/min), 12 tools, audit log.
   - **Read tools:** `search`, `list_workspace`, `get_page` (auto-detects type, no `isDbRow` flag needed), `get_database_schema` (schema only, no rows), `query_database` (supports `filters: Record<string,any>` for property matching)
   - **Write tools:** `create_page`, `update_page` (merges `properties` — never overwrites), `bulk_update` (multiple pages/rows in one call), `delete_page` (workspace item or DB row; requires `confirm: true`), `move_item` (reparent sidebar item; `newParentId: null` → root), `create_database` (custom schema; title column auto-prepended), `update_database_schema` (add/remove columns; removing requires `confirm: true`; title column protected)
 
 **Server Actions (`src/lib/actions/`)**
-- `workspace.ts` — Workspace + sidebar item CRUD (all auth-gated via `assertWorkspaceAccess`).
+- `workspace.ts` — Workspace + sidebar item CRUD (all auth-gated via `assertWorkspaceAccess`). Includes `updateWorkspaceIcon(id, icon, iconColor)`.
 - `database.ts` — Database schema + view mutations (`assertDatabaseAccess`).
 - `page.ts` — Database row CRUD (`assertDatabaseAccess`).
 - `auth.ts` — User auth, registration, role management, workspace membership, admin user ops.
@@ -208,8 +210,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `PageEditor` — DB row editor: properties panel + block editor, Narrow/Wide/Full width, peek-compact layout.
 - `MobileNavWrapper` — Mobile-only bottom bar: workspace sheet, context-aware + button, user sheet.
 - `ViewsBar` — View tabs with inline rename/delete/add; collapses to dropdown on mobile.
-- `PageIcon` — Emoji or Lucide icon with 9 theme colors.
-- `IconPicker` — Popover for emoji + Lucide icon + color selection.
+- `PageIcon` — Renders icons: emoji string, `lucide:Name`, or `https://…` image URL (as `<img>`). Supports 9 theme colors.
+- `IconPicker` — Popover with 3 tabs: emoji, Lucide icon + color, Upload (Cloudinary via `POST /api/upload`). Used for workspace items, DB rows, and workspaces.
 - `SaveStatus` — Auto-fading save indicator (idle → saving → saved → error).
 - `LanguageSwitcher` — Language dropdown; calls `setLocale()` + `router.refresh()`.
 - `AdminUsersTable` — Paginated user table with delete (10/page).

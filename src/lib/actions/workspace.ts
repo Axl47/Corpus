@@ -162,6 +162,16 @@ export async function renameWorkspace(id: string, name: string) {
   return { success: true };
 }
 
+export async function updateWorkspaceIcon(id: string, icon: string | null, iconColor: string | null) {
+  const userId = await assertWorkspaceAccess(id);
+  await db.update(workspaces)
+    .set({ icon, iconColor, updatedAt: new Date() })
+    .where(eq(workspaces.id, id));
+
+  revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId: id, actorId: userId });
+}
+
 export async function switchWorkspace(workspaceId: string) {
   await assertWorkspaceAccess(workspaceId);
   const cookieStore = await cookies();

@@ -54,7 +54,7 @@ messages/                   # i18n JSON (en, tr, hi, es, fr, de)
 ```
 
 ## DB Tables
-- `workspaces` — workspace list
+- `workspaces` — workspace list; `icon` (emoji/lucide/https URL), `icon_color`
 - `workspace_items` — sidebar items (pages + databases), recursive nesting via `parent_id`
 - `standalone_pages` — markdown content for page-type items
 - `databases` — schema (JSON) + views (JSON) config

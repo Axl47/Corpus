@@ -136,7 +136,7 @@
     "transferConfirm": "¿Estás absolutamente seguro de que deseas transferir la propiedad de este espacio a {name}? Serás degradado a miembro regular.",
     "removeConfirm": "¿Estás seguro de que deseas eliminar a {name} de este espacio?",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar permanentemente este espacio y todas sus páginas/bases de datos? Esta acción no se puede deshacer.",
-    "tabTokens": "Tokens API / MCP",
+    "tabTokens": "MCP",
     "tokensSectionHint": "Los tokens otorgan a los agentes de IA acceso a este espacio de trabajo mediante MCP.",
     "ownerOnlyTokens": "Solo los propietarios del espacio de trabajo pueden gestionar tokens.",
     "tokenName": "Nombre del token",
@@ -182,7 +182,10 @@
     "tokenExpiry60d": "60 días",
     "tokenExpiry90d": "90 días",
     "tokenExpiresInDays": "{days}d restantes",
-    "tokenExpired": "Expirado"
+    "tokenExpired": "Expirado",
+    "workspaceIcon": "Ícono del espacio de trabajo",
+    "workspaceIconHint": "Elige un emoji, icono o sube una imagen personalizada.",
+    "changeIcon": "Cambiar ícono"
   },
   "Templates": {
     "modalTitle": "Nuevo Elemento",
@@ -354,7 +357,12 @@
     "customEmojiPlaceholder": "Pegar emoji personalizado...",
     "searchPlaceholder": "Buscar íconos…",
     "colorLabel": "Color",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "tabUpload": "Subir",
+    "uploadHint": "Haz clic para seleccionar una imagen",
+    "uploadLimit": "Compatible con JPG, PNG, GIF, WebP, SVG",
+    "uploadError": "Error al subir. Inténtalo de nuevo.",
+    "add": "Añadir"
   },
   "Errors": {
     "emailRequired": "El correo y la contraseña son obligatorios",

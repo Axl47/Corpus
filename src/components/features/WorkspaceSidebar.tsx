@@ -25,6 +25,7 @@ import {
   createWorkspace,
   switchWorkspace,
   updateWorkspaceItemIcon,
+  updateWorkspaceIcon,
   updateWorkspaceItemTitle,
   deleteWorkspaceItem,
   duplicateWorkspaceItem,
@@ -50,6 +51,8 @@ function isDescendant(items: WorkspaceItemRow[], targetId: string, ancestorId: s
 type WorkspaceType = {
   id: string;
   name: string;
+  icon?: string | null;
+  iconColor?: string | null;
 };
 
 type CurrentUser = {
@@ -93,6 +96,9 @@ export default function WorkspaceSidebar({
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [activeIconPickerId, setActiveIconPickerId] = useState<string | null>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // Workspace icon picker
+  const [activeWorkspaceIconPickerId, setActiveWorkspaceIconPickerId] = useState<string | null>(null);
+  const workspaceIconRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   // Item context menu
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
@@ -137,9 +143,15 @@ export default function WorkspaceSidebar({
     updateWorkspaceItemIcon(itemId, newIcon, newColor);
   };
 
+  const handleWorkspaceIconSelect = (workspaceId: string, newIcon: string | null, newColor: string | null) => {
+    setLocalWorkspaces(prev => prev.map(w => w.id === workspaceId ? { ...w, icon: newIcon, iconColor: newColor } : w));
+    setActiveWorkspaceIconPickerId(null);
+    updateWorkspaceIcon(workspaceId, newIcon, newColor);
+  };
+
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
-  const [settingsModalWorkspace, setSettingsModalWorkspace] = useState<{ id: string; name: string } | null>(null);
+  const [settingsModalWorkspace, setSettingsModalWorkspace] = useState<{ id: string; name: string; icon?: string | null; iconColor?: string | null } | null>(null);
 
   // Expand / collapse states for workspaces (All expanded by default)
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>(() => {
@@ -737,16 +749,38 @@ export default function WorkspaceSidebar({
                     {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   </button>
 
-                  {/* Initials badge */}
-                  <div
-                    translate="no"
-                    className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm transition-colors notranslate ${
-                      isCurrentActive
-                        ? 'bg-neutral-50 text-neutral-950'
-                        : 'bg-neutral-700 group-hover/root:bg-neutral-600 text-neutral-200'
-                    }`}
-                  >
-                    {(w.name || 'W').trim().charAt(0).toUpperCase()}
+                  {/* Workspace icon / initials badge */}
+                  <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      ref={(el) => { workspaceIconRefs.current[w.id] = el; }}
+                      onClick={() => setActiveWorkspaceIconPickerId(activeWorkspaceIconPickerId === w.id ? null : w.id)}
+                      className="flex items-center justify-center"
+                      title={t('changeIcon')}
+                    >
+                      {w.icon ? (
+                        <PageIcon icon={w.icon} iconColor={w.iconColor} size={20} hideFallback={false} className="rounded" />
+                      ) : (
+                        <div
+                          translate="no"
+                          className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm transition-colors notranslate ${
+                            isCurrentActive
+                              ? 'bg-neutral-50 text-neutral-950'
+                              : 'bg-neutral-700 group-hover/root:bg-neutral-600 text-neutral-200'
+                          }`}
+                        >
+                          {(w.name || 'W').trim().charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </button>
+                    {activeWorkspaceIconPickerId === w.id && (
+                      <IconPicker
+                        currentIcon={w.icon}
+                        currentIconColor={w.iconColor}
+                        onSelect={(newIcon, newColor) => handleWorkspaceIconSelect(w.id, newIcon, newColor)}
+                        onClose={() => setActiveWorkspaceIconPickerId(null)}
+                        anchorRef={{ current: workspaceIconRefs.current[w.id] }}
+                      />
+                    )}
                   </div>
 
                   <span className="truncate flex-1 font-medium">{w.name}</span>
@@ -766,7 +800,7 @@ export default function WorkspaceSidebar({
                   </button>
                   <button
                     onClick={() => {
-                      setSettingsModalWorkspace({ id: w.id, name: w.name });
+                      setSettingsModalWorkspace({ id: w.id, name: w.name, icon: w.icon, iconColor: w.iconColor });
                     }}
                     className="p-1 rounded hover:bg-neutral-700 text-neutral-400 hover:text-white"
                     title={t('workspaceSettings')}
@@ -1137,11 +1171,17 @@ export default function WorkspaceSidebar({
         <WorkspaceSettingsModal
           workspaceId={settingsModalWorkspace.id}
           workspaceName={settingsModalWorkspace.name}
+          workspaceIcon={settingsModalWorkspace.icon}
+          workspaceIconColor={settingsModalWorkspace.iconColor}
           currentUser={currentUser}
           onClose={() => setSettingsModalWorkspace(null)}
           onRenamed={(newName) => {
             setSettingsModalWorkspace(prev => prev ? { ...prev, name: newName } : null);
             setLocalWorkspaces(prev => prev.map(w => w.id === settingsModalWorkspace.id ? { ...w, name: newName } : w));
+          }}
+          onIconChanged={(newIcon, newColor) => {
+            setSettingsModalWorkspace(prev => prev ? { ...prev, icon: newIcon, iconColor: newColor } : null);
+            setLocalWorkspaces(prev => prev.map(w => w.id === settingsModalWorkspace.id ? { ...w, icon: newIcon, iconColor: newColor } : w));
           }}
           onDeleted={() => {
             setLocalWorkspaces(prev => prev.filter(w => w.id !== settingsModalWorkspace.id));

@@ -4,6 +4,8 @@ import { sql } from 'drizzle-orm';
 export const workspaces = sqliteTable('workspaces', {
   id:        text('id').primaryKey(),
   name:      text('name').notNull(),
+  icon:      text('icon'),
+  iconColor: text('icon_color'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),

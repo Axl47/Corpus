@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Trash, UserPlus, Check, AlertCircle, Copy, KeyRound, Plus, ChevronDown } from 'lucide-react';
+import { X, Trash, UserPlus, Check, AlertCircle, Copy, KeyRound, Plus, ChevronDown, Zap } from 'lucide-react';
 import AIMark from '@/components/marketing/AIMark';
-import { renameWorkspace, deleteWorkspace } from '@/lib/actions/workspace';
+import { renameWorkspace, deleteWorkspace, updateWorkspaceIcon } from '@/lib/actions/workspace';
+import IconPicker from '@/components/features/IconPicker';
+import PageIcon from '@/components/features/PageIcon';
 import {
   getWorkspaceMembers,
   inviteToWorkspace,
@@ -55,18 +57,24 @@ type AgentId = typeof AGENT_OPTIONS[number]['id'];
 interface WorkspaceSettingsModalProps {
   workspaceId: string;
   workspaceName: string;
+  workspaceIcon?: string | null;
+  workspaceIconColor?: string | null;
   currentUser: CurrentUser;
   onClose: () => void;
   onRenamed: (newName: string) => void;
+  onIconChanged?: (icon: string | null, iconColor: string | null) => void;
   onDeleted: () => void;
 }
 
 export default function WorkspaceSettingsModal({
   workspaceId,
   workspaceName,
+  workspaceIcon,
+  workspaceIconColor,
   currentUser,
   onClose,
   onRenamed,
+  onIconChanged,
   onDeleted,
 }: WorkspaceSettingsModalProps) {
   const t = useTranslations('WorkspaceSettings');
@@ -78,6 +86,11 @@ export default function WorkspaceSettingsModal({
   const [renameSuccess, setRenameSuccess] = useState('');
   const [isRenaming, startRenameTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+
+  // Icon state
+  const [currentIcon, setCurrentIcon] = useState<string | null>(workspaceIcon ?? null);
+  const [currentIconColor, setCurrentIconColor] = useState<string | null>(workspaceIconColor ?? null);
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   // Members Tab state
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -405,12 +418,17 @@ export default function WorkspaceSettingsModal({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
-                activeTab === tab
-                  ? 'border-blue-500 text-white'
-                  : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+                tab === 'tokens'
+                  ? activeTab === tab
+                    ? 'border-amber-400 text-amber-300'
+                    : 'border-transparent text-amber-500/70 hover:text-amber-400'
+                  : activeTab === tab
+                    ? 'border-blue-500 text-white'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-200'
               }`}
             >
+              {tab === 'tokens' && <Zap size={11} className="shrink-0" />}
               {tab === 'general' ? t('tabGeneral') : tab === 'members' ? t('tabMembers') : t('tabTokens')}
             </button>
           ))}
@@ -420,6 +438,45 @@ export default function WorkspaceSettingsModal({
         <div className="overflow-y-auto p-6 space-y-6 flex-1">
           {activeTab === 'general' && (
             <div className="space-y-6">
+              {/* Workspace Icon */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+                  {t('workspaceIcon')}
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowIconPicker(v => !v)}
+                      className="w-12 h-12 rounded-lg border border-neutral-700 hover:border-neutral-500 bg-neutral-900 flex items-center justify-center transition-colors cursor-pointer"
+                      title={t('changeIcon')}
+                    >
+                      {currentIcon ? (
+                        <PageIcon icon={currentIcon} iconColor={currentIconColor} size={28} />
+                      ) : (
+                        <span className="text-2xl font-bold text-neutral-600 select-none">
+                          {(workspaceName || 'W').trim().charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </button>
+                    {showIconPicker && (
+                      <IconPicker
+                        currentIcon={currentIcon}
+                        currentIconColor={currentIconColor}
+                        onSelect={async (newIcon, newColor) => {
+                          setCurrentIcon(newIcon);
+                          setCurrentIconColor(newColor);
+                          setShowIconPicker(false);
+                          await updateWorkspaceIcon(workspaceId, newIcon, newColor);
+                          onIconChanged?.(newIcon, newColor);
+                        }}
+                        onClose={() => setShowIconPicker(false)}
+                      />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 leading-relaxed">{t('workspaceIconHint')}</p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
                   {t('workspaceName')}

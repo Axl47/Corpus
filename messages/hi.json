@@ -136,7 +136,7 @@
     "transferConfirm": "क्या आप वाकई इस कार्यक्षेत्र का स्वामित्व {name} को हस्तांतरित करना चाहते हैं? आपको सामान्य सदस्य में पदावनत किया जाएगा।",
     "removeConfirm": "क्या आप {name} को इस कार्यक्षेत्र से हटाना चाहते हैं?",
     "deleteConfirm": "क्या आप इस कार्यक्षेत्र और सभी पेज/डेटाबेस को स्थायी रूप से हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
-    "tabTokens": "API / MCP टोकन",
+    "tabTokens": "MCP",
     "tokensSectionHint": "टोकन AI एजेंट को MCP के माध्यम से इस कार्यक्षेत्र तक पहुँच देते हैं।",
     "ownerOnlyTokens": "केवल कार्यक्षेत्र के स्वामी ही टोकन प्रबंधित कर सकते हैं।",
     "tokenName": "टोकन का नाम",
@@ -182,7 +182,10 @@
     "tokenExpiry60d": "60 दिन",
     "tokenExpiry90d": "90 दिन",
     "tokenExpiresInDays": "{days}d शेष",
-    "tokenExpired": "समाप्त"
+    "tokenExpired": "समाप्त",
+    "workspaceIcon": "वर्कस्पेस आइकन",
+    "workspaceIconHint": "इमोजी, आइकन चुनें या कस्टम छवि अपलोड करें।",
+    "changeIcon": "आइकन बदलें"
   },
   "Templates": {
     "modalTitle": "नया आइटम",
@@ -354,7 +357,12 @@
     "customEmojiPlaceholder": "कस्टम इमोजी पेस्ट करें...",
     "searchPlaceholder": "आइकन खोजें…",
     "colorLabel": "रंग",
-    "remove": "हटाएं"
+    "remove": "हटाएं",
+    "tabUpload": "अपलोड",
+    "uploadHint": "एक छवि चुनने के लिए क्लिक करें",
+    "uploadLimit": "JPG, PNG, GIF, WebP, SVG समर्थित",
+    "uploadError": "अपलोड विफल। कृपया पुनः प्रयास करें।",
+    "add": "जोड़ें"
   },
   "Errors": {
     "emailRequired": "ईमेल और पासवर्ड आवश्यक हैं",
