@@ -34,11 +34,15 @@
     "demoHint": "Explora sin registrarte — los cambios se restablecen cada sesión",
     "backToHome": "Volver al inicio",
     "clientLoginTitle": "Iniciar sesión en Remnus",
-    "clientLoginSubtitle": "Inicia sesión con tu cuenta del navegador — tus credenciales permanecen en el navegador.",
+    "clientLoginSubtitle": "Inicia sesión para conectar tu cuenta con la app de escritorio.",
     "clientLoginSuccess": "¡Sesión iniciada! Puedes cerrar esta pestaña y volver a la aplicación.",
+    "clientBridgeTitle": "Sesión Iniciada",
+    "clientBridgeHint": "Puedes cerrar esta pestaña y volver a Remnus.",
     "clientLoginError": "Error de autenticación. Inténtalo de nuevo.",
     "openInBrowser": "Iniciar sesión con Google",
-    "openingBrowser": "Abriendo el navegador…"
+    "openingBrowser": "Abriendo el navegador…",
+    "openBrowserInstruction": "Completa el inicio de sesión en la ventana del navegador que acaba de abrirse.",
+    "cancelSignIn": "Cancelar"
   },
   "Admin": {
     "panelTitle": "Panel de Administración",

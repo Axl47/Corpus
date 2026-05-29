@@ -29,6 +29,13 @@ export default function LoginPage() {
 
   const [demoState, demoFormAction, isDemoPending] = useActionState(loginAsDemo, null);
 
+  function cancelSignIn() {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    deviceIdRef.current = null;
+    setTauriState('idle');
+  }
+
   async function handleTauriSignIn() {
     const deviceId = crypto.randomUUID();
     deviceIdRef.current = deviceId;
@@ -45,8 +52,11 @@ export default function LoginPage() {
     try {
       const { openUrl } = await import('@tauri-apps/plugin-opener');
       await openUrl(loginUrl);
-    } catch {
-      window.open(loginUrl, '_blank');
+    } catch (err) {
+      console.error('[Remnus] openUrl failed:', err);
+      deviceIdRef.current = null;
+      setTauriState('error');
+      return;
     }
 
     pollIntervalRef.current = setInterval(async () => {
@@ -99,6 +109,20 @@ export default function LoginPage() {
             <p className="text-sm text-neutral-500">
               {tauriState === 'waiting' ? t('openingBrowser') : t('signingIn')}
             </p>
+            {tauriState === 'waiting' && (
+              <>
+                <p className="text-xs text-neutral-600 text-center max-w-55 leading-relaxed">
+                  {t('openBrowserInstruction')}
+                </p>
+                <button
+                  type="button"
+                  onClick={cancelSignIn}
+                  className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors mt-1"
+                >
+                  {t('cancelSignIn')}
+                </button>
+              </>
+            )}
           </div>
         )}
 

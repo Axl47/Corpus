@@ -34,11 +34,15 @@
     "demoHint": "Explore without signing up — changes reset each session",
     "backToHome": "Back to home",
     "clientLoginTitle": "Sign in to Remnus",
-    "clientLoginSubtitle": "Sign in with your browser account — your credentials stay in your browser.",
+    "clientLoginSubtitle": "Sign in to connect your account to the desktop app.",
     "clientLoginSuccess": "Signed in! You can close this tab and return to the app.",
+    "clientBridgeTitle": "Signed in",
+    "clientBridgeHint": "You can close this tab and return to Remnus.",
     "clientLoginError": "Authentication failed. Please try again.",
     "openInBrowser": "Sign in with Google",
-    "openingBrowser": "Opening browser…"
+    "openingBrowser": "Opening browser…",
+    "openBrowserInstruction": "Complete sign-in in the browser window that just opened.",
+    "cancelSignIn": "Cancel"
   },
   "Admin": {
     "panelTitle": "Admin Panel",

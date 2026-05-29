@@ -10,10 +10,10 @@
       "identifier": "opener:allow-open-url",
       "allow": [
         {
-          "url": "https://remnus.com**"
+          "url": "https://remnus.com/*"
         },
         {
-          "url": "http://localhost**"
+          "url": "http://localhost:3000/*"
         }
       ]
     },

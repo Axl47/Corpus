@@ -34,11 +34,15 @@
     "demoHint": "Explorez sans vous inscrire — les modifications sont réinitialisées à chaque session",
     "backToHome": "Retour à l'accueil",
     "clientLoginTitle": "Se connecter à Remnus",
-    "clientLoginSubtitle": "Connectez-vous avec votre compte navigateur — vos identifiants restent dans le navigateur.",
+    "clientLoginSubtitle": "Connectez-vous pour lier votre compte à l'application bureau.",
     "clientLoginSuccess": "Connecté ! Vous pouvez fermer cet onglet et retourner à l'application.",
+    "clientBridgeTitle": "Connexion Réussie",
+    "clientBridgeHint": "Vous pouvez fermer cet onglet et revenir à Remnus.",
     "clientLoginError": "Échec de l'authentification. Veuillez réessayer.",
     "openInBrowser": "Se connecter avec Google",
-    "openingBrowser": "Ouverture du navigateur…"
+    "openingBrowser": "Ouverture du navigateur…",
+    "openBrowserInstruction": "Terminez la connexion dans la fenêtre de navigateur qui vient de s'ouvrir.",
+    "cancelSignIn": "Annuler"
   },
   "Admin": {
     "panelTitle": "Panneau d'Administration",

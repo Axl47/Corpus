@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const deviceId = searchParams.get('device_id');
   if (!deviceId) return Response.json({ ready: false });
 
-  const token = consumeClientToken(deviceId);
+  const token = await consumeClientToken(deviceId);
   if (!token) return Response.json({ ready: false });
 
   return Response.json({ ready: true, token });

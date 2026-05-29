@@ -34,11 +34,15 @@
     "demoHint": "साइन अप किए बिना एक्सप्लोर करें — परिवर्तन हर सत्र में रीसेट होते हैं",
     "backToHome": "होम पर वापस जाएं",
     "clientLoginTitle": "Remnus में साइन इन करें",
-    "clientLoginSubtitle": "अपने ब्राउज़र खाते से साइन इन करें — आपकी जानकारी ब्राउज़र में रहती है।",
+    "clientLoginSubtitle": "डेस्कटॉप ऐप से जुड़ने के लिए अपने खाते से साइन इन करें।",
     "clientLoginSuccess": "साइन इन हो गया! आप यह टैब बंद करके ऐप पर वापस जा सकते हैं।",
+    "clientBridgeTitle": "साइन इन सफल",
+    "clientBridgeHint": "आप यह टैब बंद करके Remnus पर वापस जा सकते हैं।",
     "clientLoginError": "प्रमाणीकरण विफल। कृपया पुनः प्रयास करें।",
     "openInBrowser": "Google से साइन इन करें",
-    "openingBrowser": "ब्राउज़र खुल रहा है…"
+    "openingBrowser": "ब्राउज़र खुल रहा है…",
+    "openBrowserInstruction": "अभी खुली ब्राउज़र विंडो में साइन-इन पूरा करें।",
+    "cancelSignIn": "रद्द करें"
   },
   "Admin": {
     "panelTitle": "व्यवस्थापक पैनल",

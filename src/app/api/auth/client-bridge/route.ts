@@ -1,6 +1,8 @@
 import { auth } from '@/auth';
 import { SignJWT } from 'jose';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { getTranslations } from 'next-intl/server';
 import { setPendingClientToken } from '@/lib/client-auth-store';
 
 // Called after browser-side login (via callbackUrl).
@@ -20,15 +22,21 @@ export async function GET(request: Request) {
     .setExpirationTime('5m')
     .sign(secret);
 
-  setPendingClientToken(deviceId, token);
+  await setPendingClientToken(deviceId, token);
+
+  const SUPPORTED_LOCALES = ['en', 'tr', 'hi', 'es', 'fr', 'de'] as const;
+  const cookieStore = await cookies();
+  const rawLocale = cookieStore.get('NEXT_LOCALE')?.value;
+  const locale = (SUPPORTED_LOCALES as readonly string[]).includes(rawLocale ?? '') ? rawLocale! : 'en';
+  const t = await getTranslations({ locale, namespace: 'Auth' });
 
   return new Response(
     `<!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Remnus – Signed in</title>
+  <title>Remnus</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1d1f23; color: #cccccc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
@@ -46,8 +54,8 @@ export async function GET(request: Request) {
         <polyline points="20 6 9 17 4 12"/>
       </svg>
     </div>
-    <h1>Signed in successfully</h1>
-    <p>You can close this tab and return to Remnus.</p>
+    <h1>${t('clientBridgeTitle')}</h1>
+    <p>${t('clientBridgeHint')}</p>
   </div>
 </body>
 </html>`,

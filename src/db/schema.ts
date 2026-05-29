@@ -141,6 +141,13 @@ export const agentTokens = sqliteTable('agent_tokens', {
   index('agent_tokens_token_prefix_idx').on(table.tokenPrefix),
 ]);
 
+export const clientAuthTokens = sqliteTable('client_auth_tokens', {
+  deviceId:  text('device_id').primaryKey(),
+  token:     text('token').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const agentActivity = sqliteTable('agent_activity', {
   id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   tokenId:     text('token_id').notNull().references(() => agentTokens.id, { onDelete: 'cascade' }),
