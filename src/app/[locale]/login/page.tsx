@@ -11,6 +11,7 @@ export default function LoginPage() {
   const t = useTranslations('Auth');
   const [isTauri, setIsTauri] = useState(false);
   const [tauriState, setTauriState] = useState<TauriState>('idle');
+  const [openUrlError, setOpenUrlError] = useState<string | null>(null);
   const deviceIdRef = useRef<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,7 +54,9 @@ export default function LoginPage() {
       const { openUrl } = await import('@tauri-apps/plugin-opener');
       await openUrl(loginUrl);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error('[Remnus] openUrl failed:', err);
+      setOpenUrlError(msg);
       deviceIdRef.current = null;
       setTauriState('error');
       return;
@@ -129,9 +132,14 @@ export default function LoginPage() {
         {tauriState === 'error' && (
           <div className="flex flex-col items-center gap-4">
             <p className="text-sm text-red-400">{t('clientLoginError')}</p>
+            {openUrlError && (
+              <p className="text-xs text-neutral-600 font-mono text-center max-w-xs break-all select-all">
+                {openUrlError}
+              </p>
+            )}
             <button
               type="button"
-              onClick={() => { deviceIdRef.current = null; setTauriState('idle'); }}
+              onClick={() => { deviceIdRef.current = null; setOpenUrlError(null); setTauriState('idle'); }}
               className="px-10 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm rounded-lg transition-colors"
             >
               {t('signIn')}

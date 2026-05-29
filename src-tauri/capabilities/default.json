@@ -9,12 +9,12 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
-        {
-          "url": "https://remnus.com/*"
-        },
-        {
-          "url": "http://localhost:3000/*"
-        }
+        { "url": "https://remnus.com/**" },
+        { "url": "https://remnus.com/*" },
+        { "url": "https://remnus.com*" },
+        { "url": "http://localhost:3000/**" },
+        { "url": "http://localhost:3000/*" },
+        { "url": "http://localhost:3000*" }
       ]
     },
     "deep-link:default",
