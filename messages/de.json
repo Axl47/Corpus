@@ -159,6 +159,8 @@
     "revoking": "Wird widerrufen...",
     "active": "Aktiv",
     "revoked": "Widerrufen",
+    "showInactiveTokens": "Inaktive anzeigen ({count})",
+    "hideInactiveTokens": "Inaktive ausblenden",
     "you": "Sie",
     "addToken": "Hinzufügen",
     "cancelCreate": "Abbrechen",

@@ -159,6 +159,8 @@
     "revoking": "Révocation...",
     "active": "Actif",
     "revoked": "Révoqué",
+    "showInactiveTokens": "Afficher les inactifs ({count})",
+    "hideInactiveTokens": "Masquer les inactifs",
     "you": "Vous",
     "addToken": "Ajouter",
     "cancelCreate": "Annuler",

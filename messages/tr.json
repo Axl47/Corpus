@@ -159,6 +159,8 @@
     "revoking": "İptal ediliyor...",
     "active": "Aktif",
     "revoked": "İptal Edildi",
+    "showInactiveTokens": "Pasif tokenleri göster ({count})",
+    "hideInactiveTokens": "Pasif tokenleri gizle",
     "you": "Sen",
     "addToken": "Ekle",
     "cancelCreate": "İptal",

@@ -159,6 +159,8 @@
     "revoking": "रद्द हो रहा है...",
     "active": "सक्रिय",
     "revoked": "रद्द",
+    "showInactiveTokens": "निष्क्रिय दिखाएं ({count})",
+    "hideInactiveTokens": "निष्क्रिय छुपाएं",
     "you": "आप",
     "addToken": "जोड़ें",
     "cancelCreate": "रद्द करें",

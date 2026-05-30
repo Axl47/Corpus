@@ -116,6 +116,7 @@ export default function WorkspaceSettingsModal({
   const [copied, setCopied] = useState(false);
   const [tokenError, setTokenError] = useState('');
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [showInactiveTokens, setShowInactiveTokens] = useState(false);
   const [cmdCopied, setCmdCopied] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [activeGuide, setActiveGuide] = useState<'claude' | 'cursor' | 'windsurf' | 'continue' | 'antigravity'>('claude');
@@ -707,9 +708,27 @@ export default function WorkspaceSettingsModal({
                   ) : (
                     /* Token list + add button at bottom */
                     <div className="space-y-2">
-                      {tokens.length > 0 && (
+                      {tokens.length > 0 && (() => {
+                        const inactiveCount = tokens.filter(t => !!t.revokedAt || getExpiryState(t.expiresAt) === 'expired').length;
+                        const visibleTokens = showInactiveTokens
+                          ? tokens
+                          : tokens.filter(t => !t.revokedAt && getExpiryState(t.expiresAt) !== 'expired');
+                        return (
+                          <>
+                            {inactiveCount > 0 && (
+                              <button
+                                onClick={() => setShowInactiveTokens(v => !v)}
+                                className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-500 hover:text-neutral-300 transition-colors"
+                              >
+                                <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${showInactiveTokens ? 'bg-neutral-600 border-neutral-500' : 'border-neutral-600'}`}>
+                                  {showInactiveTokens && <Check size={9} />}
+                                </span>
+                                {showInactiveTokens ? t('hideInactiveTokens') : t('showInactiveTokens', { count: inactiveCount })}
+                              </button>
+                            )}
+                            {visibleTokens.length > 0 && (
                         <div className="divide-y divide-neutral-800 border border-neutral-800 rounded-lg overflow-hidden bg-neutral-900/20">
-                          {tokens.map((token) => {
+                          {visibleTokens.map((token) => {
                             const isRevoked = !!token.revokedAt;
                             const isRevoking = revokingId === token.id;
                             const isNew = newTokenPrefix === token.tokenPrefix;
@@ -792,7 +811,10 @@ export default function WorkspaceSettingsModal({
                             );
                           })}
                         </div>
-                      )}
+                            )}
+                          </>
+                        );
+                      })()}
 
                       {/* Inline create form or add button */}
                       {showCreateForm ? (
