@@ -40,8 +40,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Remnus',
-  description: 'Customizable database and pages',
+  title: {
+    default: 'Remnus — MCP-native workspace for vibe coders',
+    template: '%s — Remnus',
+  },
+  description: 'Remnus is the MCP-native workspace for vibe coders — kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -54,17 +57,17 @@ export const metadata: Metadata = {
     apple: '/logo-square-dark.png',
   },
   openGraph: {
-    title: 'Remnus',
-    description: 'Customizable database and pages',
+    title: 'Remnus — MCP-native workspace for vibe coders',
+    description: 'Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP.',
     url: 'https://remnus.com',
     siteName: 'Remnus',
-    images: [{ url: 'https://remnus.com/OG_1200x630.png', width: 1200, height: 630, alt: 'Remnus' }],
+    images: [{ url: 'https://remnus.com/OG_1200x630.png', width: 1200, height: 630, alt: 'Remnus — MCP-native workspace for vibe coders' }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Remnus',
-    description: 'Customizable database and pages',
+    title: 'Remnus — MCP-native workspace for vibe coders',
+    description: 'Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP.',
     images: ['https://remnus.com/OG_1200x630.png'],
   },
 };
@@ -147,7 +150,7 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable}`}>
       <body className="font-sans bg-neutral-950 text-neutral-50">
         <PostHogProvider>
-          <PostHogPageView />
+          <PostHogPageView skip={currentUser?.role === 'admin'} />
           <PostHogIdentify user={currentUser} />
           <NextIntlClientProvider messages={messages}>
             <QueryProvider>

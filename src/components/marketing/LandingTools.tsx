@@ -19,7 +19,15 @@ const RESOURCES = [
   { uri: 'remnus://workspace/{id}/schema', mimeType: 'application/json', descKey: 'bridgeResourcesDescWorkspace' },
   { uri: 'remnus://page/{id}',             mimeType: 'text/markdown',     descKey: 'bridgeResourcesDescPage' },
   { uri: 'remnus://database/{id}/schema',  mimeType: 'application/json', descKey: 'bridgeResourcesDescDatabase' },
-  { uri: 'remnus://audit-log/recent',     mimeType: 'application/json', descKey: 'bridgeResourcesDescAuditLog' },
+  { uri: 'remnus://audit-log/recent',      mimeType: 'application/json', descKey: 'bridgeResourcesDescAuditLog' },
+] as const;
+
+const PROMPTS = [
+  { name: 'summarize-page',       args: 'page_id, style?',       descKey: 'bridgePromptsDescSummarizePage' },
+  { name: 'weekly-status-report', args: 'database_id, period?',  descKey: 'bridgePromptsDescWeeklyReport'  },
+  { name: 'kanban-triage',        args: 'database_id',           descKey: 'bridgePromptsDescKanbanTriage'  },
+  { name: 'extract-tasks',        args: 'page_id',               descKey: 'bridgePromptsDescExtractTasks'  },
+  { name: 'search-and-create',    args: 'title, query',          descKey: 'bridgePromptsDescSearchCreate'  },
 ] as const;
 
 const SCOPE_COLORS: Record<string, string> = {
@@ -95,7 +103,7 @@ export default async function LandingTools() {
             <div className="overflow-x-auto">
               {/* header row */}
               <div
-                className="grid px-4 lg:px-4.5 py-3 bg-neutral-850 font-mono text-[11px] text-dim uppercase tracking-[0.08em] min-w-[580px]"
+                className="grid px-4 lg:px-4.5 py-3 bg-neutral-850 font-mono text-[11px] text-dim uppercase tracking-[0.08em] min-w-145"
                 style={{ gridTemplateColumns: '80px 1.4fr 1.5fr 0.6fr' }}
               >
                 <span>{t('bridgeToolsColScope')}</span>
@@ -110,7 +118,7 @@ export default async function LandingTools() {
                 return (
                   <div
                     key={i}
-                    className="grid items-center px-4 lg:px-4.5 py-3 text-[13px] lg:text-[13.5px] min-w-[580px]"
+                    className="grid items-center px-4 lg:px-4.5 py-3 text-[13px] lg:text-[13.5px] min-w-145"
                     style={{
                       gridTemplateColumns: '80px 1.4fr 1.5fr 0.6fr',
                       borderTop: '1px solid var(--color-neutral-800)',
@@ -159,9 +167,8 @@ export default async function LandingTools() {
 
           <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              {/* header row */}
               <div
-                className="grid px-4 lg:px-4.5 py-3 bg-neutral-850 font-mono text-[11px] text-dim uppercase tracking-[0.08em] min-w-[580px]"
+                className="grid px-4 lg:px-4.5 py-3 bg-neutral-850 font-mono text-[11px] text-dim uppercase tracking-[0.08em] min-w-145"
                 style={{ gridTemplateColumns: '1.2fr 1fr 1.8fr' }}
               >
                 <span>{t('bridgeResourcesColUri')}</span>
@@ -174,7 +181,7 @@ export default async function LandingTools() {
                 return (
                   <div
                     key={i}
-                    className="grid items-center px-4 lg:px-4.5 py-3 text-[13px] lg:text-[13.5px] min-w-[580px]"
+                    className="grid items-center px-4 lg:px-4.5 py-3 text-[13px] lg:text-[13.5px] min-w-145"
                     style={{
                       gridTemplateColumns: '1.2fr 1fr 1.8fr',
                       borderTop: '1px solid var(--color-neutral-800)',
@@ -193,6 +200,44 @@ export default async function LandingTools() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Tablo 3: MCP Prompts ───────────────────────────────────────────── */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-strong" />
+            <h3 className="m-0 font-mono text-[11px] text-neutral-100 uppercase tracking-widest font-semibold">
+              Protocol Prompts <span className="text-dim font-normal">({PROMPTS.length})</span>
+            </h3>
+          </div>
+
+          <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <div
+                className="grid px-4 lg:px-4.5 py-3 bg-neutral-850 font-mono text-[11px] text-dim uppercase tracking-[0.08em] min-w-145"
+                style={{ gridTemplateColumns: '1.3fr 1fr 1.8fr' }}
+              >
+                <span>{t('bridgePromptsColName')}</span>
+                <span>{t('bridgePromptsColArgs')}</span>
+                <span>{t('bridgePromptsColDesc')}</span>
+              </div>
+
+              {PROMPTS.map((row, i) => (
+                <div
+                  key={i}
+                  className="grid items-center px-4 lg:px-4.5 py-3 text-[13px] lg:text-[13.5px] min-w-145"
+                  style={{
+                    gridTemplateColumns: '1.3fr 1fr 1.8fr',
+                    borderTop: '1px solid var(--color-neutral-800)',
+                  }}
+                >
+                  <span className="font-mono text-neutral-100 font-medium">{row.name}</span>
+                  <span className="font-mono text-[12px] text-dim">{row.args}</span>
+                  <span className="text-dim">{t(row.descKey)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

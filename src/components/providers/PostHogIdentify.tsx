@@ -19,6 +19,15 @@ export default function PostHogIdentify({ user }: Props) {
     if (!posthog) return;
 
     if (user) {
+      if (user.role === 'admin') {
+        posthog.opt_out_capturing();
+        return;
+      } else {
+        if (posthog.has_opted_out_capturing()) {
+          posthog.opt_in_capturing();
+        }
+      }
+
       // Identify user in PostHog and attach role & name properties
       posthog.identify(user.id, {
         email: user.email,
@@ -28,6 +37,9 @@ export default function PostHogIdentify({ user }: Props) {
     } else {
       // Clear identity on sign out
       posthog.reset();
+      if (posthog.has_opted_out_capturing()) {
+        posthog.opt_in_capturing();
+      }
     }
   }, [user, posthog]);
 

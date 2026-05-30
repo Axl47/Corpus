@@ -1,19 +1,13 @@
 import { getTranslations } from 'next-intl/server';
 
-const CODES = [
-  'https://remnus.com/login',
-  'Workspace Settings → API / MCP Tokens → New token',
-  '{"type":"http","url":"https://remnus.com/api/mcp"}',
-];
-
 export default async function LandingSetup() {
   const t = await getTranslations('Landing');
 
   const steps = [
-    { num: '01', titleKey: 'bridgeSetup1Title', bodyKey: 'bridgeSetup1Body', code: CODES[0] },
-    { num: '02', titleKey: 'bridgeSetup2Title', bodyKey: 'bridgeSetup2Body', code: CODES[1] },
-    { num: '03', titleKey: 'bridgeSetup3Title', bodyKey: 'bridgeSetup3Body', code: CODES[2] },
-  ] as const;
+    { num: '01', titleKey: 'bridgeSetup1Title', bodyKey: 'bridgeSetup1Body', code: 'https://remnus.com/login' },
+    { num: '02', titleKey: 'bridgeSetup2Title', bodyKey: 'bridgeSetup2Body', code: t('bridgeSetupCode2') },
+    { num: '03', titleKey: 'bridgeSetup3Title', bodyKey: 'bridgeSetup3Body', code: '{"type":"http","url":"https://remnus.com/api/mcp"}' },
+  ];
 
   return (
     <section className="px-4 sm:px-8 lg:px-14 py-16 lg:py-[110px]">

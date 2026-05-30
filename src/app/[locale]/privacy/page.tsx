@@ -1,6 +1,18 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import MarketingShell from '@/components/marketing/MarketingShell';
 import { Shield, Eye, Lock, Mail } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-native workspace for vibe coders.',
+  alternates: { canonical: 'https://remnus.com/privacy' },
+  openGraph: {
+    title: 'Privacy Policy — Remnus',
+    description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-native workspace for vibe coders.',
+    url: 'https://remnus.com/privacy',
+  },
+};
 
 export default async function PrivacyPage() {
   const t = await getTranslations('Privacy');

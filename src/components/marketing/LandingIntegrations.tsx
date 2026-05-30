@@ -10,7 +10,7 @@ const CLIENTS: { id: AIId; name: string; sub: string; descKey: string; status: '
   { id: 'windsurf', name: 'Windsurf', sub: 'IDE · Cascade',         descKey: 'bridgeIntWindsurfDesc', status: 'native' },
   { id: 'chatgpt',  name: 'ChatGPT',  sub: 'Desktop · OAuth',       descKey: 'bridgeIntChatgptDesc',  status: 'beta'   },
   { id: 'continue', name: 'Continue', sub: 'VS Code · open source', descKey: 'bridgeIntContinueDesc', status: 'native' },
-  { id: 'antigravity', name: 'Antigravity', sub: 'IDE · Gemini 3.1 Pro', descKey: 'bridgeIntAntigravityDesc', status: 'native' },
+  { id: 'antigravity', name: 'Antigravity', sub: 'Agent · Gemini',       descKey: 'bridgeIntAntigravityDesc', status: 'native' },
 ];
 
 export default async function LandingIntegrations() {

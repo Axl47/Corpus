@@ -4,9 +4,9 @@ import { getTranslations } from 'next-intl/server';
 import AIMark from './AIMark';
 
 const AI_TILES = [
-  { id: 'claude',   name: 'Claude',   sub: 'Desktop · Sonnet 4.5' },
-  { id: 'cursor',   name: 'Cursor',   sub: 'IDE · gpt-5' },
-  { id: 'windsurf', name: 'Windsurf', sub: 'IDE · Cascade' },
+  { id: 'claude',      name: 'Claude',      sub: 'Desktop · Claude Code' },
+  { id: 'cursor',      name: 'Cursor',      sub: 'IDE · Composer'       },
+  { id: 'antigravity', name: 'Antigravity', sub: 'Agent · Google Gemini'       },
 ] as const;
 
 const KANBAN_COLS = [
@@ -96,25 +96,30 @@ export default async function LandingHero() {
             </div>
 
             {/* stats row — scales down on mobile, never wraps */}
-            <div className="mt-8 lg:mt-10 flex border border-neutral-800 rounded-md overflow-hidden w-fit max-w-full">
-              {[
-                { num: t('bridgeHeroStat1Num'), label: t('bridgeHeroStat1Label') },
-                { num: t('bridgeHeroStat2Num'), label: t('bridgeHeroStat2Label') },
-                { num: t('bridgeHeroStat3Num'), label: t('bridgeHeroStat3Label') },
-              ].map((s, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5"
-                  style={{ borderLeft: i ? '1px solid var(--color-neutral-800)' : 'none' }}
-                >
-                  <span className="font-sans font-bold text-neutral-100 text-[17px] sm:text-[20px] lg:text-[22px] tracking-[-0.02em] leading-none">
-                    {s.num}
-                  </span>
-                  <span className="font-mono text-[10px] sm:text-[11px] text-dim leading-tight max-w-[65px] sm:max-w-[90px]">
-                    {s.label}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-8 lg:mt-10 space-y-2">
+              <div className="flex border border-neutral-800 rounded-md overflow-hidden w-fit max-w-full">
+                {[
+                  { num: t('bridgeHeroStat1Num'), label: t('bridgeHeroStat1Label') },
+                  { num: t('bridgeHeroStat2Num'), label: t('bridgeHeroStat2Label') },
+                  { num: t('bridgeHeroStat3Num'), label: t('bridgeHeroStat3Label') },
+                ].map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5"
+                    style={{ borderLeft: i ? '1px solid var(--color-neutral-800)' : 'none' }}
+                  >
+                    <span className="font-sans font-bold text-neutral-100 text-[17px] sm:text-[20px] lg:text-[22px] tracking-[-0.02em] leading-none">
+                      {s.num}
+                    </span>
+                    <span className="font-mono text-[10px] sm:text-[11px] text-dim leading-tight max-w-16.25 sm:max-w-22.5">
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="font-mono text-[10.5px] text-dim tracking-[0.02em]">
+                {t('bridgeHeroStatNote')}
+              </p>
             </div>
           </div>
 
