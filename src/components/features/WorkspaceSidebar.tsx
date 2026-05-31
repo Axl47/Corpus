@@ -736,6 +736,9 @@ export default function WorkspaceSidebar({
           <Link href={logoHref ?? '#'} className="font-semibold flex items-center gap-2.5 text-white hover:text-neutral-300 transition-colors">
             <img src="/logo-square-dark.png" alt="Remnus Logo" className={`w-5 h-5 object-contain rounded-md shrink-0 shadow-sm ${isSaving ? 'animate-pulse' : ''}`} />
             <span className="font-bold tracking-tight text-white">Remnus</span>
+            <span className="font-mono text-[9px] text-amber-400/60 bg-amber-500/8 border border-amber-500/15 px-1.5 py-0.5 rounded-full leading-none tracking-wide">
+              {t('earlyAccess')}
+            </span>
           </Link>
         </div>
         <div className="flex items-center gap-1.5">

@@ -20,6 +20,10 @@ export default async function LandingNav() {
             </span>
           </Link>
 
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] text-amber-400/70 bg-amber-500/8 border border-amber-500/20 px-1.5 py-0.5 rounded-full shrink-0 tracking-wide">
+            {t('earlyAccess')} · v0.1.2
+          </span>
+
           <span className="font-mono text-[11px] text-dimmer tracking-widest ml-2 hidden md:block">
             {t('bridgeNavCaption')}
           </span>

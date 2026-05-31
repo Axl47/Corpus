@@ -113,7 +113,8 @@
     "zoomIn": "Yakınlaştır",
     "zoomOut": "Uzaklaştır",
     "resetZoom": "Sıfırla",
-    "myAgents": "AI Ajanlarım"
+    "myAgents": "AI Ajanlarım",
+    "earlyAccess": "Erken erişim"
   },
   "WorkspaceSettings": {
     "title": "Çalışma Alanı Ayarları",
@@ -348,7 +349,9 @@
     "delete": "Sil",
     "deleteCancel": "İptal",
     "visibleGroups": "Görünür Gruplar",
-    "changeIcon": "Simgeyi değiştir"
+    "changeIcon": "Simgeyi değiştir",
+    "agentEditedLabel": "AI ajan tarafından düzenlendi",
+    "agentEditedVia": "MCP üzerinden"
   },
   "Editor": {
     "placeholder": "Komutlar için '/' tuşuna basın veya yazmaya başlayın…",
@@ -675,7 +678,8 @@
     "bridgePricingFreeF4": "Sınırsız MCP erişimi",
     "bridgePricingFreeF5": "Tüm görünümler ve veritabanları",
     "bridgePricingFreeCta": "Ücretsiz kaydol",
-    "bridgeNavDownload": "İndir"
+    "bridgeNavDownload": "İndir",
+    "earlyAccess": "Erken erişim"
   },
   "Pricing": {
     "title": "Fiyatlandırma",

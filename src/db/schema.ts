@@ -60,6 +60,8 @@ export const pages = sqliteTable('pages', {
   iconColor: text('icon_color'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  agentEditedAt: integer('agent_edited_at', { mode: 'timestamp' }),
+  agentTokenId: text('agent_token_id'),
 }, (table) => [
   index('pages_database_id_idx').on(table.databaseId),
 ]);

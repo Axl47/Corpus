@@ -150,6 +150,81 @@ function applySorts(pages: any[], sorts: ViewSort[]): any[] {
   });
 }
 
+function getDefaultPropertiesFromFilters(filters: ViewFilter[], schema: any[]): Record<string, any> {
+  const props: Record<string, any> = {};
+
+  if (!filters || !filters.length) return props;
+
+  // Group filters by columnId for easier merging
+  const filtersByColumn: Record<string, ViewFilter[]> = {};
+  for (const f of filters) {
+    if (!filtersByColumn[f.columnId]) {
+      filtersByColumn[f.columnId] = [];
+    }
+    filtersByColumn[f.columnId].push(f);
+  }
+
+  for (const [columnId, colFilters] of Object.entries(filtersByColumn)) {
+    const colSchema = schema.find((c) => c.id === columnId);
+    if (!colSchema) continue;
+
+    // Find the best filter to use for default value
+    // Prioritize 'equals', then 'contains'
+    const equalsFilter = colFilters.find((f) => f.operator === 'equals');
+    const containsFilter = colFilters.find((f) => f.operator === 'contains');
+    const activeFilter = equalsFilter || containsFilter;
+
+    if (!activeFilter) continue;
+
+    let targetValues: string[] = [];
+    if (activeFilter.value) {
+      if (activeFilter.value.startsWith('[') && activeFilter.value.endsWith(']')) {
+        try {
+          targetValues = JSON.parse(activeFilter.value);
+        } catch {
+          targetValues = [activeFilter.value];
+        }
+      } else {
+        targetValues = [activeFilter.value];
+      }
+    }
+
+    if (targetValues.length === 0) continue;
+
+    if (colSchema.type === 'multi_select') {
+      // Merge all equal/contains values for multi-select
+      const allVals = new Set<string>();
+      colFilters.forEach((f) => {
+        if (f.operator === 'equals' || f.operator === 'contains') {
+          let vals: string[] = [];
+          if (f.value.startsWith('[') && f.value.endsWith(']')) {
+            try { vals = JSON.parse(f.value); } catch { vals = [f.value]; }
+          } else {
+            vals = [f.value];
+          }
+          vals.forEach(v => allVals.add(v));
+        }
+      });
+      props[columnId] = Array.from(allVals);
+    } else if (colSchema.type === 'select') {
+      props[columnId] = targetValues[0];
+    } else if (colSchema.type === 'number') {
+      const num = Number(targetValues[0]);
+      if (!isNaN(num)) {
+        props[columnId] = num;
+      }
+    } else if (colSchema.type === 'date' || colSchema.type === 'datetime') {
+      props[columnId] = targetValues[0];
+    } else {
+      // text or other types
+      props[columnId] = targetValues[0];
+    }
+  }
+
+  return props;
+}
+
+
 export default function DatabaseView({
   database,
   initialPages,
@@ -344,6 +419,9 @@ export default function DatabaseView({
   };
 
   const handleAddRow = (initialProperties?: Record<string, any>) => {
+    const filterProps = getDefaultPropertiesFromFilters(config.filters || [], schema || []);
+    const mergedProperties = { ...filterProps, ...initialProperties };
+
     const tempId = `temp-${crypto.randomUUID().slice(0, 8)}`;
     const now = new Date();
     const defaultIcon = config.defaultPageIcon || null;
@@ -358,7 +436,7 @@ export default function DatabaseView({
       databaseId: database.id,
       title: 'New Page',
       content: '',
-      properties: { title: 'New Page', ...initialProperties },
+      properties: { title: 'New Page', ...mergedProperties },
       sortOrder: maxSort + 1,
       icon: defaultIcon,
       iconColor: defaultIconColor,
@@ -374,7 +452,7 @@ export default function DatabaseView({
         const realId = await createPage(
           database.id,
           'New Page',
-          initialProperties,
+          mergedProperties,
           defaultIcon,
           defaultIconColor,
         );

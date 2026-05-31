@@ -9,6 +9,7 @@ import type { SelectOption } from '@/lib/types/properties';
 import InlineCellEditor from './InlineCellEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
+import AgentEditBadge from './AgentEditBadge';
 import { updatePageIcon } from '@/lib/actions/page';
 import { ConfirmDialog } from './ConfirmDialog';
 
@@ -423,6 +424,13 @@ export default function KanbanBoard({
                       </div>
                       <span className={propertyTextClamp === 'truncate' ? 'truncate min-w-0' : ''}>{page.properties['title'] || tPage('untitled')}</span>
                     </h4>
+
+                    <AgentEditBadge
+                      agentName={page.agentName ?? null}
+                      tokenName={page.agentTokenName ?? null}
+                      editedAt={page.agentEditedAt ?? null}
+                      className="absolute bottom-0 right-0 rounded-tl-xl p-1.5 z-10 translate-x-0.5 translate-y-0.5"
+                    />
 
                     <div className="mt-1.5 flex flex-col gap-1.5">
                       {propsToShow.map((c) => {

@@ -113,7 +113,8 @@
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
     "resetZoom": "Reset",
-    "myAgents": "AI Agents"
+    "myAgents": "AI Agents",
+    "earlyAccess": "Early access"
   },
   "WorkspaceSettings": {
     "title": "Workspace Settings",
@@ -348,7 +349,9 @@
     "delete": "Delete",
     "deleteCancel": "Cancel",
     "visibleGroups": "Visible Groups",
-    "changeIcon": "Change icon"
+    "changeIcon": "Change icon",
+    "agentEditedLabel": "Edited by AI agent",
+    "agentEditedVia": "via MCP"
   },
   "Editor": {
     "placeholder": "Press '/' for commands or start writing…",
@@ -675,7 +678,8 @@
     "bridgePricingFreeF4": "Unlimited MCP access",
     "bridgePricingFreeF5": "All views & databases",
     "bridgePricingFreeCta": "Sign up free",
-    "bridgeNavDownload": "Download"
+    "bridgeNavDownload": "Download",
+    "earlyAccess": "Early access"
   },
   "Pricing": {
     "title": "Pricing",

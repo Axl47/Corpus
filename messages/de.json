@@ -113,7 +113,8 @@
     "zoomIn": "Vergrößern",
     "zoomOut": "Verkleinern",
     "resetZoom": "Zurücksetzen",
-    "myAgents": "KI-Agenten"
+    "myAgents": "KI-Agenten",
+    "earlyAccess": "Früher Zugang"
   },
   "WorkspaceSettings": {
     "title": "Arbeitsbereichseinstellungen",
@@ -348,7 +349,9 @@
     "delete": "Löschen",
     "deleteCancel": "Abbrechen",
     "visibleGroups": "Sichtbare Gruppen",
-    "changeIcon": "Symbol ändern"
+    "changeIcon": "Symbol ändern",
+    "agentEditedLabel": "Von KI-Agent bearbeitet",
+    "agentEditedVia": "über MCP"
   },
   "Editor": {
     "placeholder": "Drücken Sie '/' für Befehle oder beginnen Sie zu schreiben…",
@@ -675,7 +678,8 @@
     "bridgePricingFreeF4": "Unbegrenzter MCP-Zugriff",
     "bridgePricingFreeF5": "Alle Ansichten & Datenbanken",
     "bridgePricingFreeCta": "Kostenlos registrieren",
-    "bridgeNavDownload": "Download"
+    "bridgeNavDownload": "Download",
+    "earlyAccess": "Früher Zugang"
   },
   "Pricing": {
     "title": "Preise",

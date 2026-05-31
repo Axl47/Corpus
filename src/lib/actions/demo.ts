@@ -1,9 +1,11 @@
 'use server';
-import { signIn } from '@/auth';
 import { db } from '@/db';
 import { users, workspaces, workspaceMembers } from '@/db/schema';
 import { eq, ne } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { encode } from '@auth/core/jwt';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createDemoSeedData } from '@/lib/seed';
 
 const DEMO_EMAIL = 'demo@remnus.com';
@@ -41,7 +43,7 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
     demoUser = { id, name: 'Demo User' };
   }
 
-  // Reset: delete all workspaces belonging to the demo user (cascades items/pages)
+  // Reset: delete all workspaces belonging to the demo user (cascades items/pages/tokens)
   const memberships = await db
     .select({ workspaceId: workspaceMembers.workspaceId })
     .from(workspaceMembers)
@@ -54,11 +56,33 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
   // Recreate fresh demo data (1 workspace + pages + databases)
   await createDemoSeedData(demoUser.id, demoUser.name);
 
-  // Sign in — throws a NEXT_REDIRECT which must not be caught
-  await signIn('credentials', {
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
-    redirectTo: '/',
+  // Create a session JWT directly — bypasses Auth.js HTTP route and its CSRF check.
+  // Calling signIn() from a server action makes an internal POST to /api/auth/signin
+  // which requires a CSRF token that isn't present in server-side contexts.
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieName = isProd ? '__Secure-authjs.session-token' : 'authjs.session-token';
+  const secret = process.env.AUTH_SECRET!;
+
+  const sessionToken = await encode({
+    token: {
+      sub: demoUser.id,
+      name: demoUser.name ?? 'Demo User',
+      email: DEMO_EMAIL,
+      id: demoUser.id,
+      role: 'demo',
+    },
+    secret,
+    salt: cookieName,
   });
-  return null;
+
+  const cookieStore = await cookies();
+  cookieStore.set(cookieName, sessionToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  redirect('/app');
 }

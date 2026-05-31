@@ -8,6 +8,7 @@ import { GripHorizontal, GripVertical, Settings, Trash2, Type, List, Hash, Align
 import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
+import AgentEditBadge from './AgentEditBadge';
 import { updatePageIcon } from '@/lib/actions/page';
 import { ConfirmDialog } from './ConfirmDialog';
 
@@ -613,6 +614,14 @@ export default function TableLayout({
                             >
                               {val || tPage('untitled')}
                             </span>
+                            {page.agentEditedAt && (
+                              <AgentEditBadge
+                                agentName={page.agentName ?? null}
+                                tokenName={page.agentTokenName ?? null}
+                                editedAt={page.agentEditedAt}
+                                className="shrink-0 ml-1.5 p-1 rounded-md"
+                              />
+                            )}
                           </div>
                         ) : col.type === 'select' ? (
                           val ? (() => {

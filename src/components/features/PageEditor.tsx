@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
+import AgentEditBadge from './AgentEditBadge';
 import SaveStatus, { type SaveState } from './SaveStatus';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
@@ -284,6 +285,19 @@ export default function PageEditor({
           />
         </div>
       </div>
+
+      {/* Agent edit stamp */}
+      {initialPage.agentEditedAt && (
+        <div className="flex items-center gap-2 mb-4 -mt-2">
+          <AgentEditBadge
+            agentName={initialPage.agentName ?? null}
+            tokenName={initialPage.agentTokenName ?? null}
+            editedAt={initialPage.agentEditedAt}
+            className="p-1 rounded-md"
+          />
+          <span className="text-[10px] text-neutral-600 select-none">{t('agentEditedLabel')}</span>
+        </div>
+      )}
 
       {/* Properties Section */}
       <div className={isPeek ? 'mb-6 space-y-1' : 'mb-12 space-y-4'}>

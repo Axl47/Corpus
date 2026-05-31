@@ -1,6 +1,6 @@
 'use server';
 import { db } from '@/db';
-import { pages, databases, workspaceItems, workspaceMembers } from '@/db/schema';
+import { pages, databases, workspaceItems, workspaceMembers, agentTokens } from '@/db/schema';
 import { eq, asc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -73,8 +73,24 @@ export async function createPage(
 export async function getPages(databaseId: string) {
   await assertDatabaseAccess(databaseId);
   return db
-    .select()
+    .select({
+      id: pages.id,
+      databaseId: pages.databaseId,
+      title: pages.title,
+      content: pages.content,
+      properties: pages.properties,
+      sortOrder: pages.sortOrder,
+      icon: pages.icon,
+      iconColor: pages.iconColor,
+      createdAt: pages.createdAt,
+      updatedAt: pages.updatedAt,
+      agentEditedAt: pages.agentEditedAt,
+      agentTokenId: pages.agentTokenId,
+      agentName: agentTokens.agentName,
+      agentTokenName: agentTokens.name,
+    })
     .from(pages)
+    .leftJoin(agentTokens, eq(pages.agentTokenId, agentTokens.id))
     .where(eq(pages.databaseId, databaseId))
     .orderBy(asc(pages.sortOrder), asc(pages.createdAt));
 }

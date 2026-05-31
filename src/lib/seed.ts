@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers } from '@/db/schema';
+import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, agentTokens } from '@/db/schema';
 
 export async function createSeedWorkspace(userId: string, userName?: string | null) {
   const workspaceName = userName ? `${userName} Workspace` : 'Personal Workspace';
@@ -352,11 +352,34 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
     return dt.toISOString().split('T')[0];
   };
 
+  // Returns a Date offset by n hours from now (for realistic agent edit timestamps)
+  const h = (n: number) => {
+    const dt = new Date();
+    dt.setHours(dt.getHours() + n);
+    return dt;
+  };
+
   // ── Single workspace ────────────────────────────────────────────────────────
 
   const ws1 = crypto.randomUUID();
   await db.insert(workspaces).values({ id: ws1, name: workspaceName, sortOrder: 0, createdAt: new Date() });
   await db.insert(workspaceMembers).values({ id: crypto.randomUUID(), workspaceId: ws1, userId, role: 'owner', createdAt: new Date() });
+
+  // ── Demo agent token — used to stamp selected rows with an "agent edited" badge ──
+
+  const demoTokenId = crypto.randomUUID();
+  await db.insert(agentTokens).values({
+    id: demoTokenId,
+    workspaceId: ws1,
+    name: 'Claude AI Agent',
+    agentName: 'claude-code',
+    tokenPrefix: 'rmns-demo',
+    tokenHash: 'demo-seed-not-valid',
+    scope: 'write',
+    createdBy: userId,
+    createdAt: h(-48),
+    lastUsedAt: h(-1),
+  });
 
   // ── Getting Started page ────────────────────────────────────────────────────
 
@@ -492,18 +515,18 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
 
   const launchTasks = [
     { title: 'Add parent_id column to workspace_items', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-4) },
-    { title: 'Build recursive sidebar tree renderer', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-2) },
+    { title: 'Build recursive sidebar tree renderer', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-2), agentAt: h(-30) },
     { title: 'Implement auto-expand for active nested page', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-1) },
     { title: 'Design sidebar chevron & connector lines', status: 'Done', area: 'Design', assignee: 'Aisha', dueDate: d(-3) },
-    { title: 'Add nested item creation via + button', status: 'In Progress', area: 'Engineering', assignee: 'Marcus', dueDate: d(1) },
-    { title: 'Write end-to-end regression tests', status: 'In Progress', area: 'QA', assignee: 'Kai', dueDate: d(3) },
+    { title: 'Add nested item creation via + button', status: 'In Progress', area: 'Engineering', assignee: 'Marcus', dueDate: d(1), agentAt: h(-5) },
+    { title: 'Write end-to-end regression tests', status: 'In Progress', area: 'QA', assignee: 'Kai', dueDate: d(3), agentAt: h(-2) },
     { title: 'Update Getting Started demo content', status: 'Review', area: 'Product', assignee: 'Alice', dueDate: d(2) },
     { title: 'Support drag-and-drop within parent scope', status: 'Backlog', area: 'Engineering', assignee: 'Marcus', dueDate: d(7) },
     { title: 'Breadcrumb navigation in page header', status: 'Backlog', area: 'Design', assignee: 'Aisha', dueDate: d(14) },
     { title: 'Public launch announcement', status: 'Backlog', area: 'Product', assignee: 'Alice', dueDate: d(21) },
   ];
   for (let i = 0; i < launchTasks.length; i++) {
-    const t = launchTasks[i];
+    const t = launchTasks[i] as typeof launchTasks[0] & { agentAt?: Date };
     await db.insert(pages).values({
       id: crypto.randomUUID(),
       databaseId: launchTasksDbId,
@@ -511,6 +534,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       content: '',
       properties: { title: t.title, status: t.status, area: t.area, assignee: t.assignee, dueDate: t.dueDate },
       sortOrder: i,
+      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
     });
   }
 
@@ -615,9 +639,9 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   const components = [
     { title: 'Sidebar', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'Collapsible tree, drag-and-drop, nested items' },
     { title: 'WorkspaceItem', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'Icon, title, chevron, action buttons' },
-    { title: 'DatabaseView', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Orchestrates Table, Kanban, Calendar views' },
-    { title: 'TableLayout', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Inline editing, resizable columns, row tint' },
-    { title: 'KanbanBoard', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Grouped columns, card colors, group bg tint' },
+    { title: 'DatabaseView', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Orchestrates Table, Kanban, Calendar views', agentAt: h(-18) },
+    { title: 'TableLayout', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Inline editing, resizable columns, row tint', agentAt: h(-17) },
+    { title: 'KanbanBoard', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Grouped columns, card colors, group bg tint', agentAt: h(-16) },
     { title: 'CalendarView', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Month/week modes, card color, date placement' },
     { title: 'ViewsBar', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'View tabs, inline rename, add/delete view' },
     { title: 'PropertiesSidebar', category: 'Form', status: 'Done', owner: 'Aisha', notes: 'Schema editing, filters, sorts, group-by' },
@@ -630,7 +654,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
     { title: 'Toast', category: 'Feedback', status: 'In Progress', owner: 'Aisha', notes: 'Auto-dismiss, stack up to 3' },
   ];
   for (let i = 0; i < components.length; i++) {
-    const c = components[i];
+    const c = components[i] as typeof components[0] & { agentAt?: Date };
     await db.insert(pages).values({
       id: crypto.randomUUID(),
       databaseId: compLibDbId,
@@ -638,6 +662,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       content: '',
       properties: { title: c.title, category: c.category, status: c.status, owner: c.owner, notes: c.notes },
       sortOrder: i,
+      ...(c.agentAt ? { agentEditedAt: c.agentAt, agentTokenId: demoTokenId } : {}),
     });
   }
 
@@ -702,13 +727,13 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   await db.insert(databases).values({ id: sprintDb, name: 'Sprint Board', itemId: sprintDbItem, schema: sprintSchema, views: sprintViews });
 
   const sprintTasks = [
-    { title: 'Implement OAuth login flow', status: 'In Progress', priority: 'P1 — Critical', assignee: 'Alice', sprint: 'Sprint 12', points: 8 },
+    { title: 'Implement OAuth login flow', status: 'In Progress', priority: 'P1 — Critical', assignee: 'Alice', sprint: 'Sprint 12', points: 8, agentAt: h(-3) },
     { title: 'Design new onboarding screens', status: 'In Review', priority: 'P2 — High', assignee: 'Bob', sprint: 'Sprint 12', points: 5 },
     { title: 'Fix mobile navigation bug', status: 'To Do', priority: 'P2 — High', assignee: 'Charlie', sprint: 'Sprint 12', points: 3 },
     { title: 'Add export to CSV feature', status: 'In Progress', priority: 'P3 — Medium', assignee: 'Alice', sprint: 'Sprint 12', points: 5 },
     { title: 'Write API documentation', status: 'To Do', priority: 'P3 — Medium', assignee: 'Bob', sprint: 'Sprint 12', points: 3 },
-    { title: 'Set up CI/CD pipeline', status: 'Done', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 12', points: 8 },
-    { title: 'Database query optimization', status: 'Done', priority: 'P2 — High', assignee: 'Alice', sprint: 'Sprint 12', points: 5 },
+    { title: 'Set up CI/CD pipeline', status: 'Done', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 12', points: 8, agentAt: h(-26) },
+    { title: 'Database query optimization', status: 'Done', priority: 'P2 — High', assignee: 'Alice', sprint: 'Sprint 12', points: 5, agentAt: h(-25) },
     { title: 'User dashboard redesign', status: 'In Progress', priority: 'P2 — High', assignee: 'Bob', sprint: 'Sprint 13', points: 8 },
     { title: 'Push notification system', status: 'To Do', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 13', points: 13 },
     { title: 'Performance monitoring setup', status: 'To Do', priority: 'P3 — Medium', assignee: 'Alice', sprint: 'Sprint 13', points: 5 },
@@ -716,7 +741,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
     { title: 'Security audit remediation', status: 'Done', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 12', points: 8 },
   ];
   for (let i = 0; i < sprintTasks.length; i++) {
-    const t = sprintTasks[i];
+    const t = sprintTasks[i] as typeof sprintTasks[0] & { agentAt?: Date };
     await db.insert(pages).values({
       id: crypto.randomUUID(),
       databaseId: sprintDb,
@@ -724,6 +749,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       content: '',
       properties: { title: t.title, status: t.status, priority: t.priority, assignee: t.assignee, sprint: t.sprint, points: t.points },
       sortOrder: i,
+      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
     });
   }
 
@@ -805,15 +831,15 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   const bugs = [
     { title: 'Login fails after password reset', severity: 'Critical', status: 'Open', module: 'Auth', reporter: 'Alice', reported: d(-5) },
     { title: 'Dashboard charts not loading on Safari', severity: 'High', status: 'In Progress', module: 'Dashboard', reporter: 'Bob', reported: d(-8) },
-    { title: 'API rate limiting not working correctly', severity: 'Critical', status: 'In Progress', module: 'API', reporter: 'Charlie', reported: d(-3) },
+    { title: 'API rate limiting not working correctly', severity: 'Critical', status: 'In Progress', module: 'API', reporter: 'Charlie', reported: d(-3), agentAt: h(-8) },
     { title: 'Settings page crashes on mobile iOS', severity: 'High', status: 'Open', module: 'Mobile', reporter: 'Alice', reported: d(-6) },
     { title: 'CSV export includes soft-deleted rows', severity: 'Medium', status: 'Open', module: 'API', reporter: 'Bob', reported: d(-2) },
     { title: 'Dark mode toggle resets on page refresh', severity: 'Low', status: 'Resolved', module: 'Settings', reporter: 'Charlie', reported: d(-12) },
-    { title: 'Search results showing duplicate entries', severity: 'Medium', status: 'In Progress', module: 'Dashboard', reporter: 'Alice', reported: d(-4) },
+    { title: 'Search results showing duplicate entries', severity: 'Medium', status: 'In Progress', module: 'Dashboard', reporter: 'Alice', reported: d(-4), agentAt: h(-1) },
     { title: 'Email notifications delayed by ~30 minutes', severity: 'High', status: 'Open', module: 'API', reporter: 'Bob', reported: d(-1) },
   ];
   for (let i = 0; i < bugs.length; i++) {
-    const b = bugs[i];
+    const b = bugs[i] as typeof bugs[0] & { agentAt?: Date };
     await db.insert(pages).values({
       id: crypto.randomUUID(),
       databaseId: bugDb,
@@ -821,6 +847,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       content: '',
       properties: { title: b.title, severity: b.severity, status: b.status, module: b.module, reporter: b.reporter, reported: b.reported },
       sortOrder: i,
+      ...(b.agentAt ? { agentEditedAt: b.agentAt, agentTokenId: demoTokenId } : {}),
     });
   }
 
@@ -882,17 +909,17 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
     { title: 'Daily Standup', date: d(2), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
     { title: 'Sprint 12 Review', date: d(-3), type: 'Review', attendees: 'Full team' },
     { title: 'Design Critique', date: d(-1), type: 'Review', attendees: 'Alice, Bob' },
-    { title: 'Sprint 13 Planning', date: d(1), type: 'Sprint', attendees: 'Full team' },
+    { title: 'Sprint 13 Planning', date: d(1), type: 'Sprint', attendees: 'Full team', agentAt: h(-4) },
     { title: 'API Architecture Review', date: d(3), type: 'Review', attendees: 'Charlie, Alice' },
     { title: 'Team Lunch', date: d(4), type: 'Social', attendees: 'All team' },
-    { title: 'Customer Demo', date: d(6), type: 'Meeting', attendees: 'Bob, Diana' },
+    { title: 'Customer Demo', date: d(6), type: 'Meeting', attendees: 'Bob, Diana', agentAt: h(-6) },
     { title: 'Tech Debt Session', date: d(8), type: 'Meeting', attendees: 'Charlie, Alice' },
     { title: 'Team Retrospective', date: d(10), type: 'Review', attendees: 'Full team' },
     { title: 'Sprint 13 Review', date: d(14), type: 'Review', attendees: 'Full team' },
     { title: 'Q3 Release — v2.1', date: d(16), type: 'Release', attendees: 'Full team' },
   ];
   for (let i = 0; i < events.length; i++) {
-    const e = events[i];
+    const e = events[i] as typeof events[0] & { agentAt?: Date };
     await db.insert(pages).values({
       id: crypto.randomUUID(),
       databaseId: calDb,
@@ -900,6 +927,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       content: '',
       properties: { title: e.title, date: e.date, type: e.type, attendees: e.attendees },
       sortOrder: i,
+      ...(e.agentAt ? { agentEditedAt: e.agentAt, agentTokenId: demoTokenId } : {}),
     });
   }
 

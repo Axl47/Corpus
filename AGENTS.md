@@ -120,7 +120,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 | `workspace_items` | Sidebar items (pages + databases), recursive `parent_id` nesting |
 | `standalone_pages` | Markdown content for page-type items (1:1 with `workspace_items`) |
 | `databases` | `schema` JSON (columns) + `views` JSON (named view configs) |
-| `pages` | Database rows — `properties` JSON + `title`, `content`, `icon`, `icon_color` |
+| `pages` | Database rows — `properties` JSON + `title`, `content`, `icon`, `icon_color`, `agent_edited_at` + `agent_token_id` (nullable; stamped on MCP writes) |
 | `user` | Auth.js accounts — `role` ('user'\|'admin'\|'demo'), `password_hash` |
 | `account` | OAuth provider links (Google) |
 | `session` | Auth.js sessions |
@@ -152,7 +152,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 ### Migration Notes
 
-- New migration `when` values must be **greater than** all existing values. Last: `0015` → `1780600000000`. **Next migration: `when` > `1780600000000`.**
+- New migration `when` values must be **greater than** all existing values. Last: `0016` → `1780700000000`. **Next migration: `when` > `1780700000000`.**
+- **libsql DDL caveat:** Drizzle's `migrate()` runs SQL in a `batch()` call. libsql's `batch()` silently fails DDL statements (ALTER TABLE, CREATE TABLE, etc.) — the call returns "complete" but changes are not applied. Use `client.execute()` directly for DDL, or manually apply + insert into `__drizzle_migrations` via a helper script. Migration 0016 was applied this way.
 - Apply with: `npx tsx src/db/migrate.ts`
 
 ### Project Structure

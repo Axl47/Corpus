@@ -113,7 +113,8 @@
     "zoomIn": "ज़ूम इन",
     "zoomOut": "ज़ूम आउट",
     "resetZoom": "रीसेट",
-    "myAgents": "AI एजेंट"
+    "myAgents": "AI एजेंट",
+    "earlyAccess": "अर्ली एक्सेस"
   },
   "WorkspaceSettings": {
     "title": "कार्यक्षेत्र सेटिंग",
@@ -348,7 +349,9 @@
     "delete": "हटाएं",
     "deleteCancel": "रद्द करें",
     "visibleGroups": "दृश्यमान समूह",
-    "changeIcon": "आइकन बदलें"
+    "changeIcon": "आइकन बदलें",
+    "agentEditedLabel": "AI एजेंट द्वारा संपादित",
+    "agentEditedVia": "MCP के माध्यम से"
   },
   "Editor": {
     "placeholder": "कमांड के लिए '/' दबाएं या लिखना शुरू करें…",
@@ -675,7 +678,8 @@
     "bridgePricingFreeF4": "असीमित MCP एक्सेस",
     "bridgePricingFreeF5": "सभी दृश्य और डेटाबेस",
     "bridgePricingFreeCta": "मुफ्त साइन अप करें",
-    "bridgeNavDownload": "डाउनलोड"
+    "bridgeNavDownload": "डाउनलोड",
+    "earlyAccess": "अर्ली एक्सेस"
   },
   "Pricing": {
     "title": "मूल्य निर्धारण",

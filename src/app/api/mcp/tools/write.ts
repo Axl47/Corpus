@@ -38,7 +38,7 @@ export function registerWriteTools(server: McpServer, ctx: TokenContext) {
         return { content: [{ type: 'text' as const, text: READ_ONLY_ERROR }], isError: true };
       }
       try {
-        const result = await createPageInWorkspace(ctx.workspaceId, { title, content, parentId, databaseId, properties });
+        const result = await createPageInWorkspace(ctx.workspaceId, { title, content, parentId, databaseId, properties }, { tokenId: ctx.tokenId });
         await logActivity(ctx, 'create_page', 'success', result.type, result.id);
         publish({ scope: databaseId ? 'database' : 'sidebar', workspaceId: ctx.workspaceId, resourceId: databaseId, actorId: actorId(ctx) });
         return { content: [{ type: 'text' as const, text: JSON.stringify({ id: result.id, type: result.type }) }] };
@@ -66,7 +66,7 @@ export function registerWriteTools(server: McpServer, ctx: TokenContext) {
         return { content: [{ type: 'text' as const, text: READ_ONLY_ERROR }], isError: true };
       }
       try {
-        await updatePageById(ctx.workspaceId, pageId, { title, content, properties });
+        await updatePageById(ctx.workspaceId, pageId, { title, content, properties }, { tokenId: ctx.tokenId });
         await logActivity(ctx, 'update_page', 'success', 'page', pageId);
         publish({ scope: 'page', workspaceId: ctx.workspaceId, resourceId: pageId, actorId: actorId(ctx) });
         return { content: [{ type: 'text' as const, text: JSON.stringify({ updated: true, id: pageId }) }] };
@@ -96,7 +96,7 @@ export function registerWriteTools(server: McpServer, ctx: TokenContext) {
         return { content: [{ type: 'text' as const, text: READ_ONLY_ERROR }], isError: true };
       }
       try {
-        const results = await bulkUpdatePages(ctx.workspaceId, updates);
+        const results = await bulkUpdatePages(ctx.workspaceId, updates, { tokenId: ctx.tokenId });
         await logActivity(ctx, 'bulk_update', 'success');
         publish({ scope: 'database', workspaceId: ctx.workspaceId, actorId: actorId(ctx) });
         return { content: [{ type: 'text' as const, text: JSON.stringify(results) }] };

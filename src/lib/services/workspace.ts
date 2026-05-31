@@ -384,9 +384,10 @@ export async function getAnyPageById(workspaceId: string, pageId: string) {
 export async function bulkUpdatePages(
   workspaceId: string,
   updates: { pageId: string; title?: string; content?: string; properties?: Record<string, unknown> }[],
+  agentCtx?: { tokenId: string },
 ) {
   const results = await Promise.all(
-    updates.map(({ pageId, ...patch }) => updatePageById(workspaceId, pageId, patch)),
+    updates.map(({ pageId, ...patch }) => updatePageById(workspaceId, pageId, patch, agentCtx)),
   );
   return results.map((r, i) => ({ id: updates[i].pageId, updated: r.updated }));
 }
@@ -400,6 +401,7 @@ export async function createPageInWorkspace(
     databaseId?: string;
     properties?: Record<string, any>;
   },
+  agentCtx?: { tokenId: string },
 ) {
   if (input.databaseId) {
     // Database row — resolve workspace_items.id → databases.id if needed
@@ -419,6 +421,7 @@ export async function createPageInWorkspace(
       content: input.content ?? '',
       properties: { title: input.title, ...input.properties },
       sortOrder: maxSort + 1,
+      ...(agentCtx ? { agentEditedAt: new Date(), agentTokenId: agentCtx.tokenId } : {}),
     });
     return { id, type: 'db-row' as const };
   }
@@ -629,6 +632,7 @@ export async function updatePageById(
   workspaceId: string,
   itemId: string,
   patch: { title?: string; content?: string; properties?: Record<string, any> },
+  agentCtx?: { tokenId: string },
 ) {
   // Try as workspace item first
   const [item] = await db
@@ -681,6 +685,10 @@ export async function updatePageById(
       .where(eq(pages.id, itemId))
       .limit(1);
     updateData.properties = { ...(existing?.properties ?? {}), ...patch.properties };
+  }
+  if (agentCtx) {
+    updateData.agentEditedAt = new Date();
+    updateData.agentTokenId = agentCtx.tokenId;
   }
 
   await db.update(pages).set(updateData).where(eq(pages.id, itemId));

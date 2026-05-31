@@ -113,7 +113,8 @@
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
     "resetZoom": "Restablecer",
-    "myAgents": "Agentes IA"
+    "myAgents": "Agentes IA",
+    "earlyAccess": "Acceso anticipado"
   },
   "WorkspaceSettings": {
     "title": "Configuración del Espacio",
@@ -348,7 +349,9 @@
     "delete": "Eliminar",
     "deleteCancel": "Cancelar",
     "visibleGroups": "Grupos visibles",
-    "changeIcon": "Cambiar ícono"
+    "changeIcon": "Cambiar ícono",
+    "agentEditedLabel": "Editado por agente IA",
+    "agentEditedVia": "vía MCP"
   },
   "Editor": {
     "placeholder": "Presiona '/' para comandos o comienza a escribir…",
@@ -675,7 +678,8 @@
     "bridgePricingFreeF4": "Acceso MCP ilimitado",
     "bridgePricingFreeF5": "Todas las vistas y bases de datos",
     "bridgePricingFreeCta": "Registrarse gratis",
-    "bridgeNavDownload": "Descargar"
+    "bridgeNavDownload": "Descargar",
+    "earlyAccess": "Acceso anticipado"
   },
   "Pricing": {
     "title": "Precios",
