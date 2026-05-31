@@ -4,6 +4,7 @@ use tauri::{
     Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_updater::UpdaterExt;
 
 const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('remnus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";
 
