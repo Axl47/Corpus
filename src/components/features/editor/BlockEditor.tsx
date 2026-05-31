@@ -121,6 +121,7 @@ export default function BlockEditor({
     editorProps: {
       attributes: {
         class: 'prose-editor focus:outline-none min-h-[500px]',
+        spellcheck: 'false',
       },
       handleKeyDown: (view, event) => {
         if (event.key !== 'Backspace') return false;

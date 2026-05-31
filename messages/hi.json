@@ -194,7 +194,10 @@
     "tokenExpired": "समाप्त",
     "workspaceIcon": "वर्कस्पेस आइकन",
     "workspaceIconHint": "इमोजी, आइकन चुनें या कस्टम छवि अपलोड करें।",
-    "changeIcon": "आइकन बदलें"
+    "changeIcon": "आइकन बदलें",
+    "installIn": "अपने एडिटर में जोड़ें",
+    "installCursor": "Cursor में जोड़ें",
+    "installVSCode": "VS Code में जोड़ें"
   },
   "Templates": {
     "modalTitle": "नया आइटम",

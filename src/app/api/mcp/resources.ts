@@ -26,7 +26,7 @@ export function registerResources(server: McpServer, ctx: TokenContext) {
       const workspaceId = variables.id as string;
       if (workspaceId !== ctx.workspaceId) throw new Error('Access denied or workspace not found');
 
-      const items = await listWorkspaceItems(ctx.workspaceId);
+      const { items } = await listWorkspaceItems(ctx.workspaceId);
       const dbs = items.filter(i => i.type === 'database');
       const schemas = await Promise.all(
         dbs.map(async dbItem => {
@@ -108,7 +108,7 @@ export function registerResources(server: McpServer, ctx: TokenContext) {
   // 3. Database Schema — remnus://database/{id}/schema
   const databaseSchemaTemplate = new ResourceTemplate('remnus://database/{id}/schema', {
     list: async () => {
-      const items = await listWorkspaceItems(ctx.workspaceId);
+      const { items } = await listWorkspaceItems(ctx.workspaceId);
       return {
         resources: items
           .filter(i => i.type === 'database')

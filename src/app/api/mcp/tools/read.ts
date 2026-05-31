@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   searchWorkspace,
   listWorkspaceItems,
+  listWorkspaceMembers,
+  queryAuditLog,
   getAnyPageById,
   getDatabaseSchema,
   queryDatabaseRows,
@@ -35,17 +37,19 @@ export function registerReadTools(server: McpServer, ctx: TokenContext) {
   server.registerTool(
     'list_workspace',
     {
-      description: 'List workspace items (pages and databases). Optionally filter by parent.',
+      description: 'List workspace items (pages and databases). Optionally filter by parent. Supports cursor-based pagination.',
       inputSchema: {
         parentId: z.string().optional().describe('Parent item ID (omit for root items)'),
+        limit: z.number().optional().default(100).describe('Maximum items per page (default 100)'),
+        cursor: z.string().optional().describe('Pagination cursor from a previous response\'s nextCursor field'),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ parentId }) => {
+    async ({ parentId, limit, cursor }) => {
       try {
-        const items = await listWorkspaceItems(ctx.workspaceId, parentId);
+        const result = await listWorkspaceItems(ctx.workspaceId, parentId, limit ?? 100, cursor);
         await logActivity(ctx, 'list_workspace', 'success');
-        return { content: [{ type: 'text' as const, text: JSON.stringify(items, null, 2) }] };
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (err) {
         await logActivity(ctx, 'list_workspace', 'error');
         return { content: [{ type: 'text' as const, text: `Error: ${String(err)}` }], isError: true };
@@ -96,19 +100,64 @@ export function registerReadTools(server: McpServer, ctx: TokenContext) {
   );
 
   server.registerTool(
-    'query_database',
+    'query_audit_log',
     {
-      description: 'Get schema and rows of a database. Optionally filter rows by property values.',
+      description: 'Query the MCP agent activity audit log for this workspace. Supports filtering by tool name, status, and date range.',
       inputSchema: {
-        databaseId: z.string().describe('Database ID (from list_workspace or search)'),
-        limit: z.number().optional().default(50).describe('Maximum rows (default 50)'),
-        filters: z.record(z.string(), z.any()).optional().describe('Filter rows by property value, e.g. {"status": "Done"} or {"col_xxx": ["Tag1"]}'),
+        tool: z.string().optional().describe('Filter by tool name (e.g. "create_page", "query_database")'),
+        status: z.enum(['success', 'error']).optional().describe('Filter by call status'),
+        from: z.string().optional().describe('Start of date range (ISO 8601, e.g. "2025-01-01T00:00:00Z")'),
+        to: z.string().optional().describe('End of date range (ISO 8601, e.g. "2025-12-31T23:59:59Z")'),
+        limit: z.number().optional().default(50).describe('Maximum results (default 50)'),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ databaseId, limit, filters }) => {
+    async ({ tool, status, from, to, limit }) => {
       try {
-        const result = await queryDatabaseRows(ctx.workspaceId, databaseId, limit ?? 50, filters);
+        const rows = await queryAuditLog(ctx.workspaceId, { tool, status, from, to }, limit ?? 50);
+        await logActivity(ctx, 'query_audit_log', 'success');
+        return { content: [{ type: 'text' as const, text: JSON.stringify(rows, null, 2) }] };
+      } catch (err) {
+        await logActivity(ctx, 'query_audit_log', 'error');
+        return { content: [{ type: 'text' as const, text: `Error: ${String(err)}` }], isError: true };
+      }
+    },
+  );
+
+  server.registerTool(
+    'list_members',
+    {
+      description: 'List all members of the workspace with their roles and join dates.',
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      try {
+        const members = await listWorkspaceMembers(ctx.workspaceId);
+        await logActivity(ctx, 'list_members', 'success');
+        return { content: [{ type: 'text' as const, text: JSON.stringify(members, null, 2) }] };
+      } catch (err) {
+        await logActivity(ctx, 'list_members', 'error');
+        return { content: [{ type: 'text' as const, text: `Error: ${String(err)}` }], isError: true };
+      }
+    },
+  );
+
+  server.registerTool(
+    'query_database',
+    {
+      description: 'Get schema and rows of a database. Optionally filter rows by property values. Supports cursor-based pagination.',
+      inputSchema: {
+        databaseId: z.string().describe('Database ID (from list_workspace or search)'),
+        limit: z.number().optional().default(50).describe('Maximum rows per page (default 50)'),
+        filters: z.record(z.string(), z.any()).optional().describe('Filter rows by property value, e.g. {"status": "Done"} or {"col_xxx": ["Tag1"]}'),
+        cursor: z.string().optional().describe('Pagination cursor from a previous response\'s nextCursor field'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ databaseId, limit, filters, cursor }) => {
+      try {
+        const result = await queryDatabaseRows(ctx.workspaceId, databaseId, limit ?? 50, filters, cursor);
         await logActivity(ctx, 'query_database', 'success', 'database', databaseId);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (err) {

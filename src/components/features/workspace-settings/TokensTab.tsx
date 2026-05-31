@@ -6,6 +6,19 @@ import AIMark from '@/components/marketing/AIMark';
 import { mintAgentToken, getAgentTokens, revokeAgentToken } from '@/lib/actions/agentToken';
 import { AGENT_OPTIONS, type AgentId, type AgentToken } from './types';
 
+function buildCursorInstallUrl(token: string, mcpUrl: string): string {
+  const config = JSON.stringify({ url: mcpUrl, headers: { Authorization: `Bearer ${token}` } });
+  return `cursor://anysphere.cursor-deeplink/mcp/install?name=remnus&config=${btoa(config)}`;
+}
+
+function buildVscodeInstallUrl(token: string, mcpUrl: string): string {
+  const payload = JSON.stringify({
+    name: 'remnus',
+    config: { type: 'http', url: mcpUrl, headers: { Authorization: `Bearer ${token}` } },
+  });
+  return `vscode:mcp/install?${encodeURIComponent(payload)}`;
+}
+
 const GUIDES = [
   { id: 'claude'      as const, label: 'Claude Code' },
   { id: 'cursor'      as const, label: 'Cursor'       },
@@ -321,6 +334,29 @@ export default function TokensTab({ workspaceId, hasPrivilegedAccess }: TokensTa
                                       {copied ? <Check size={12} className="text-sky-400" /> : <Copy size={12} />}
                                       {copied ? t('copied') : t('copyToken')}
                                     </button>
+                                  </div>
+                                  <div className="pt-0.5 space-y-1.5">
+                                    <p className="text-[10px] text-neutral-400">{t('installIn')}</p>
+                                    <div className="flex gap-2 flex-wrap">
+                                      <a
+                                        href={buildCursorInstallUrl(newTokenValue, mcpUrl)}
+                                        className="flex items-center gap-1.5 text-[11px] font-semibold bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-neutral-200 px-3 py-1.5 rounded transition-colors"
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-neutral-300">
+                                          <path d="M3 3l9 9-9 9h4l7-7.5V12l-7-7.5H3zm10 0l9 9-9 9h4l7-7.5V12l-7-7.5h-4z"/>
+                                        </svg>
+                                        {t('installCursor')}
+                                      </a>
+                                      <a
+                                        href={buildVscodeInstallUrl(newTokenValue, mcpUrl)}
+                                        className="flex items-center gap-1.5 text-[11px] font-semibold bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 hover:border-neutral-600 text-neutral-200 px-3 py-1.5 rounded transition-colors"
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-blue-400">
+                                          <path d="M17.583.063L9.963 7.087 4.19 2.383 2 3.436v17.125l2.19 1.054 5.773-4.704 7.62 7.026L22 22.564V1.436L17.583.063zM20 19.437l-6-5.453v-3.97l6-5.451v14.874zM4 19.204V4.797l4 3.26v7.888L4 19.204z"/>
+                                        </svg>
+                                        {t('installVSCode')}
+                                      </a>
+                                    </div>
                                   </div>
                                 </div>
                               )}

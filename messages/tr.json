@@ -194,7 +194,10 @@
     "tokenExpired": "Süresi Doldu",
     "workspaceIcon": "Workspace İkonu",
     "workspaceIconHint": "Emoji, simge seçin veya özel görsel yükleyin.",
-    "changeIcon": "İkonu değiştir"
+    "changeIcon": "İkonu değiştir",
+    "installIn": "Editörünüze ekleyin",
+    "installCursor": "Cursor'a Ekle",
+    "installVSCode": "VS Code'a Ekle"
   },
   "Templates": {
     "modalTitle": "Yeni Öğe",

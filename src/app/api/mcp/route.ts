@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import { agentTokens } from '@/db/schema';
@@ -95,19 +96,27 @@ function checkRateLimit(tokenId: string): boolean {
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
+const MCP_HEADERS = { 'MCP-Protocol-Version': LATEST_PROTOCOL_VERSION };
+
+function json(body: object, status: number): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...MCP_HEADERS } });
+}
+
+function withMcpHeader(res: Response): Response {
+  const headers = new Headers(res.headers);
+  headers.set('MCP-Protocol-Version', LATEST_PROTOCOL_VERSION);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 export async function POST(req: Request) { return handleMcpRequest(req); }
 export async function GET(req: Request)  { return handleMcpRequest(req); }
 export async function DELETE(req: Request) { return handleMcpRequest(req); }
 
 async function handleMcpRequest(req: Request): Promise<Response> {
   const ctx = await verifyBearerToken(req.headers.get('Authorization'));
-  if (!ctx) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  }
+  if (!ctx) return json({ error: 'Unauthorized' }, 401);
 
-  if (!checkRateLimit(ctx.tokenId)) {
-    return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
-  }
+  if (!checkRateLimit(ctx.tokenId)) return json({ error: 'Too many requests' }, 429);
 
   // Standard SSE GET (Cursor, Windsurf, Continue, Antigravity)
   const url = new URL(req.url);
@@ -122,7 +131,7 @@ async function handleMcpRequest(req: Request): Promise<Response> {
       cancel() { activeSseConnections.delete(sessionId); },
     });
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive' },
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive', ...MCP_HEADERS },
     });
   }
 
@@ -137,18 +146,17 @@ async function handleMcpRequest(req: Request): Promise<Response> {
   const sessionId = url.searchParams.get('sessionId');
   if (sessionId) {
     const conn = activeSseConnections.get(sessionId);
-    if (!conn) {
-      return new Response(JSON.stringify({ error: 'Session expired' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-    }
+    if (!conn) return json({ error: 'Session expired' }, 404);
+
     const transport = new SseCustomTransport(conn.controller, conn.encoder);
     await server.connect(transport);
 
     let message: unknown;
     try { message = await req.clone().json(); } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return json({ error: 'Invalid JSON' }, 400);
     }
     if (transport.onmessage) transport.onmessage(message);
-    return new Response(null, { status: 202 });
+    return new Response(null, { status: 202, headers: MCP_HEADERS });
   }
 
   // Streamable HTTP (Claude Code — stateless)
@@ -157,5 +165,5 @@ async function handleMcpRequest(req: Request): Promise<Response> {
     enableJsonResponse: true,
   });
   await server.connect(transport);
-  return transport.handleRequest(req);
+  return withMcpHeader(await transport.handleRequest(req));
 }

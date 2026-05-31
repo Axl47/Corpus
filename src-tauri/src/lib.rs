@@ -31,6 +31,7 @@ pub fn run() {
             .center()
             .decorations(false)
             .shadow(true)
+            .additional_browser_args("--disable-spell-checking --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection")
             .initialization_script(ZOOM_INIT)
             .build()?;
 

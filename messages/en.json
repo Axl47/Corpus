@@ -194,7 +194,10 @@
     "tokenExpired": "Expired",
     "workspaceIcon": "Workspace Icon",
     "workspaceIconHint": "Set an emoji, icon, or upload a custom image.",
-    "changeIcon": "Change icon"
+    "changeIcon": "Change icon",
+    "installIn": "Add to your editor",
+    "installCursor": "Add to Cursor",
+    "installVSCode": "Add to VS Code"
   },
   "Templates": {
     "modalTitle": "New Item",

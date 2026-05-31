@@ -9,8 +9,22 @@ import {
   standalonePages,
   databases,
   pages,
+  workspaceMembers,
+  users,
+  agentActivity,
+  agentTokens,
 } from '@/db/schema';
-import { eq, and, like, asc, sql } from 'drizzle-orm';
+import { eq, and, like, asc, desc, gte, lte, sql } from 'drizzle-orm';
+
+// ── Cursor pagination utilities ───────────────────────────────────────────────
+
+function encodeCursor(sortOrder: number, id: string): string {
+  return Buffer.from(JSON.stringify({ so: sortOrder, id })).toString('base64url');
+}
+
+function decodeCursor(cursor: string): { so: number; id: string } {
+  return JSON.parse(Buffer.from(cursor, 'base64url').toString());
+}
 
 // ── Internal boundary check ───────────────────────────────────────────────────
 
@@ -54,6 +68,66 @@ async function assertDatabaseInWorkspace(databaseId: string, workspaceId: string
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
+
+export async function queryAuditLog(
+  workspaceId: string,
+  filters?: {
+    tool?: string;
+    status?: 'success' | 'error';
+    from?: string;
+    to?: string;
+  },
+  limit = 50,
+) {
+  const conditions = [eq(agentActivity.workspaceId, workspaceId)];
+
+  if (filters?.tool) conditions.push(eq(agentActivity.tool, filters.tool));
+  if (filters?.status) conditions.push(eq(agentActivity.status, filters.status));
+  if (filters?.from) conditions.push(gte(agentActivity.createdAt, new Date(filters.from)));
+  if (filters?.to) conditions.push(lte(agentActivity.createdAt, new Date(filters.to)));
+
+  const rows = await db
+    .select({
+      id: agentActivity.id,
+      tool: agentActivity.tool,
+      status: agentActivity.status,
+      targetType: agentActivity.targetType,
+      targetId: agentActivity.targetId,
+      createdAt: agentActivity.createdAt,
+      agentName: agentTokens.agentName,
+      tokenName: agentTokens.name,
+    })
+    .from(agentActivity)
+    .leftJoin(agentTokens, eq(agentTokens.id, agentActivity.tokenId))
+    .where(and(...conditions))
+    .orderBy(desc(agentActivity.createdAt))
+    .limit(limit);
+
+  return rows;
+}
+
+export async function listWorkspaceMembers(workspaceId: string) {
+  const rows = await db
+    .select({
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+      joinedAt: workspaceMembers.createdAt,
+      name: users.name,
+      email: users.email,
+    })
+    .from(workspaceMembers)
+    .innerJoin(users, eq(users.id, workspaceMembers.userId))
+    .where(eq(workspaceMembers.workspaceId, workspaceId))
+    .orderBy(asc(workspaceMembers.createdAt));
+
+  return rows.map(r => ({
+    userId: r.userId,
+    name: r.name,
+    email: r.email,
+    role: r.role,
+    joinedAt: r.joinedAt,
+  }));
+}
 
 export async function searchWorkspace(
   workspaceId: string,
@@ -159,10 +233,21 @@ export async function getDatabasePageById(workspaceId: string, pageId: string) {
   };
 }
 
-export async function listWorkspaceItems(workspaceId: string, parentId?: string) {
-  const conditions = parentId
+export async function listWorkspaceItems(
+  workspaceId: string,
+  parentId?: string,
+  limit = 100,
+  cursor?: string,
+) {
+  const cursorData = cursor ? decodeCursor(cursor) : null;
+
+  const baseCondition = parentId
     ? and(eq(workspaceItems.workspaceId, workspaceId), eq(workspaceItems.parentId, parentId))
-    : and(eq(workspaceItems.workspaceId, workspaceId));
+    : eq(workspaceItems.workspaceId, workspaceId);
+
+  const cursorCondition = cursorData
+    ? sql`(${workspaceItems.sortOrder} > ${cursorData.so} OR (${workspaceItems.sortOrder} = ${cursorData.so} AND ${workspaceItems.id} > ${cursorData.id}))`
+    : undefined;
 
   const rows = await db
     .select({
@@ -171,21 +256,31 @@ export async function listWorkspaceItems(workspaceId: string, parentId?: string)
       title: workspaceItems.title,
       parentId: workspaceItems.parentId,
       icon: workspaceItems.icon,
+      sortOrder: workspaceItems.sortOrder,
       databaseId: databases.id,
     })
     .from(workspaceItems)
     .leftJoin(databases, eq(databases.itemId, workspaceItems.id))
-    .where(conditions)
-    .orderBy(asc(workspaceItems.sortOrder), asc(workspaceItems.createdAt));
+    .where(cursorCondition ? and(baseCondition, cursorCondition) : baseCondition)
+    .orderBy(asc(workspaceItems.sortOrder), asc(workspaceItems.id))
+    .limit(limit + 1);
 
-  return rows.map(r => ({
-    id: r.id,
-    type: r.type,
-    title: r.title,
-    parentId: r.parentId,
-    icon: r.icon,
-    ...(r.databaseId ? { databaseId: r.databaseId } : {}),
-  }));
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+
+  return {
+    items: page.map(r => ({
+      id: r.id,
+      type: r.type,
+      title: r.title,
+      parentId: r.parentId,
+      icon: r.icon,
+      ...(r.databaseId ? { databaseId: r.databaseId } : {}),
+    })),
+    hasMore,
+    nextCursor: hasMore && last ? encodeCursor(last.sortOrder, last.id) : undefined,
+  };
 }
 
 export async function getDatabaseSchema(workspaceId: string, databaseId: string) {
@@ -206,6 +301,7 @@ export async function queryDatabaseRows(
   databaseId: string,
   limit = 50,
   filters?: Record<string, unknown>,
+  cursor?: string,
 ) {
   const resolvedId = await assertDatabaseInWorkspace(databaseId, workspaceId);
 
@@ -232,9 +328,16 @@ export async function queryDatabaseRows(
       )
     : [];
 
-  const whereCondition = filterConditions.length > 0
-    ? and(eq(pages.databaseId, resolvedId), ...filterConditions)
-    : eq(pages.databaseId, resolvedId);
+  const cursorData = cursor ? decodeCursor(cursor) : null;
+  const cursorCondition = cursorData
+    ? sql`(${pages.sortOrder} > ${cursorData.so} OR (${pages.sortOrder} = ${cursorData.so} AND ${pages.id} > ${cursorData.id}))`
+    : undefined;
+
+  const allConditions = [
+    eq(pages.databaseId, resolvedId),
+    ...filterConditions,
+    ...(cursorCondition ? [cursorCondition] : []),
+  ];
 
   const rows = await db
     .select({
@@ -242,13 +345,23 @@ export async function queryDatabaseRows(
       title: pages.title,
       properties: pages.properties,
       content: pages.content,
+      sortOrder: pages.sortOrder,
     })
     .from(pages)
-    .where(whereCondition)
-    .orderBy(asc(pages.sortOrder))
-    .limit(limit);
+    .where(and(...allConditions))
+    .orderBy(asc(pages.sortOrder), asc(pages.id))
+    .limit(limit + 1);
 
-  return { schema: dbRecord.schema, rows };
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+
+  return {
+    schema: dbRecord.schema,
+    rows: page.map(({ sortOrder: _so, ...r }) => r),
+    hasMore,
+    nextCursor: hasMore && last ? encodeCursor(last.sortOrder, last.id) : undefined,
+  };
 }
 
 export async function getAnyPageById(workspaceId: string, pageId: string) {

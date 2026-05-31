@@ -65,13 +65,15 @@ messages/                   # i18n JSON (en, tr, hi, es, fr, de)
 - `workspace_members` — user↔workspace join with role
 - `agent_tokens` — MCP bearer tokens scoped to workspace; columns: id, workspace_id (CASCADE), name, agent_name, token_prefix (8-char, indexed), token_hash (bcrypt cost 12), scope ('read'|'write'), created_by, created_at, expires_at (nullable, null = no expiry), last_used_at, revoked_at
 - `agent_activity` — audit log per MCP tool call; columns: id, token_id (CASCADE), workspace_id, tool, target_type, target_id, status ('success'|'error'), created_at
+- `client_auth_tokens` — short-lived desktop OAuth tokens; device_id (PK), token (JWT), expires_at (5 min TTL)
 
 ## MCP feature files
-- `src/app/api/mcp/route.ts` — MCP route handler (Node runtime, stateless Streamable HTTP). Bearer token auth, rate limit 60/min, **12 tools**, audit log every call.
-  - Read: `search`, `list_workspace`, `get_page`, `get_database_schema`, `query_database`
-  - Write (scope='write' required): `create_page`, `update_page`, `bulk_update`, `delete_page` (confirm flag; dry-run by default), `move_item` (reparent sidebar item; null → root), `create_database` (custom schema; title auto-prepended), `update_database_schema` (add/remove columns; remove requires confirm; title protected)
-- `src/lib/services/workspace.ts` — Cookie-free service layer for MCP. All fns take explicit workspaceId, no session cookies. Exports: searchWorkspace, listWorkspaceItems, getPageById, getAnyPageById, getDatabasePageById, getDatabaseSchema, queryDatabaseRows, createPageInWorkspace, updatePageById, bulkUpdatePages, deleteItemFromWorkspace (recursive cascade), moveItemInWorkspace (subtree cycle-check), createDatabaseInWorkspace, updateDatabaseSchemaById.
+- `src/app/api/mcp/route.ts` — MCP route handler (Node runtime, stateless Streamable HTTP). Bearer token auth, rate limit 60/min, **15 tools**, audit log every call. Always sets `MCP-Protocol-Version` header (LATEST_PROTOCOL_VERSION from SDK) on every response path.
+  - Read: `search`, `list_workspace` (cursor pagination), `get_page`, `get_database_schema`, `query_database` (cursor pagination), `list_members` (workspace_members JOIN user; role/email/joinedAt), `query_audit_log` (agentActivity; tool/status/from/to filters)
+  - Write (scope='write' required): `create_page`, `update_page`, `bulk_update`, `delete_page` (confirm flag), `move_item` (reparent; null → root), `create_database` (custom schema; title auto-prepended), `update_database_schema` (add/remove; remove requires confirm; title protected)
+- `src/lib/services/workspace.ts` — Cookie-free service layer for MCP. All fns take explicit workspaceId, no session cookies. Exports: searchWorkspace, listWorkspaceItems (returns `{ items, hasMore, nextCursor }` — keyset pagination by sort_order+id), getPageById, getAnyPageById, getDatabasePageById, getDatabaseSchema, queryDatabaseRows (returns `{ schema, rows, hasMore, nextCursor }` — keyset pagination; optional filters), listWorkspaceMembers (workspace_members JOIN user), queryAuditLog (agentActivity; tool/status/from/to filters; agentTokens LEFT JOIN), createPageInWorkspace, updatePageById, bulkUpdatePages, deleteItemFromWorkspace (recursive cascade), moveItemInWorkspace (subtree cycle-check), createDatabaseInWorkspace, updateDatabaseSchemaById.
 - `src/lib/actions/agentToken.ts` — mintAgentToken (accepts expiresInDays: number|null) / getAgentTokens / revokeAgentToken (owner/admin only).
-- `src/components/marketing/LandingTools.tsx` — Tool reference table on the landing page. TOOLS array lists all 12 tools with scope/desc/return.
+- `src/components/marketing/LandingTools.tsx` — Tool reference table on the landing page. TOOLS array lists all 15 tools with scope/desc/return.
+- `TokensTab` — after token creation, shows one-click install deeplinks: `cursor://anysphere.cursor-deeplink/mcp/install?...` (base64 config) and `vscode:mcp/install?...` (URL-encoded JSON).
 
 See `mem:tech_stack` for stack. See `mem:conventions` for code patterns.
