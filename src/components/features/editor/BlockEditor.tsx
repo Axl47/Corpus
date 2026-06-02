@@ -154,7 +154,10 @@ export default function BlockEditor({
         event.preventDefault();
         // Internal page/database links → SPA navigation (save first so edits
         // persist on return). External links → open in a new tab.
-        if (href.startsWith('/')) {
+        // Guard against protocol-relative ("//evil.com") and backslash tricks
+        // ("/\\evil.com") which start with "/" but resolve off-origin.
+        const isInternal = href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/\\');
+        if (isInternal) {
           const md = editorRef.current?.getMarkdown?.();
           const save = onImmediateSaveRef.current;
           const go = () => router.push(href);
