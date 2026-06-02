@@ -1,6 +1,7 @@
 'use client';
 import { Extension } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
+import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import tippy, { type Instance } from 'tippy.js';
 import PageMentionList from './PageMentionList';
@@ -17,6 +18,9 @@ export const PageMention = Extension.create({
     return [
       Suggestion<PageLinkItem>({
         editor: this.editor,
+        // Distinct key — the default ('suggestion$') collides with SlashCommand's
+        // suggestion plugin and throws "Adding different instances of a keyed plugin".
+        pluginKey: new PluginKey('pageMention'),
         char: '@',
         // Allow spaces in nothing — keep default word matching; query is the
         // text after "@" up to whitespace.
@@ -27,7 +31,7 @@ export const PageMention = Extension.create({
             .focus()
             .deleteRange(range)
             .insertContent([
-              { type: 'text', text: item.title, marks: [{ type: 'link', attrs: { href: item.href } }] },
+              { type: 'pageLink', attrs: { href: item.href, label: item.title, itemType: item.type } },
               { type: 'text', text: ' ' },
             ])
             .run();

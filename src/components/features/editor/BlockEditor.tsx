@@ -14,6 +14,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import BubbleMenuBar from './BubbleMenuBar';
 import { SlashCommand } from './SlashCommandMenu';
 import { ChildBlock } from './ChildBlockExtension';
+import { PageLink } from './PageLinkNode';
 import { PageMention } from './PageMentionExtension';
 import { CollapsibleHeading, HeadingCollapsePlugin } from './HeadingCollapseExtension';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
@@ -133,6 +134,7 @@ export default function BlockEditor({
         workspaceId: workspaceId ?? null,
         parentId: parentId ?? null,
       }),
+      PageLink,
       PageMention,
     ],
     content: computedInitial,

@@ -36,7 +36,7 @@ src/
     # AdminUsersTable, AdminWorkspacesTable
     # editor/: BlockEditor, ChildBlockExtension, ChildBlockView, BubbleMenuBar,
     #           SlashCommandMenu, SlashCommandList, PageMentionExtension/PageMentionList (@ inline page links), PagePickerPanel + pagePicker.ts (block "Link to page" picker), pageLinkData.ts (cached index)
-    # Page linking: inline "@" inserts a link mark (href=internal route); block "Link to page" slash cmd inserts a link-only childBlock (data-cb-link=1, delete removes block only, not target). Typed/pasted URLs auto-link; BlockEditor handleClick routes internal /… via SPA router (after onImmediateSave), external opens new tab. StarterKit link openOnClick:false.
+    # Page linking: inline "@" inserts a pageLink atomic node (PageLinkNode, atom:true — label non-editable, one Backspace deletes whole link; renders <a data-page-link>, round-trips via inline-HTML token); block "Link to page" slash cmd inserts a link-only childBlock (data-cb-link=1, delete removes block only, not target). Typed/pasted URLs auto-link; BlockEditor handleClick routes internal /… via SPA router (after onImmediateSave), external opens new tab. StarterKit link openOnClick:false.
   components/providers/     # QueryProvider (TanStack Query)
   db/
     schema.ts               # Drizzle ORM schema (all tables)
