@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useTransition, useState, useRef, useEffect } from 'react';
 import { setLocale } from '@/lib/actions/locale';
 import { Globe } from 'lucide-react';
+import FlagIcon from './FlagIcon';
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'en', label: 'English' },
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
 ] as const;
 
 type Variant = 'sidebar' | 'compact' | 'header';
@@ -80,11 +81,14 @@ export default function LanguageSwitcher({
             <span className="uppercase tracking-wide">{current.code}</span>
           </>
         ) : resolvedVariant === 'compact' ? (
-          <span>{current.flag}</span>
+          <FlagIcon code={current.code} size={18} />
         ) : (
           <>
             <Globe size={13} />
-            <span className="font-medium">{current.flag} {current.label}</span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <FlagIcon code={current.code} size={16} />
+              {current.label}
+            </span>
           </>
         )}
       </button>
@@ -101,7 +105,7 @@ export default function LanguageSwitcher({
                   : 'text-neutral-300 hover:bg-neutral-800/60'
               }`}
             >
-              <span>{lang.flag}</span>
+              <FlagIcon code={lang.code} size={16} />
               <span>{lang.label}</span>
             </button>
           ))}

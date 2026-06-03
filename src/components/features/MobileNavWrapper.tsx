@@ -9,6 +9,7 @@ import { setLocale } from '@/lib/actions/locale';
 import { X, Plus, Layers, LogOut, Shield, User } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import TemplatePickerModal from './TemplatePickerModal';
+import FlagIcon from './FlagIcon';
 
 type WorkspaceType = { id: string; name: string };
 type CurrentUser = {
@@ -22,12 +23,12 @@ type CurrentUser = {
 type Sheet = 'workspace' | 'user' | null;
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'en', label: 'English' },
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
 ] as const;
 
 function BottomSheet({
@@ -202,7 +203,7 @@ export default function MobileNavWrapper({
                       : 'border-neutral-800 bg-neutral-850 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
                   }`}
                 >
-                  <span className="text-lg leading-none">{lang.flag}</span>
+                  <FlagIcon code={lang.code} size={22} />
                   <span className="text-[10px] truncate w-full text-center">{lang.label}</span>
                 </button>
               ))}

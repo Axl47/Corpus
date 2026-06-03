@@ -33,11 +33,11 @@ src/
     # StandalonePageEditor, PageEditor, TemplatePickerModal, WorkspaceSettingsModal,
     # DatabasePropertiesSidebar, TableLayout, KanbanBoard, CalendarView,
     # InlineCellEditor, IconPicker, PageIcon, SaveStatus, LanguageSwitcher,
-    # AdminUsersTable, AdminWorkspacesTable
+    # AdminUsersTable (sortable/filterable cols + last-active/time-spent + clickable rows), admin/AdminUserDetailModal (per-user: account+role toggle, activity summary, workspaces+items), admin/format.ts (formatDate/Duration/Relative). AdminWorkspacesTable REMOVED — workspaces now in the user detail modal.
     # editor/: BlockEditor, ChildBlockExtension, ChildBlockView, BubbleMenuBar,
     #           SlashCommandMenu, SlashCommandList, PageMentionExtension/PageMentionList (@ inline page links), PagePickerPanel + pagePicker.ts (block "Link to page" picker), pageLinkData.ts (cached index)
     # Page linking: inline "@" inserts a pageLink atomic node (PageLinkNode, atom:true — label non-editable, one Backspace deletes whole link; renders <a data-page-link>, round-trips via inline-HTML token); block "Link to page" slash cmd inserts a link-only childBlock (data-cb-link=1, delete removes block only, not target). Typed/pasted URLs auto-link; BlockEditor handleClick routes internal /… via SPA router (after onImmediateSave), external opens new tab. StarterKit link openOnClick:false.
-  components/providers/     # QueryProvider (TanStack Query)
+  components/providers/     # QueryProvider (TanStack Query), ActivityTracker (engagement heartbeat → /api/activity/ping every 30s while tab visible; mounted for authed users in [locale]/layout.tsx)
   db/
     schema.ts               # Drizzle ORM schema (all tables)
     index.ts                # DB connection + SQLite PRAGMAs
@@ -47,7 +47,7 @@ src/
     routing.ts              # defineRouting (locales, localePrefix:'never')
     request.ts              # getRequestConfig (message loader)
   lib/
-    actions/                # Server Actions (auth, workspace, database, page, demo, locale)
+    actions/                # Server Actions (auth, workspace, database, page, demo, locale, agentToken, analytics). analytics.ts: admin-gated getEngagementOverview (session time, DAU/WAU/MAU, signup trend, per-user map) + getUserDetail (account/activity/workspaces) for the admin panel.
     auth/session.ts         # getCurrentUser() — React.cache wrapper around auth()
     types/properties.ts     # SelectOption, color system, helpers
     types/views.ts          # DatabaseView, ViewFilter, ViewSort types
@@ -67,6 +67,7 @@ messages/                   # i18n JSON (en, tr, hi, es, fr, de)
 - `agent_tokens` — MCP bearer tokens scoped to workspace; columns: id, workspace_id (CASCADE), name, agent_name, token_prefix (8-char, indexed), token_hash (bcrypt cost 12), scope ('read'|'write'), created_by, created_at, expires_at (nullable, null = no expiry), last_used_at, revoked_at
 - `agent_activity` — audit log per MCP tool call; columns: id, token_id (CASCADE), workspace_id, tool, target_type, target_id, status ('success'|'error'), created_at
 - `client_auth_tokens` — short-lived desktop OAuth tokens; device_id (PK), token (JWT), expires_at (5 min TTL)
+- `user_sessions` — engagement/time-in-app tracking; user_id, started_at, last_seen_at, duration_seconds. Extended by `/api/activity/ping` heartbeat (ActivityTracker); new row after 2-min gap. Migration 0018, applied manually via `src/db/apply-0018-user-sessions.ts` (not in journal). Powers admin engagement stats.
 
 ## MCP feature files
 - `src/app/api/mcp/route.ts` — MCP route handler (Node runtime, stateless Streamable HTTP). Bearer token auth, rate limit 60/min, **15 tools**, audit log every call. Always sets `MCP-Protocol-Version` header (LATEST_PROTOCOL_VERSION from SDK) on every response path.

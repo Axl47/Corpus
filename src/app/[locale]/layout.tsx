@@ -16,6 +16,7 @@ import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import PostHogPageView from '@/components/providers/PostHogPageView';
 import PostHogIdentify from '@/components/providers/PostHogIdentify';
 import UpdateBanner from '@/components/features/UpdateBanner';
+import ActivityTracker from '@/components/providers/ActivityTracker';
 
 export const metadata: Metadata = {
   title: {
@@ -128,6 +129,7 @@ export default async function LocaleLayout({
         <PostHogPageView skip={currentUser?.role === 'admin'} />
         <PostHogIdentify user={currentUser} />
         <NextIntlClientProvider messages={messages}>
+          <ActivityTracker />
           <UpdateBanner />
           <QueryProvider>
             <AppShell

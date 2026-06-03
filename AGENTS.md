@@ -129,6 +129,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 | `agent_tokens` | MCP bearer tokens — `token_prefix`, `token_hash`, `scope` ('read'\|'write'), `expires_at` (nullable, null = no expiry), `revoked_at` |
 | `agent_activity` | Audit log for every MCP tool call |
 | `client_auth_tokens` | Short-lived desktop OAuth tokens — `device_id` (PK), `token` (JWT), `expires_at` (5 min TTL). DB-backed; safe for multi-instance deployments. |
+| `user_sessions` | Engagement / time-in-app tracking — `user_id`, `started_at`, `last_seen_at`, `duration_seconds`. Extended by the `/api/activity/ping` heartbeat (`ActivityTracker`); a new row opens after a 2-min inactivity gap. Powers admin engagement stats. |
 
 ### Auth System
 
@@ -152,7 +153,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 ### Migration Notes
 
-- New migration `when` values must be **greater than** all existing values. Last: `0016` → `1780700000000`. **Next migration: `when` > `1780700000000`.**
+- New migration `when` values must be **greater than** all existing values. Last journaled: `0016` → `1780700000000`. Reserve `0018_user_sessions` → `1780800000000`. **Next migration: `when` > `1780800000000`.**
+- `0018_user_sessions` (and `0017`) are NOT in `_journal.json` — applied manually via direct DDL due to the libsql `batch()` caveat below. Apply `user_sessions` with `npx tsx src/db/apply-0018-user-sessions.ts` (idempotent).
 - **libsql DDL caveat:** Drizzle's `migrate()` runs SQL in a `batch()` call. libsql's `batch()` silently fails DDL statements (ALTER TABLE, CREATE TABLE, etc.) — the call returns "complete" but changes are not applied. Use `client.execute()` directly for DDL, or manually apply + insert into `__drizzle_migrations` via a helper script. Migration 0016 was applied this way.
 - Apply with: `npx tsx src/db/migrate.ts`
 
@@ -183,11 +185,13 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `contact/page.tsx` — Public contact (MarketingShell-wrapped). Exports page-specific `metadata` with canonical URL.
 - `download/page.tsx` — Public desktop download page (MarketingShell-wrapped). Renders `DownloadView` with static `releases/latest/download/<stable-name>` links. Exports page-specific `metadata` with canonical URL.
 - `privacy/page.tsx` — Public privacy page (MarketingShell-wrapped). Exports page-specific `metadata` with canonical URL.
-- `admin/page.tsx` — Admin dashboard (users + workspaces tables, stat cards).
+- `admin/page.tsx` — Admin dashboard: engagement + acquisition stat cards (total users, new this week/month, active users, avg session, total time), a 30-day signup-trend mini bar chart, and the users table. Fetches `getAllUsers()` + `getEngagementOverview()`. The standalone workspaces table was removed — workspaces now live in `AdminUserDetailModal`.
+- `admin/workspaces/page.tsx` — Legacy stub; redirects to `/admin`.
 - `api/auth/[...nextauth]/route.ts` — Auth.js handler.
 - `api/auth/client-bridge/route.ts` — GET. Called after browser-side login (as callbackUrl). Requires `device_id` query param. Creates a 5-min JWT signed with AUTH_SECRET, stores it in the in-memory `client-auth-store` keyed by `device_id`, and returns a "Close this tab" HTML page.
 - `api/auth/client-poll/route.ts` — GET. Polled by the Tauri WebView every 2 s. Accepts `device_id`; returns `{ ready: false }` while waiting, `{ ready: true, token }` once the browser completes login (one-time consume).
 - `api/auth/client-activate/route.ts` — GET. Tauri WebView navigates here with the token from the poll response. Signs in via `client-token` provider, redirects to `/app`.
+- `api/activity/ping/route.ts` — `POST`. Auth-gated heartbeat for engagement tracking. Extends the user's most recent `user_sessions` row (or opens a new one after a 2-min gap) and recomputes `duration_seconds`. **Admins are skipped** (no rows created) so their reviewing doesn't pollute the stats. Best-effort; returns `{ ok: true }`. Called by `ActivityTracker`.
 - `api/upload/route.ts` — `POST`. Cloudinary image upload. Auth-gated (session required). Accepts `multipart/form-data` with `file` field (max 5 MB, image types only). Returns `{ url }`. Images stored in `remnus/icons/`, cropped to 256×256.
 - `api/mcp/route.ts` — MCP transport shell (~130 lines): bearer auth, rate limit (60 req/min), SSE connection store, Streamable HTTP (stateless) + SSE (stateful) dual transport.
 - `api/mcp/context.ts` — `TokenContext` type + `logActivity()` helper (audit log insert, best-effort). Imported by all tool/resource/prompt files.
@@ -204,6 +208,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `demo.ts` — `loginAsDemo()` — reset + reseed demo workspace and sign in.
 - `locale.ts` — `setLocale(locale)` — writes `NEXT_LOCALE` cookie.
 - `agentToken.ts` — MCP token mint / list / revoke.
+- `analytics.ts` — Admin-gated engagement analytics. `getEngagementOverview()` (total/avg session time, DAU/WAU/MAU, new-this-week/month signups, 30-day signup trend, per-user activity map) and `getUserDetail(userId)` (account + authType, activity summary, workspaces with items) for the admin panel. Exports type-only `PerUserActivity`/`EngagementOverview`/`UserDetail`.
 
 **Types (`src/lib/types/`)**
 - `views.ts` — `DatabaseView` (added `icon` and `iconColor`), `TableViewConfig`, `KanbanViewConfig` (added `hiddenGroups`), `CalendarViewConfig`, `ViewFilter`, `ViewSort`, `OpenBehavior`.
@@ -228,8 +233,9 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `IconPicker` — Popover with 3 tabs: emoji, Lucide icon + color, Upload (Cloudinary via `POST /api/upload`). Used for workspace items, DB rows, and workspaces.
 - `SaveStatus` — Auto-fading save indicator (idle → saving → saved → error).
 - `LanguageSwitcher` — Language dropdown; calls `setLocale()` + `router.refresh()`.
-- `AdminUsersTable` — Paginated user table with delete (10/page).
-- `AdminWorkspacesTable` — Paginated workspace table with item expand and delete (10/page).
+- `AdminUsersTable` — Paginated user table (10/page) with client-side column sorting (name/email/sign-in/role/last-active/time-spent/joined), search + role + sign-in filters, last-active & time-spent columns (from `getEngagementOverview().perUser`), and clickable rows that open `AdminUserDetailModal`. Delete is inline (stops row-click propagation).
+- `admin/AdminUserDetailModal` — Per-user detail modal opened from `AdminUsersTable`. Fetches `getUserDetail(userId)` on open. Three sections: account details (incl. inline role promote/demote via `setUserRole`), activity summary (total time, session count, last active), and the user's workspaces with their items. Replaces the old standalone workspaces table.
+- `admin/format.ts` — Shared admin formatters: `formatDate`, `formatDuration`, `formatRelative`, `safeDate`.
 
 **Editor (`src/components/features/editor/`)**
 - `BlockEditor` — Tiptap editor: StarterKit (with `link` configured: `openOnClick:false`, autolink, linkOnPaste), `@tiptap/markdown` v3, TaskList, Table, ChildBlock, SlashCommand, PageMention. `editorProps.handleClick` intercepts `<a>` clicks: internal `/…` hrefs navigate via the SPA router (after `onImmediateSave`), external hrefs open in a new tab. Use `key={page.id}` to remount on page switch.
@@ -264,6 +270,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `src/components/providers/PostHogProvider.tsx` — Client-side PostHog initializing wrapper.
 - `src/components/providers/PostHogPageView.tsx` — Client-side pageview capturer for App Router path transitions.
 - `src/components/providers/PostHogIdentify.tsx` — Identity binding provider connecting auth user info & role metadata.
+- `src/components/providers/ActivityTracker.tsx` — Engagement heartbeat. Mounted for authenticated users in `[locale]/layout.tsx`; POSTs `/api/activity/ping` every 30s while the tab is visible (pauses when hidden), feeding `user_sessions`.
 - `src/db/` — Drizzle `schema.ts`, `index.ts` (WAL + PRAGMAs on startup), migrations.
 - `messages/` — Translation files (`en.json` source of truth, 17 namespaces, 6 locales).
 

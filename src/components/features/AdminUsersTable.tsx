@@ -1,9 +1,15 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Calendar, ChevronLeft, ChevronRight, Mail, Globe, Trash2 } from 'lucide-react';
+import {
+  Shield, Calendar, ChevronLeft, ChevronRight, ChevronUp, ChevronDown,
+  Mail, Globe, Trash2, Search, Clock, Activity,
+} from 'lucide-react';
 import { adminDeleteUser } from '@/lib/actions/auth';
+import type { PerUserActivity } from '@/lib/actions/analytics';
 import { useTranslations, useLocale } from 'next-intl';
+import { formatDate, formatDuration, formatRelative } from './admin/format';
+import AdminUserDetailModal from './admin/AdminUserDetailModal';
 
 type UserRow = {
   id: string;
@@ -15,41 +21,90 @@ type UserRow = {
   authType: 'google' | 'github' | 'email' | 'unknown';
 };
 
-function safeDate(val: Date | string | number | null | undefined): Date | null {
-  if (!val) return null;
-  const d = new Date(val as string);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function formatDate(val: Date | string | number | null | undefined, locale: string) {
-  const d = safeDate(val);
-  if (!d) return '—';
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
-}
+type SortKey = 'name' | 'email' | 'authType' | 'role' | 'createdAt' | 'lastActive' | 'totalSeconds';
+type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 10;
 
 export default function AdminUsersTable({
   users,
   currentUserId,
+  activity,
 }: {
   users: UserRow[];
   currentUserId: string;
+  activity: Record<string, PerUserActivity>;
 }) {
   const t = useTranslations('Admin');
   const locale = useLocale();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const [page, setPage] = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
 
-  const total = users.length;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const slice = users.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const from = page * PAGE_SIZE + 1;
-  const to = Math.min((page + 1) * PAGE_SIZE, total);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [authFilter, setAuthFilter] = useState('all');
+  const [sortKey, setSortKey] = useState<SortKey | null>('createdAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const relLabels = {
+    now: t('justNow'),
+    minutesAgo: (n: number) => t('minutesAgo', { count: n }),
+    hoursAgo: (n: number) => t('hoursAgo', { count: n }),
+    daysAgo: (n: number) => t('daysAgo', { count: n }),
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let rows = users.filter((u) => {
+      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      if (authFilter !== 'all' && u.authType !== authFilter) return false;
+      if (q) {
+        const hay = `${u.name ?? ''} ${u.email ?? ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    if (sortKey) {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      rows = [...rows].sort((a, b) => {
+        let va: string | number = '';
+        let vb: string | number = '';
+        switch (sortKey) {
+          case 'name': va = (a.name ?? '').toLowerCase(); vb = (b.name ?? '').toLowerCase(); break;
+          case 'email': va = (a.email ?? '').toLowerCase(); vb = (b.email ?? '').toLowerCase(); break;
+          case 'authType': va = a.authType; vb = b.authType; break;
+          case 'role': va = a.role; vb = b.role; break;
+          case 'createdAt': va = new Date(a.createdAt ?? 0).getTime() || 0; vb = new Date(b.createdAt ?? 0).getTime() || 0; break;
+          case 'lastActive': va = activity[a.id]?.lastActive ?? 0; vb = activity[b.id]?.lastActive ?? 0; break;
+          case 'totalSeconds': va = activity[a.id]?.totalSeconds ?? 0; vb = activity[b.id]?.totalSeconds ?? 0; break;
+        }
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+      });
+    }
+    return rows;
+  }, [users, activity, search, roleFilter, authFilter, sortKey, sortDir]);
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const slice = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const from = total === 0 ? 0 : safePage * PAGE_SIZE + 1;
+  const to = Math.min((safePage + 1) * PAGE_SIZE, total);
+
+  const toggleSort = (key: SortKey) => {
+    setPage(0);
+    if (sortKey !== key) { setSortKey(key); setSortDir('asc'); return; }
+    if (sortDir === 'asc') { setSortDir('desc'); return; }
+    setSortKey(null); // third click clears sort
+  };
 
   const handleDelete = (id: string) => {
     setDeletingId(id);
@@ -61,8 +116,35 @@ export default function AdminUsersTable({
     });
   };
 
+  const selectCls = 'bg-neutral-900 border border-neutral-800 rounded-md text-xs text-neutral-300 px-2 py-1.5 focus:outline-none focus:border-blue-500';
+
   return (
     <div className="border border-neutral-800 rounded-lg overflow-hidden">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-neutral-800 bg-neutral-900/40">
+        <div className="relative flex-1 min-w-45">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-600" />
+          <input
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            placeholder={t('searchPlaceholder')}
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-md text-xs text-neutral-200 pl-8 pr-2 py-1.5 placeholder:text-neutral-600 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }} className={selectCls}>
+          <option value="all">{t('allRoles')}</option>
+          <option value="admin">{t('roleAdmin')}</option>
+          <option value="user">{t('roleUser')}</option>
+          <option value="demo">{t('roleDemo')}</option>
+        </select>
+        <select value={authFilter} onChange={(e) => { setAuthFilter(e.target.value); setPage(0); }} className={selectCls}>
+          <option value="all">{t('allMethods')}</option>
+          <option value="google">{t('signInGoogle')}</option>
+          <option value="github">{t('signInGithub')}</option>
+          <option value="email">{t('signInEmail')}</option>
+        </select>
+      </div>
+
       {total === 0 ? (
         <div className="py-10 text-center text-xs text-neutral-600">{t('noUsers')}</div>
       ) : (
@@ -71,11 +153,13 @@ export default function AdminUsersTable({
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-neutral-900/60">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colName')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">{t('colEmail')}</th>
-                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-28">{t('colSignIn')}</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-24">{t('colRole')}</th>
-                <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-neutral-500 uppercase tracking-wider w-36">{t('colJoined')}</th>
+                <Th sk="name" label={t('colName')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <Th sk="email" label={t('colEmail')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <Th sk="authType" label={t('colSignIn')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell w-28" />
+                <Th sk="role" label={t('colRole')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="w-24" />
+                <Th sk="lastActive" label={t('colLastActive')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell w-32" />
+                <Th sk="totalSeconds" label={t('colTotalTime')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden lg:table-cell w-28" />
+                <Th sk="createdAt" label={t('colJoined')} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} className="hidden md:table-cell w-36" />
                 <th className="w-24 px-4 py-2.5" />
               </tr>
             </thead>
@@ -84,9 +168,14 @@ export default function AdminUsersTable({
                 const isSelf = u.id === currentUserId;
                 const isConfirming = confirmDeleteId === u.id;
                 const isDeleting = deletingId === u.id;
+                const act = activity[u.id];
 
                 return (
-                  <tr key={u.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors last:border-0">
+                  <tr
+                    key={u.id}
+                    onClick={() => setDetailUserId(u.id)}
+                    className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors last:border-0 cursor-pointer"
+                  >
                     <td className="px-4 py-3">
                       <span className="text-neutral-200 font-medium">{u.name ?? <span className="text-neutral-600 italic">—</span>}</span>
                     </td>
@@ -117,11 +206,25 @@ export default function AdminUsersTable({
                       {u.role === 'admin' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
                           <Shield size={9} />
-                          Admin
+                          {t('roleAdmin')}
                         </span>
+                      ) : u.role === 'demo' ? (
+                        <span className="text-xs text-amber-500/80">{t('roleDemo')}</span>
                       ) : (
-                        <span className="text-xs text-neutral-500">User</span>
+                        <span className="text-xs text-neutral-500">{t('roleUser')}</span>
                       )}
+                    </td>
+                    <td className="hidden lg:table-cell px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
+                        <Activity size={11} />
+                        {formatRelative(act?.lastActive, relLabels)}
+                      </div>
+                    </td>
+                    <td className="hidden lg:table-cell px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
+                        <Clock size={11} />
+                        {formatDuration(act?.totalSeconds)}
+                      </div>
                     </td>
                     <td className="hidden md:table-cell px-4 py-3">
                       <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
@@ -130,8 +233,8 @@ export default function AdminUsersTable({
                       </div>
                     </td>
 
-                    {/* Delete / confirm */}
-                    <td className="px-4 py-3">
+                    {/* Delete / confirm — clicks must not open the detail modal */}
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       {isSelf ? (
                         <span className="text-[10px] text-neutral-700">{t('youBadge')}</span>
                       ) : isConfirming ? (
@@ -141,7 +244,7 @@ export default function AdminUsersTable({
                             disabled={isDeleting}
                             className="text-[11px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
                           >
-                            {isDeleting ? 'Deleting…' : t('confirm')}
+                            {isDeleting ? t('deleting') : t('confirm')}
                           </button>
                           <span className="text-neutral-700">·</span>
                           <button
@@ -171,22 +274,22 @@ export default function AdminUsersTable({
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-800 bg-neutral-900/40">
               <span className="text-xs text-neutral-500">
-                {from}–{to} of {total}
+                {from}–{to} {t('ofTotal')} {total}
               </span>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
                   className="p-1 text-neutral-400 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft size={14} />
                 </button>
                 <span className="text-xs text-neutral-500 px-1">
-                  {page + 1} / {totalPages}
+                  {safePage + 1} / {totalPages}
                 </span>
                 <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={safePage >= totalPages - 1}
                   className="p-1 text-neutral-400 hover:text-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronRight size={14} />
@@ -196,7 +299,41 @@ export default function AdminUsersTable({
           )}
         </>
       )}
+
+      {detailUserId && (
+        <AdminUserDetailModal
+          userId={detailUserId}
+          currentUserId={currentUserId}
+          onClose={() => setDetailUserId(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />;
+  return dir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />;
+}
+
+function Th({ sk, label, sortKey, sortDir, onSort, className }: {
+  sk: SortKey;
+  label: string;
+  sortKey: SortKey | null;
+  sortDir: SortDir;
+  onSort: (k: SortKey) => void;
+  className?: string;
+}) {
+  return (
+    <th className={`text-left px-4 py-2.5 ${className ?? ''}`}>
+      <button
+        onClick={() => onSort(sk)}
+        className="group inline-flex items-center gap-1 text-xs font-medium text-neutral-500 uppercase tracking-wider hover:text-neutral-300 transition-colors"
+      >
+        {label}
+        <SortIcon active={sortKey === sk} dir={sortDir} />
+      </button>
+    </th>
   );
 }
 

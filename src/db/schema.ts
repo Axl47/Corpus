@@ -152,6 +152,22 @@ export const clientAuthTokens = sqliteTable('client_auth_tokens', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// ── User engagement / session tracking ───────────────────────────────────────
+// Heartbeat-based active-time tracking. The client pings /api/activity/ping
+// while the user is active; each ping extends the most recent open session or
+// opens a new one after an inactivity gap. Powers the admin engagement stats.
+
+export const userSessions = sqliteTable('user_sessions', {
+  id:              text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId:          text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  startedAt:       integer('started_at', { mode: 'timestamp' }).notNull(),
+  lastSeenAt:      integer('last_seen_at', { mode: 'timestamp' }).notNull(),
+  durationSeconds: integer('duration_seconds').notNull().default(0),
+}, (table) => [
+  index('user_sessions_user_id_idx').on(table.userId),
+  index('user_sessions_last_seen_at_idx').on(table.lastSeenAt),
+]);
+
 export const agentActivity = sqliteTable('agent_activity', {
   id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   tokenId:     text('token_id').notNull().references(() => agentTokens.id, { onDelete: 'cascade' }),
