@@ -135,8 +135,15 @@ export default async function LandingHero() {
             </div>
           </div>
 
-          {/* right — AI dock + workspace, hidden on mobile */}
-          <div className="relative hidden lg:block" style={{ height: 580 }}>
+          {/* right — AI dock + workspace, hidden on mobile.
+              overflow-hidden clips the enlarged board at THIS column's edges
+              (i.e. the content container), not the viewport, so nothing sticks
+              out past the layout and symmetry is kept. The AI tiles are left at
+              their natural size so they never overflow; only the board is scaled. */}
+          <div
+            className="relative hidden lg:block overflow-hidden"
+            style={{ height: 580 }}
+          >
             {/* AI tiles */}
             <div className="absolute top-0 left-0 right-0 grid grid-cols-3 gap-2 z-10">
               {AI_TILES.map((tile, i) => (
@@ -178,13 +185,27 @@ export default async function LandingHero() {
               <span className="text-accent-strong">{t('bridgeHeroPill')}</span>
             </div>
 
-            {/* Workspace shot */}
+            {/* Workspace shot — only this is scaled up. Origin top-left keeps the
+                sidebar/topbar anchored while it grows down/right into the clipped,
+                faded zone. */}
             <div
-              className="absolute right-0 left-1"
-              style={{ top: 124 }}
+              className="absolute left-1"
+              style={{ top: 124, transform: 'scale(1.14)', transformOrigin: 'top left' }}
             >
               <HeroWorkspaceShot />
             </div>
+
+            {/* Edge fades — dissolve the enlarged board into the page background
+                at the right + bottom so the overflow disappears softly instead of
+                a hard crop. Start below the tiles/pill so the agents stay crisp. */}
+            <div
+              className="absolute right-0 z-20 pointer-events-none"
+              style={{ top: 116, bottom: 0, width: 140, background: 'linear-gradient(to right, transparent, var(--color-neutral-950))' }}
+            />
+            <div
+              className="absolute left-0 right-0 bottom-0 z-20 pointer-events-none"
+              style={{ height: 90, background: 'linear-gradient(to bottom, transparent, var(--color-neutral-950))' }}
+            />
           </div>
         </div>
       </div>
