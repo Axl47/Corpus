@@ -1,12 +1,13 @@
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import AIMark from './AIMark';
 
 const AI_TILES = [
-  { id: 'claude',      name: 'Claude',      sub: 'Desktop · Claude Code' },
-  { id: 'cursor',      name: 'Cursor',      sub: 'IDE · Composer'       },
-  { id: 'antigravity', name: 'Antigravity', sub: 'Agent · Google Gemini'       },
+  { id: 'claude',      name: 'Claude',      sub: 'Desktop · Claude Code', color: '#d97757' },
+  { id: 'cursor',      name: 'Cursor',      sub: 'IDE · Composer',        color: '#4cb5a8' },
+  { id: 'antigravity', name: 'Antigravity', sub: 'Agent · Google Gemini', color: '#8a6dba' },
 ] as const;
 
 const KANBAN_COLS = [
@@ -34,6 +35,13 @@ const KANBAN_COLS = [
     ],
   },
 ] as const;
+
+// Flat starting index per kanban column, so each card gets a unique --i
+// for the left→right "agent editing" ripple in HeroWorkspaceShot.
+const CARD_OFFSETS = KANBAN_COLS.reduce<number[]>((acc, _col, i) => {
+  acc.push(i === 0 ? 0 : acc[i - 1] + KANBAN_COLS[i - 1].cards.length);
+  return acc;
+}, []);
 
 export default async function LandingHero() {
   const t = await getTranslations('Landing');
@@ -131,10 +139,11 @@ export default async function LandingHero() {
           <div className="relative hidden lg:block" style={{ height: 580 }}>
             {/* AI tiles */}
             <div className="absolute top-0 left-0 right-0 grid grid-cols-3 gap-2 z-10">
-              {AI_TILES.map((tile) => (
+              {AI_TILES.map((tile, i) => (
                 <div
                   key={tile.id}
-                  className="flex items-center gap-2.5 px-3 py-2.5 bg-neutral-900 border border-neutral-800 rounded-lg"
+                  className="hero-ai-tile flex items-center gap-2.5 px-3 py-2.5 bg-neutral-900 border border-neutral-800 rounded-lg"
+                  style={{ animationDelay: `${i * 8}s`, ['--tile-color' as string]: tile.color } as CSSProperties}
                 >
                   <AIMark name={tile.id} size={20} />
                   <div className="flex flex-col min-w-0 flex-1">
@@ -145,29 +154,34 @@ export default async function LandingHero() {
                       {tile.sub}
                     </span>
                   </div>
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                  <span
+                    className="hero-ai-dot w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"
+                    style={{ animationDelay: `${i * 8}s`, ['--tile-color' as string]: tile.color } as CSSProperties}
+                  />
                 </div>
               ))}
             </div>
 
-            {/* connector line */}
+            {/* connector line + streaming command dot */}
             <div
               className="absolute left-1/2 -translate-x-1/2"
               style={{ top: 60, width: 1, height: 32, background: 'linear-gradient(180deg, var(--color-blue-500), transparent)', opacity: 0.6 }}
-            />
+            >
+              <span className="hero-flow-dot" />
+            </div>
 
-            {/* MCP pill */}
+            {/* MCP pill — border/glow follows the active agent, text stays fixed */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 z-10 bg-neutral-950 border border-blue-500 rounded-full px-3 py-0.5 font-mono text-[10.5px] text-accent-strong tracking-[0.04em]"
+              className="hero-mcp-pill absolute left-1/2 -translate-x-1/2 z-10 bg-neutral-950 border border-blue-500 rounded-full px-3 py-0.5 font-mono text-[10.5px] tracking-[0.04em]"
               style={{ top: 82 }}
             >
-              {t('bridgeHeroPill')}
+              <span className="text-accent-strong">{t('bridgeHeroPill')}</span>
             </div>
 
             {/* Workspace shot */}
             <div
               className="absolute right-0 left-1"
-              style={{ top: 124, transform: 'rotate(-0.8deg)' }}
+              style={{ top: 124 }}
             >
               <HeroWorkspaceShot />
             </div>
@@ -191,10 +205,10 @@ function HeroWorkspaceShot() {
     >
       {/* Sidebar */}
       <div className="w-47 shrink-0 bg-neutral-900 border-r border-neutral-800 flex flex-col gap-1 px-2.5 py-3 text-[10px]">
-        <div className="flex items-center gap-1.5 px-1.5 pb-2.5 mb-1.5 border-b border-neutral-800">
+        <div className="flex items-center gap-1.5 px-1.5 pb-2 mb-1.5 border-b border-neutral-800">
           <Image src="/logo-square-transparent.png" alt="Remnus" width={12} height={12} />
           <span className="font-semibold text-neutral-100 text-[11px]">Acme</span>
-          <span className="ml-auto text-dim text-[9px] font-mono">⌘K</span>
+          {/* <span className="ml-auto text-dim text-[9px] font-mono">⌘K</span> */}
         </div>
         {[
           { i: '📋', t: 'Getting started' },
@@ -226,27 +240,38 @@ function HeroWorkspaceShot() {
       <div className="flex-1 bg-neutral-850 flex flex-col min-w-0">
         {/* Topbar */}
         <div className="border-b border-neutral-800 px-3 py-2 flex items-center gap-2.5 text-[10px]">
-          <span className="text-dim">Projects / Remnus v2 /</span>
-          <span className="text-neutral-100 font-medium">📊 Sprint Board</span>
+          {/* <span className="text-dim">Projects / Remnus v2 /</span> */}
+          <span className="text-neutral-100 font-medium py-1">📊 Sprint Board</span>
+          <span
+            className="hero-agent-tint flex items-center gap-1 ml-0.5 px-1.5 py-0.5 rounded-full font-mono text-[8.5px] tracking-[0.03em]"
+            style={{ background: 'color-mix(in srgb, currentColor 14%, transparent)' }}
+          >
+            <span className="hero-agent-chip-dot w-1 h-1 rounded-full" />
+            Agent editing
+          </span>
           <span className="flex-1" />
-          <span className="text-dim">Table</span>
+          {/* <span className="text-dim">Table</span>
           <span className="text-neutral-100 font-medium pb-0.5" style={{ borderBottom: '1.5px solid var(--color-accent-strong)' }}>Board</span>
-          <span className="text-dim">Calendar</span>
+          <span className="text-dim">Calendar</span> */}
         </div>
 
         {/* Kanban */}
-        <div className="flex-1 flex gap-2.5 p-3 overflow-hidden">
-          {KANBAN_COLS.map((col) => (
+        <div className="relative flex-1 flex gap-2.5 p-3 overflow-hidden">
+          {KANBAN_COLS.map((col, colIdx) => (
             <div key={col.name} className="flex-1 min-w-0 flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5 px-0.5">
                 <span className="w-1.75 h-1.75 rounded-full shrink-0" style={{ background: col.color }} />
                 <span className="text-neutral-100 font-medium text-[10px]">{col.name}</span>
               </div>
-              {col.cards.map((c) => (
+              {col.cards.map((c, cardIdx) => (
                 <div
                   key={c.t}
-                  className="flex flex-col gap-1 px-2 py-1.5 rounded bg-neutral-900"
-                  style={{ border: '1px solid var(--color-neutral-800)', borderLeft: `2.5px solid ${c.tc}` }}
+                  className="hero-card flex flex-col gap-1 px-2 py-1.5 rounded bg-neutral-900"
+                  style={{
+                    border: '1px solid var(--color-neutral-800)',
+                    borderLeft: `2.5px solid ${c.tc}`,
+                    ['--i' as string]: CARD_OFFSETS[colIdx] + cardIdx,
+                  } as CSSProperties}
                 >
                   <span className="text-neutral-100 text-[9.5px] leading-[1.35]">{c.t}</span>
                   <span
@@ -257,6 +282,30 @@ function HeroWorkspaceShot() {
                   </span>
                 </div>
               ))}
+
+              {/* Continuous agent storyline — one card the agents work in turn:
+                  Claude creates here → Cursor slides it to "Review" → Antigravity
+                  edits → reset. Anchored to this real 3rd slot of "In progress" so
+                  its size + create position come from the layout. The bottom-right
+                  stamp shows whichever agent is currently working it. */}
+              {colIdx === 1 && (
+                <div className="relative">
+                  <div className="hero-story-card flex flex-col gap-1 px-2 py-1.5 pr-5">
+                    <span className="text-neutral-100 text-[9.5px] leading-[1.35]">Sync schema → API types</span>
+                    <span
+                      className="self-start font-mono text-[8px] px-1 rounded-[3px]"
+                      style={{ color: 'currentColor', background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
+                    >
+                      agent
+                    </span>
+                    {AI_TILES.map((tile, i) => (
+                      <span key={tile.id} className="hero-story-icon" style={{ animationDelay: `${i * 8}s` }}>
+                        <AIMark name={tile.id} size={13} />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
