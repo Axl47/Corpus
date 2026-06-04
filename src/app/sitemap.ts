@@ -1,6 +1,24 @@
 import type { MetadataRoute } from 'next';
+import { db } from '@/db';
+import { sharedPages } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Only include shares explicitly opted-in to sitemap by an admin
+  let sharedEntries: MetadataRoute.Sitemap = [];
+  try {
+    const shares = await db
+      .select({ slug: sharedPages.slug, createdAt: sharedPages.createdAt })
+      .from(sharedPages)
+      .where(eq(sharedPages.inSitemap, true));
+    sharedEntries = shares.map(s => ({
+      url: `https://remnus.com/share/${s.slug}`,
+      lastModified: s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt as number * 1000),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+  } catch { /* DB may not be available at build time */ }
+
   return [
     {
       url: 'https://remnus.com',
@@ -32,5 +50,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    ...sharedEntries,
   ];
 }

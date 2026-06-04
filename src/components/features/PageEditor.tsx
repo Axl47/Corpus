@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { updatePageContent, updatePageProperties, duplicatePage, deletePage, updatePageIcon } from '@/lib/actions/page';
-import { ArrowLeft, X, ChevronDown, MoreHorizontal, Trash2, Copy, Smile, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeft, X, ChevronDown, MoreHorizontal, Trash2, Copy, Smile, ArrowLeftRight, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -11,6 +11,7 @@ import IconPicker from './IconPicker';
 import AgentEditBadge from './AgentEditBadge';
 import SaveStatus, { type SaveState } from './SaveStatus';
 import { ConfirmDialog } from './ConfirmDialog';
+import ShareModal from '@/components/share/ShareModal';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
 import {
   type SelectOption,
@@ -34,6 +35,7 @@ export default function PageEditor({
   onClose,
   onPageUpdated,
   subItems,
+  isAdmin = false,
 }: {
   database: any;
   initialPage: any;
@@ -41,10 +43,12 @@ export default function PageEditor({
   onClose?: () => void;
   onPageUpdated?: (updatedPage: any) => void;
   subItems?: WorkspaceItemRow[];
+  isAdmin?: boolean;
 }) {
   const t = useTranslations('Page');
   const tDb = useTranslations('Database');
   const tEditor = useTranslations('Editor');
+  const tSharing = useTranslations('Sharing');
   const [properties, setProperties] = useState<Record<string, any>>(initialPage.properties || {});
   const [icon, setIcon] = useState<string | null>(initialPage.icon);
   const [iconColor, setIconColor] = useState<string | null>(initialPage.iconColor);
@@ -53,6 +57,7 @@ export default function PageEditor({
   const [openSelectId, setOpenSelectId] = useState<string | null>(null);
   const selectDropdownRef = useRef<HTMLDivElement>(null);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   type WidthMode = 'narrow' | 'wide' | 'full';
   const [widthMode, setWidthMode] = useState<WidthMode>('full');
@@ -192,15 +197,8 @@ export default function PageEditor({
           <Link href={`/db/${database.id}`} className="inline-flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm font-medium">
             <ArrowLeft size={16} /> {t('back')} — {database.name}
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <SaveStatus state={saveState} />
-            <button
-              onClick={cycleWidth}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
-            >
-              <ArrowLeftRight size={14} />
-              {widthLabels[widthMode]}
-            </button>
             <div className="relative" ref={menuDropdownRef}>
               <button
                 onClick={() => setOpenMenu(!openMenu)}
@@ -209,30 +207,56 @@ export default function PageEditor({
                 <MoreHorizontal size={14} />
               </button>
               {openMenu && (
-                <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1 w-36 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
+                <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1.5 w-44 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
+                  {/* Width */}
+                  <p className="px-3 pt-0.5 pb-1 text-[9px] font-semibold text-neutral-600 uppercase tracking-widest">
+                    {widthLabels[widthMode]}
+                  </p>
+                  {(['narrow', 'wide', 'full'] as WidthMode[]).map(w => (
+                    <button
+                      key={w}
+                      onClick={() => { setWidthMode(w); localStorage.setItem(`page-width-${initialPage.id}`, w); setOpenMenu(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors cursor-pointer ${
+                        widthMode === w ? 'text-blue-400 bg-blue-500/8' : 'text-neutral-300 hover:bg-neutral-800'
+                      }`}
+                    >
+                      <ArrowLeftRight size={12} className={widthMode === w ? 'text-blue-400' : 'text-neutral-600'} />
+                      {widthLabels[w]}
+                      {widthMode === w && <span className="ml-auto text-[9px] text-blue-400">✓</span>}
+                    </button>
+                  ))}
+
+                  <div className="border-t border-neutral-800 my-1" />
+
+                  {/* Share */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOpenMenu(false); setShowShareModal(true); }}
+                    className="w-full px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Globe size={12} className="text-neutral-500" />
+                    {tSharing('shareButton')}
+                  </button>
+
+                  <div className="border-t border-neutral-800 my-1" />
+
+                  {/* Duplicate / Delete */}
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
                       setOpenMenu(false);
                       const newId = await duplicatePage(initialPage.id, database.id);
-                      if (newId) {
-                        router.push(`/db/${database.id}/${newId}`);
-                      }
+                      if (newId) router.push(`/db/${database.id}/${newId}`);
                     }}
-                    className="w-full px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors border-b border-neutral-850"
+                    className="w-full px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Copy size={13} />
+                    <Copy size={12} className="text-neutral-500" />
                     <span>Duplicate</span>
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenMenu(false);
-                      setShowDeleteConfirm(true);
-                    }}
-                    className="w-full px-3 py-2 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setOpenMenu(false); setShowDeleteConfirm(true); }}
+                    className="w-full px-3 py-1.5 text-xs text-red-400 hover:bg-neutral-800 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={12} />
                     <span>{t('deletePage')}</span>
                   </button>
                 </div>
@@ -433,6 +457,14 @@ export default function PageEditor({
         initialSubItems={subItems}
         onImmediateSave={saveContent}
       />
+      {showShareModal && (
+        <ShareModal
+          pageId={initialPage.id}
+          workspaceId={database.workspaceId}
+          isAdmin={isAdmin}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
       {showDeleteConfirm && (
         <ConfirmDialog
           title={t('deleteConfirm', { title: properties['title'] || t('untitled') })}

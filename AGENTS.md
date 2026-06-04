@@ -58,7 +58,7 @@ Remnus is fully internationalized using **next-intl v4** (App Router native). Al
 
 **Clean URLs:** `localePrefix: 'never'` — URLs stay as `/db/123`, never `/en/db/123`. All pages live under `src/app/[locale]/`.
 
-**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **18 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Pricing`, `Contact`, `Download`.
+**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **19 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Pricing`, `Contact`, `Download`, `Sharing`.
 
 ### Rules for All Future Development
 
@@ -136,6 +136,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 | `agent_tokens` | MCP bearer tokens — `token_prefix`, `token_hash`, `scope` ('read'\|'write'), `expires_at` (nullable, null = no expiry), `revoked_at` |
 | `uploaded_assets` | One row per Cloudinary upload — `public_id`, `resource_type`, `kind` ('icon'\|'image'\|'file'), `bytes`, `url`, `user_id`, `workspace_id` (nullable). Powers reliable Cloudinary cleanup on delete + storage-usage accounting per user/workspace (future plan limits). |
 | `agent_activity` | Audit log for every MCP tool call |
+| `shared_pages` | Public page sharing — `slug` (unique; UUID for regular users, custom path for admins e.g. `docs/mcp`), `page_id`, `workspace_id`, `permission` ('read'\|'write'), `width` ('narrow'\|'wide'\|'full', default 'narrow'), `in_sitemap` (boolean, default false — admin-only, cascades to children), `created_by`. Powers `/share/[...slug]` public route. Migrations: `0020` (initial), `0021` (width), `0022` (in_sitemap). |
 | `client_auth_tokens` | Short-lived desktop OAuth tokens — `device_id` (PK), `token` (JWT), `expires_at` (5 min TTL). DB-backed; safe for multi-instance deployments. |
 | `user_sessions` | Engagement / time-in-app tracking — `user_id`, `started_at`, `last_seen_at`, `duration_seconds`. Extended by the `/api/activity/ping` heartbeat (`ActivityTracker`); a new row opens after a 2-min inactivity gap. Powers admin engagement stats. |
 
@@ -161,8 +162,9 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 ### Migration Notes
 
-- New migration `when` values must be **greater than** all existing values. Last journaled: `0016` → `1780700000000`. Reserve `0018_user_sessions` → `1780800000000`, `0019_uploaded_assets` → `1780900000000`. **Next migration: `when` > `1780900000000`.**
+- New migration `when` values must be **greater than** all existing values. Last journaled: `0016` → `1780700000000`. Reserve `0018_user_sessions` → `1780800000000`, `0019_uploaded_assets` → `1780900000000`, `0020_shared_pages` → `1781000000000`. **Next migration: `when` > `1781200000000`.**
 - `0018_user_sessions`, `0019_uploaded_assets` (and `0017`) are NOT in `_journal.json` — applied manually via direct DDL due to the libsql `batch()` caveat below. Apply `user_sessions` with `npx tsx src/db/apply-0018-user-sessions.ts`, `uploaded_assets` with `npx tsx src/db/apply-0019-uploaded-assets.ts` (both idempotent).
+- `0020_shared_pages`, `0021_shared_pages_width`, `0022_shared_pages_sitemap` — also manually applied. Scripts: `src/db/apply-002{0,1,2}-*.ts`. Apply to both local and Turso.
 - **Two databases / env precedence gotcha:** `.env` has the **Turso** `DATABASE_URL`; `.env.local` overrides it with `file:local.db`. Next.js (dev) uses `.env.local` → **local.db**, but the apply scripts call `dotenv.config()` which reads only `.env` → **Turso**. So a plain `npx tsx src/db/apply-00xx-*.ts` migrates Turso only; for local dev also run it with an explicit override: `DATABASE_URL="file:local.db" npx tsx src/db/apply-00xx-*.ts`. Apply every manual migration to **both**.
 - **libsql DDL caveat:** Drizzle's `migrate()` runs SQL in a `batch()` call. libsql's `batch()` silently fails DDL statements (ALTER TABLE, CREATE TABLE, etc.) — the call returns "complete" but changes are not applied. Use `client.execute()` directly for DDL, or manually apply + insert into `__drizzle_migrations` via a helper script. Migration 0016 was applied this way.
 - Apply with: `npx tsx src/db/migrate.ts`
@@ -172,13 +174,13 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 **Auth & middleware**
 - `src/auth.config.ts` — Edge-compatible config (middleware only, no DB import). `/client-login` is handled specially: logged-in users with a `device_id` param are redirected straight to `/api/auth/client-bridge?device_id=…`; without a `device_id` they go to `/app`.
 - `src/auth.ts` — Full config: DrizzleAdapter, `client-token` credentials provider (desktop OAuth), JWT callbacks, first-user bootstrap event.
-- `src/proxy.ts` — Protects all routes (Next.js 16 proxy, replaces `middleware.ts`); whitelists `/login`, `/client-login`, `/tauri-app`, `/api/auth/*`, `/api/auth/client-activate`, `/api/mcp`, static assets, `/`, `/pricing`, `/contact`, `/download`. Matcher explicitly excludes `sitemap.xml` and `robots.txt` so Next.js metadata routes bypass the intl middleware entirely.
+- `src/proxy.ts` — Protects all routes (Next.js 16 proxy, replaces `middleware.ts`); whitelists `/login`, `/client-login`, `/tauri-app`, `/api/auth/*`, `/api/auth/client-activate`, `/api/mcp`, static assets, `/`, `/pricing`, `/contact`, `/download`, `/share/`. Matcher explicitly excludes `sitemap.xml` and `robots.txt` so Next.js metadata routes bypass the intl middleware entirely.
 - `src/lib/auth/session.ts` — `getCurrentUser()` — `React.cache`-wrapped `auth()`. Use this everywhere in server actions.
 
 **Root app files (`src/app/`)**
 - `layout.tsx` — True root layout. Renders `<html lang={locale}>` + `<body>` with Geist/GeistMono/InstrumentSerif font CSS variables. Reads locale from `NEXT_LOCALE` cookie (falls back to `'en'`). Defines `export const viewport`. **All other layouts must NOT render `<html>`/`<body>`.**
-- `sitemap.ts` — Generates `/sitemap.xml`. Lists 5 public URLs (`/`, `/pricing`, `/download`, `/contact`, `/privacy`) with priorities and change frequencies.
-- `robots.ts` — Generates `/robots.txt`. Allows public marketing paths; disallows `/app`, `/db/`, `/page/`, `/admin/`, `/api/`, `/login`.
+- `sitemap.ts` — **Async.** Generates `/sitemap.xml`. Lists 5 static public URLs + all `shared_pages` where `in_sitemap = true` (admin-opted, priority 0.7). Child pages of sitemap-included parents are automatically included via `updateShare` cascade — no manual per-child toggle needed.
+- `robots.ts` — Generates `/robots.txt`. Allows public marketing paths + `/share/`; disallows `/app`, `/db/`, `/page/`, `/admin/`, `/api/`, `/login`.
 
 **Routes (`src/app/[locale]/`)**
 - `layout.tsx` — Locale validation, `NextIntlClientProvider`, session check, sidebar + mobile nav render. Does NOT render `<html>`/`<body>` (those live in root layout); returns a React Fragment with providers. Exports `metadata` (global title template + OG/Twitter tags).
@@ -194,6 +196,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `contact/page.tsx` — Public contact (MarketingShell-wrapped). Exports page-specific `metadata` with canonical URL.
 - `download/page.tsx` — Public desktop download page (MarketingShell-wrapped). Renders `DownloadView` with static `releases/latest/download/<stable-name>` links. Exports page-specific `metadata` with canonical URL.
 - `privacy/page.tsx` — Public privacy page (MarketingShell-wrapped). Exports page-specific `metadata` with canonical URL.
+- `share/[...slug]/page.tsx` — **Public** (no auth). Resolves `slug` (joined `/`-separated path parts) via `getShareBySlug`. **Workspace members are redirected** to the real `/page/[id]` or `/db/[id]` route instead of seeing the shared view. Fetches `shareMap` (pageId→slug for all workspace shares) and builds `navTree` (shared pages tree for sidebar). Passes `parentSlug` (parent's share slug if parent is also shared). Renders `SharedPageView`.
+- `src/lib/server/sharing-internals.ts` — **Server-only** (no `'use server'` — NOT a server action endpoint). `import 'server-only'`. Contains `getShareMapForWorkspace(workspaceId)` and `checkUserHasWorkspaceAccess(userId, workspaceId)`. Imported directly by server components only. NEVER import from a `'use server'` file (IDOR risk).
 - `admin/page.tsx` — Admin dashboard: engagement + acquisition stat cards (total users, new this week/month, active users, avg session, total time), a 30-day signup-trend mini bar chart, and the users table. Fetches `getAllUsers()` + `getEngagementOverview()`. The standalone workspaces table was removed — workspaces now live in `AdminUserDetailModal`.
 - `admin/workspaces/page.tsx` — Legacy stub; redirects to `/admin`.
 - `api/auth/[...nextauth]/route.ts` — Auth.js handler.
@@ -221,6 +225,14 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `agentToken.ts` — MCP token mint / list / revoke.
 - `analytics.ts` — Admin-gated engagement analytics. `getEngagementOverview()` (total/avg session time, DAU/WAU/MAU, new-this-week/month signups, 30-day signup trend, per-user activity map) and `getUserDetail(userId)` (account + authType, activity summary, **storage usage** (`storageBytes` + per-workspace `storageBytes`), workspaces with items) for the admin panel. Exports type-only `PerUserActivity`/`EngagementOverview`/`UserDetail`.
 - `workspace.ts` also exports `getWorkspaceStorageUsage(workspaceId)` (auth-gated; sums `uploaded_assets.bytes`) — surfaced read-only in `WorkspaceSettings` → `GeneralTab`.
+- `sharing.ts` — Public page sharing server actions. `ShareRecord` type: `{ id, slug, pageId, workspaceId, permission: 'read'|'write', width: 'narrow'|'wide'|'full', inSitemap: boolean, createdBy, createdAt }`. Key exports:
+  - `createShare(workspaceId, pageId, permission, customSlug?, width?)` — customSlug admin-only; regular users get UUID slug
+  - `createShareWithChildren(...)` — same as createShare but also auto-shares all descendant workspace items
+  - `updateShare(shareId, workspaceId, { permission?, width?, inSitemap? })` — inSitemap admin-only; **cascades `inSitemap` to all child shared pages automatically**
+  - `revokeShare`, `revokeAllSharesInWorkspace`
+  - `getSharesByWorkspace`, `getShareBySlug` (no auth), `getShareByPageId`, `countSharedPagesInWorkspace`
+  - `updateSharedPageContent(shareId, content)` — requires login + write permission
+- `workspace.ts` `createStandalonePage` and `createWorkspaceDatabase` call `autoShareIfParentShared` after creation — if `parentId` has a `shared_pages` record, the new child is **automatically shared** with the same `permission`, `width`, and `inSitemap` values. This is best-effort (never blocks creation).
 
 **Types (`src/lib/types/`)**
 - `views.ts` — `DatabaseView` (added `icon` and `iconColor`), `TableViewConfig`, `KanbanViewConfig` (added `hiddenGroups`), `CalendarViewConfig`, `ViewFilter`, `ViewSort`, `OpenBehavior`.
@@ -229,7 +241,10 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 **Core feature components (`src/components/features/`)**
 - `WorkspaceSidebar` — Collapsible workspace tree, drag-and-drop reorder, optimistic mutations, mobile bottom-sheet context menu. Bottom bar includes an "AI Agents" button that opens `AgentsModal`.
 - `AgentsModal` — Global MCP token overview modal. Lists all active tokens across all user workspaces (grouped by workspace) with scope/expiry/last-used and per-token revoke. Collapsible recent-activity log (last 60 calls). Fetches via `getUserAgentTokens()` + `getUserAgentActivity()`.
-- `WorkspaceSettingsModal` — 3-tab modal shell (~130 lines). Tabs live in `workspace-settings/`: `GeneralTab` (rename, icon, danger zone), `MembersTab` (invite, member list), `TokensTab` (token CRUD + integration guide + one-click Cursor/VS Code install deeplinks after token creation). Shared types in `workspace-settings/types.ts`.
+- `WorkspaceSettingsModal` — 4-tab modal shell. Tabs live in `workspace-settings/`: `GeneralTab` (rename, icon, danger zone — delete warns if shared pages exist), `MembersTab` (invite, member list), `TokensTab` (token CRUD + integration guide + one-click Cursor/VS Code install deeplinks after token creation), `SharingTab` (list + revoke shared pages per workspace). Shared types in `workspace-settings/types.ts`.
+- `share/ShareModal.tsx` — Modal for creating/managing a share from sidebar context menu or page ⋯ menu. Features: permission (read/write), width (narrow/wide/full), "include child pages" toggle (cascade), custom slug (admin only), edit existing share (permission + width + `inSitemap` toggle — admin only), revoke. Shows `SEO ✓` badge when `inSitemap = true`.
+- `share/SharedPageView.tsx` — Public page renderer. Shows sticky navbar (Remnus logo, breadcrumb, permission badge, save status, Sign in / Get started CTAs for guests, Go to app for logged-in non-members). Uses `share.width` for content container. Accepts `navTree` (shared nav sidebar), `parentSlug` (back button when no navTree), `shareMap` (passed to BlockEditor for child block link resolution), `editable` (Tiptap editable mode — `false` blocks typing but allows click navigation on child blocks).
+- `share/SharedPageNav.tsx` — Navigation sidebar for shared page trees. Desktop: sticky 224px left sidebar. Mobile: collapsible "Contents" bar. Auto-expands branch containing current page. Renders `SharedNavItem` tree with `PageIcon`, chevron toggles, active highlight. Props: `navTree`, `currentPageId`, `mobileOnly`/`desktopOnly` (rendered twice for layout separation).
 - `TemplatePickerModal` — 2-step item creation from templates (defined in `src/lib/templates.ts`).
 - `DatabaseView` — View orchestrator: tabs, filters, sorts, peek modals, URL deep-link (`?v=view_id`).
 - `DatabasePropertiesSidebar` — Shell (~250 lines). Sub-panels in `database-sidebar/`: `PropertiesPanel` (column schema editor), `KanbanLayoutSection` (group-by, card props, colors), `CalendarLayoutSection` (date col, view mode, card props), `FiltersSection`, `SortsSection`. Shared utilities (`Checkbox`, `getPropertyIcon`, `selectCls`) in `database-sidebar/shared.tsx`.
@@ -237,8 +252,9 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `KanbanBoard` — Grouped by select column, draggable groups, card color, group bg tint.
 - `CalendarView` — Monthly/weekly grid, card drag-to-reschedule, card color.
 - `InlineCellEditor` — Shared inline editor for all property types (text, number, date, datetime, select, multi_select).
-- `StandalonePageEditor` — Title + block editor, auto-save, back button only when `parentId` is set.
-- `PageEditor` — DB row editor: properties panel + block editor, Narrow/Wide/Full width, peek-compact layout.
+- `StandalonePageEditor` — Title + block editor, auto-save, back button when `parentId` set. Props include `isAdmin` (passed from route). Header: `[SaveStatus] [Refresh] [⋯]` — the ⋯ dropdown contains width selector (Narrow/Wide/Full) and Share button (opens `ShareModal`).
+- `PageEditor` — DB row editor: properties panel + block editor, peek-compact layout. Props include `isAdmin`. Header: `[SaveStatus] [⋯]` — the ⋯ dropdown contains width selector + Share button + Duplicate + Delete.
+- `BlockEditor` — Props: `initialContent`, `onChange`, `onImmediateSave?`, `placeholder?`, `workspaceId?`, `parentId?`, `initialSubItems?`, `shareMap?`, `editable?` (default `true`). The `editable` prop maps to Tiptap's `editable` option — `false` prevents typing but allows click events (child block navigation works). A `useEffect` on `[editor, initialSubItems]` syncs child block node attrs (title/icon/iconColor) from `initialSubItems` after mount, keeping display current even if sub-pages were renamed after last save.
 - `MobileNavWrapper` — Mobile-only bottom bar: workspace sheet, context-aware + button, user sheet.
 - `ViewsBar` — View tabs with inline rename/delete/add; collapses to dropdown on mobile.
 - `PageIcon` — Renders icons: emoji string, `lucide:Name`, or `https://…` image URL (as `<img>`). Supports 9 theme colors.
@@ -258,8 +274,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
   - `BookmarkBlock` (`div[data-bm-url]`) — link-preview card; Open Graph metadata fetched once via `GET /api/og` and frozen into attributes.
   - `FileBlock` (`div[data-file-url]`) — downloadable attachment (`POST /api/upload` `kind=file`); name + size + download button. Delete calls `/api/upload/delete`; `workspaceId` option sent with uploads.
   - Interactive controls inside these atom node views (URL inputs, the callout textarea, toolbar buttons) only work because each `ReactNodeViewRenderer` is given `{ stopEvent: mediaStopEvent }` (`mediaStopEvent.ts`): it returns true for events whose target is an `input/textarea/select/button/a` (but not `[data-drag-handle]`), so ProseMirror ignores them entirely — including right after insertion when a NodeSelection sits on the fresh node. A React `onMouseDown` is **not** enough (it fires at the React root, after PM's `view.dom` handler already grabbed the NodeSelection). `assetClient.ts` holds the `deleteUploadedAsset(url)` fire-and-forget helper.
-- `ChildBlockExtension` — Tiptap node for embedded sub-pages/databases. Serializes as `<div data-cb-id>` — standard HTML block element required because `marked` does not tokenize custom elements. `linkOnly` attr (`data-cb-link="1"`) marks a **reference to an existing page** (block "Link to page") vs an owned embed; link-only blocks delete the block only, never the target page.
-- `ChildBlockView` — Node view: drag handle, icon, title link (calls `onImmediateSave` before nav), delete with content-check confirmation (link-only blocks skip the confirm and only remove the block).
+- `ChildBlockExtension` — Tiptap node for embedded sub-pages/databases. Serializes as `<div data-cb-id>` — standard HTML block element required because `marked` does not tokenize custom elements. `linkOnly` attr (`data-cb-link="1"`) marks a **reference to an existing page** (block "Link to page") vs an owned embed; link-only blocks delete the block only, never the target page. Options: `workspaceId`, `parentId`, `onImmediateSave`, `shareMap: Record<string,string>|null` — when provided (shared view), child blocks link to `/share/[slug]` if the target page is in the map, otherwise show a lock icon and disable navigation.
+- `ChildBlockView` — Node view: drag handle (hidden in shared view), icon, title link (calls `onImmediateSave` before nav; disabled in shared view when not shared), delete button (hidden in shared view), lock icon for unshared children. Reads `shareMap` from extension options via `editor.extensionManager`.
 - `PageMentionExtension` / `PageMentionList` — Inline page links: typing `@` opens a searchable picker of existing pages/databases; selecting one inserts a `pageLink` atomic node (not an editable mark).
 - `PageLinkNode` — Atomic inline node (`pageLink`, `atom:true`) for `@` page links: label is non-editable and a single Backspace removes the whole link. Renders `<a data-page-link href=…>` and serializes to inline HTML so it round-trips via @tiptap/markdown's inline-HTML token handling (re-parses back into the node, not a link mark). Plain typed/pasted URLs remain ordinary editable link marks.
 - `PagePickerPanel` / `pagePicker.ts` — Block "Link to page" picker (own search box, tippy-anchored at cursor); `openPagePicker(editor)` inserts a link-only `childBlock`. Arrow/Enter/Escape are handled via a **document capture-phase keydown listener** so navigation works even while ProseMirror still holds focus (the editor keeps focus when the picker is opened from a slash command); the search input is focus-grabbed across a few `requestAnimationFrame`s to win that race.

@@ -71,7 +71,17 @@ export default function GeneralTab({
     if (!confirm(t('deleteConfirm'))) return;
     startDeleteTransition(async () => {
       const res = await deleteWorkspace(workspaceId);
-      if (res && 'error' in res) {
+      if (!res) { onDeleted(); onClose(); return; }
+      if ('sharedPagesWarning' in res && res.sharedPagesWarning) {
+        const proceed = confirm(`${res.sharedPagesWarning}\n\n${t('deleteConfirm')}`);
+        if (!proceed) return;
+        // Force delete: revoke all shares then delete
+        const { revokeAllSharesInWorkspace } = await import('@/lib/actions/sharing');
+        await revokeAllSharesInWorkspace(workspaceId);
+        const res2 = await deleteWorkspace(workspaceId);
+        if (res2 && 'error' in res2) { alert(res2.error); return; }
+        onDeleted(); onClose();
+      } else if ('error' in res) {
         alert(res.error);
       } else {
         onDeleted();

@@ -3,13 +3,14 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ArrowLeftRight, RefreshCw } from 'lucide-react';
+import { ChevronLeft, RefreshCw, MoreHorizontal, Globe, ArrowLeftRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { updateStandalonePageContent, updateWorkspaceItemTitle, updateWorkspaceItemIcon } from '@/lib/actions/workspace';
 import BlockEditor from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import SaveStatus, { type SaveState } from './SaveStatus';
+import ShareModal from '@/components/share/ShareModal';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
 
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
@@ -27,14 +28,17 @@ export default function StandalonePageEditor({
   item,
   page,
   subItems,
+  isAdmin = false,
 }: {
   item: Item;
   page: Page;
   subItems?: WorkspaceItemRow[];
+  isAdmin?: boolean;
 }) {
   const t = useTranslations('Page');
   const tEditor = useTranslations('Editor');
   const tWs = useTranslations('Workspace');
+  const tSharing = useTranslations('Sharing');
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [title, setTitle] = useState(item.title);
@@ -46,6 +50,9 @@ export default function StandalonePageEditor({
   const [saveState, setSaveState] = useState<SaveState>('idle');
   type WidthMode = 'narrow' | 'wide' | 'full';
   const [widthMode, setWidthMode] = useState<WidthMode>('narrow');
+  const [openMenu, setOpenMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -74,6 +81,15 @@ export default function StandalonePageEditor({
   };
 
   const widthLabels: Record<WidthMode, string> = { narrow: t('narrow'), wide: t('wide'), full: t('full') };
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setOpenMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenu]);
 
   useEffect(() => {
     if (title === savedTitle.current) return;
@@ -122,27 +138,71 @@ export default function StandalonePageEditor({
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <SaveStatus state={saveState} />
-          
-          {/* Manual Refresh Button */}
+
+          {/* Refresh */}
           <button
             onClick={handleRefresh}
             className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
-            title={tWs('refresh') || 'Refresh'}
+            title={tWs('refresh')}
           >
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-blue-400' : ''} />
-            {tWs('refresh')}
+            <span className="hidden sm:inline">{tWs('refresh')}</span>
           </button>
 
-          <button
-            onClick={cycleWidth}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
-          >
-            <ArrowLeftRight size={14} />
-            {widthLabels[widthMode]}
-          </button>
+          {/* ⋯ Options menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setOpenMenu(v => !v)}
+              className="flex items-center justify-center p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/40 border border-neutral-800 cursor-pointer rounded transition-colors"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {openMenu && (
+              <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1.5 w-44 rounded overflow-hidden animate-fade-in animate-duration-100">
+                {/* Width */}
+                <p className="px-3 pt-0.5 pb-1 text-[9px] font-semibold text-neutral-600 uppercase tracking-widest">
+                  {tWs('narrow')}
+                </p>
+                {(['narrow', 'wide', 'full'] as WidthMode[]).map(w => (
+                  <button
+                    key={w}
+                    onClick={() => { setWidthMode(w); localStorage.setItem(`page-width-${item.id}`, w); setOpenMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors cursor-pointer ${
+                      widthMode === w ? 'text-blue-400 bg-blue-500/8' : 'text-neutral-300 hover:bg-neutral-800'
+                    }`}
+                  >
+                    <ArrowLeftRight size={12} className={widthMode === w ? 'text-blue-400' : 'text-neutral-600'} />
+                    {widthLabels[w]}
+                    {widthMode === w && <span className="ml-auto text-[9px] text-blue-400">✓</span>}
+                  </button>
+                ))}
+
+                <div className="border-t border-neutral-800 my-1.5" />
+
+                {/* Share */}
+                <button
+                  onClick={() => { setOpenMenu(false); setShowShareModal(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer transition-colors"
+                >
+                  <Globe size={12} className="text-neutral-500" />
+                  {tSharing('shareButton')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {showShareModal && (
+          <ShareModal
+            pageId={item.id}
+            workspaceId={item.workspaceId}
+            isAdmin={isAdmin}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </div>
 
       {/* Unified Page Header: Icon + Title Input */}

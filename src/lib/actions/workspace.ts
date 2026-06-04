@@ -1,7 +1,7 @@
 'use server';
 import { db } from '@/db';
-import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, users } from '@/db/schema';
-import { eq, asc, and, inArray, sql } from 'drizzle-orm';
+import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, users, sharedPages } from '@/db/schema';
+import { eq, asc, and, inArray, sql, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -129,10 +129,23 @@ export async function createWorkspace(name: string) {
 export async function deleteWorkspace(id: string) {
   const userId = await assertWorkspaceAccess(id);
   const t = await getTranslations('Errors');
+  const tSharing = await getTranslations('Sharing');
 
   const accessible = await getWorkspaces();
   if (accessible.length <= 1) {
     return { error: t('cannotDeleteOnlyWorkspace') };
+  }
+
+  const [{ n: sharedCount }] = await db
+    .select({ n: count() })
+    .from(sharedPages)
+    .where(eq(sharedPages.workspaceId, id));
+
+  if (sharedCount > 0) {
+    return {
+      sharedPagesWarning: tSharing('deleteWorkspaceSharedWarning', { count: sharedCount }),
+      sharedCount,
+    };
   }
 
   await db.delete(workspaces).where(eq(workspaces.id, id));
@@ -262,6 +275,40 @@ export async function getAllWorkspaceItems(): Promise<WorkspaceItemRow[]> {
   return rows.map((r) => ({ ...r, databaseId: r.databaseId ?? null }));
 }
 
+// If parent is shared, automatically share the new child with the same settings.
+// Best-effort — never throws, never blocks the caller.
+async function autoShareIfParentShared(itemId: string, parentId: string, workspaceId: string, userId: string): Promise<void> {
+  try {
+    const [parentShare] = await db
+      .select({ permission: sharedPages.permission, width: sharedPages.width, inSitemap: sharedPages.inSitemap })
+      .from(sharedPages)
+      .where(eq(sharedPages.pageId, parentId))
+      .limit(1);
+    if (!parentShare) return;
+
+    const [existing] = await db
+      .select({ id: sharedPages.id })
+      .from(sharedPages)
+      .where(eq(sharedPages.pageId, itemId))
+      .limit(1);
+    if (existing) return;
+
+    await db.insert(sharedPages).values({
+      id: crypto.randomUUID(),
+      slug: crypto.randomUUID(),
+      pageId: itemId,
+      workspaceId,
+      permission: parentShare.permission,
+      width: parentShare.width ?? 'narrow',
+      inSitemap: Boolean(parentShare.inSitemap),
+      createdBy: userId,
+      createdAt: new Date(),
+    });
+  } catch {
+    // best-effort — ignore errors
+  }
+}
+
 export async function createStandalonePage(
   workspaceId: string,
   title: string,
@@ -289,6 +336,8 @@ export async function createStandalonePage(
     itemId,
     content: options?.initialContent ?? '',
   });
+
+  if (parentId) autoShareIfParentShared(itemId, parentId, workspaceId, userId);
 
   revalidatePath('/', 'layout');
   publish({ scope: 'sidebar', workspaceId, actorId: userId });
@@ -326,6 +375,8 @@ export async function createWorkspaceDatabase(
     ],
     views: options?.views ?? null,
   });
+
+  if (options?.parentId) autoShareIfParentShared(itemId, options.parentId, workspaceId, userId);
 
   revalidatePath('/', 'layout');
   publish({ scope: 'sidebar', workspaceId, actorId: userId });

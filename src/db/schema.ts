@@ -189,6 +189,26 @@ export const uploadedAssets = sqliteTable('uploaded_assets', {
   index('uploaded_assets_workspace_id_idx').on(table.workspaceId),
 ]);
 
+// ── Public page sharing ───────────────────────────────────────────────────────
+// Maps a slug (URL segment) to a workspace item or DB row, with read/write permission.
+// Regular users get a UUID slug; admins can set a custom slug (e.g. "docs/mcp-intro").
+
+export const sharedPages = sqliteTable('shared_pages', {
+  id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  slug:        text('slug').notNull(),
+  pageId:      text('page_id').notNull(),
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  permission:  text('permission', { enum: ['read', 'write'] }).notNull().default('read'),
+  width:       text('width', { enum: ['narrow', 'wide', 'full'] }).notNull().default('narrow'),
+  inSitemap:   integer('in_sitemap', { mode: 'boolean' }).notNull().default(false),
+  createdBy:   text('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt:   integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex('shared_pages_slug_unique').on(table.slug),
+  index('shared_pages_workspace_id_idx').on(table.workspaceId),
+  index('shared_pages_page_id_idx').on(table.pageId),
+]);
+
 export const agentActivity = sqliteTable('agent_activity', {
   id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   tokenId:     text('token_id').notNull().references(() => agentTokens.id, { onDelete: 'cascade' }),

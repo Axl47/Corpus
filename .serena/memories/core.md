@@ -47,7 +47,8 @@ src/
     routing.ts              # defineRouting (locales, localePrefix:'never')
     request.ts              # getRequestConfig (message loader)
   lib/
-    actions/                # Server Actions (auth, workspace, database, page, demo, locale, agentToken, analytics). analytics.ts: admin-gated getEngagementOverview (session time, DAU/WAU/MAU, signup trend, per-user map) + getUserDetail (account/activity/workspaces) for the admin panel.
+    actions/                # Server Actions (auth, workspace, database, page, demo, locale, agentToken, analytics, sharing).
+    # sharing.ts: createShare/createShareWithChildren/updateShare(cascades inSitemap)/revokeShare/getShare*/updateSharedPageContent analytics.ts: admin-gated getEngagementOverview (session time, DAU/WAU/MAU, signup trend, per-user map) + getUserDetail (account/activity/workspaces) for the admin panel.
     auth/session.ts         # getCurrentUser() — React.cache wrapper around auth()
     types/properties.ts     # SelectOption, color system, helpers
     types/views.ts          # DatabaseView, ViewFilter, ViewSort types
@@ -67,8 +68,20 @@ messages/                   # i18n JSON (en, tr, hi, es, fr, de)
 - `agent_tokens` — MCP bearer tokens scoped to workspace; columns: id, workspace_id (CASCADE), name, agent_name, token_prefix (8-char, indexed), token_hash (bcrypt cost 12), scope ('read'|'write'), created_by, created_at, expires_at (nullable, null = no expiry), last_used_at, revoked_at
 - `uploaded_assets` — one row per Cloudinary upload (public_id, resource_type, kind icon|image|file, bytes, url, user_id, workspace_id nullable). Powers Cloudinary cleanup on delete + storage accounting per user/workspace. Migration 0019, applied via `src/db/apply-0019-uploaded-assets.ts`. Service: `src/lib/services/assets.ts` (recordAsset/deleteAssetByUrl/getUserStorageBytes/getWorkspaceStorageBytes). Surfaced in admin user-detail modal (storageBytes + per-ws) and WorkspaceSettings GeneralTab (getWorkspaceStorageUsage).
 - `agent_activity` — audit log per MCP tool call; columns: id, token_id (CASCADE), workspace_id, tool, target_type, target_id, status ('success'|'error'), created_at
+- `shared_pages` — public page sharing; slug (unique — UUID for users, custom path for admins), page_id, workspace_id (CASCADE), permission ('read'|'write'), width ('narrow'|'wide'|'full'), in_sitemap (boolean, admin-only, cascades to children via updateShare), created_by (CASCADE), created_at. Powers `/share/[...slug]` public route. Migrations 0020/0021/0022, scripts `src/db/apply-002{0,1,2}-*.ts`. New child pages under a shared parent are auto-shared (same permission/width/inSitemap) via `autoShareIfParentShared` in workspace.ts and services/workspace.ts.
+- `src/lib/server/sharing-internals.ts` — server-only (NOT 'use server'). `import 'server-only'`. Contains `getShareMapForWorkspace` and `checkUserHasWorkspaceAccess`. Import only from server components — never from 'use server' files (IDOR risk).
 - `client_auth_tokens` — short-lived desktop OAuth tokens; device_id (PK), token (JWT), expires_at (5 min TTL)
 - `user_sessions` — engagement/time-in-app tracking; user_id, started_at, last_seen_at, duration_seconds. Extended by `/api/activity/ping` heartbeat (ActivityTracker); new row after 2-min gap. Migration 0018, applied manually via `src/db/apply-0018-user-sessions.ts` (not in journal). Powers admin engagement stats.
+
+## Public Page Sharing
+
+- Route: `src/app/[locale]/share/[...slug]/page.tsx` — public (no auth). Workspace members redirected to real route. Builds shareMap + navTree + parentSlug server-side.
+- Components: `share/SharedPageView.tsx` (renderer, navbar, width from share.width, editable Tiptap prop), `share/SharedPageNav.tsx` (tree sidebar + mobile dropdown), `share/ShareModal.tsx` (create/edit/revoke from ⋯ menu)
+- `SharingTab.tsx` in workspace-settings — 4th tab of WorkspaceSettingsModal
+- `BlockEditor` props: `editable?` (Tiptap editable, false still allows clicks), `shareMap?` (passed to ChildBlock extension so child blocks link to /share/[slug])
+- `ChildBlockExtension` option `shareMap` — in shared view: navigate to /share/[slug] if shared, lock icon if not
+- `StandalonePageEditor`/`PageEditor` both have `isAdmin` prop; header ⋯ menu contains width selector + Share button
+- `sitemap.ts` async — includes shared_pages WHERE in_sitemap=true; child pages cascade automatically via updateShare
 
 ## MCP feature files
 - `src/app/api/mcp/route.ts` — MCP route handler (Node runtime, stateless Streamable HTTP). Bearer token auth, rate limit 60/min, **15 tools**, audit log every call. Always sets `MCP-Protocol-Version` header (LATEST_PROTOCOL_VERSION from SDK) on every response path.

@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/pricing', '/contact', '/download', '/privacy'],
+        allow: ['/', '/pricing', '/contact', '/download', '/privacy', '/share/'],
         disallow: ['/app', '/db/', '/page/', '/admin/', '/api/', '/login', '/client-login', '/tauri-app'],
       },
     ],

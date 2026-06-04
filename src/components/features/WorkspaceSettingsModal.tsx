@@ -6,6 +6,7 @@ import { getWorkspaceMembers } from '@/lib/actions/auth';
 import GeneralTab from './workspace-settings/GeneralTab';
 import MembersTab from './workspace-settings/MembersTab';
 import TokensTab from './workspace-settings/TokensTab';
+import SharingTab from './workspace-settings/SharingTab';
 import type { CurrentUser, WorkspaceMember } from './workspace-settings/types';
 
 interface WorkspaceSettingsModalProps {
@@ -14,7 +15,7 @@ interface WorkspaceSettingsModalProps {
   workspaceIcon?: string | null;
   workspaceIconColor?: string | null;
   currentUser: CurrentUser;
-  initialTab?: 'general' | 'members' | 'tokens';
+  initialTab?: 'general' | 'members' | 'tokens' | 'sharing';
   onClose: () => void;
   onRenamed: (newName: string) => void;
   onIconChanged?: (icon: string | null, iconColor: string | null) => void;
@@ -34,7 +35,8 @@ export default function WorkspaceSettingsModal({
   onDeleted,
 }: WorkspaceSettingsModalProps) {
   const t = useTranslations('WorkspaceSettings');
-  const [activeTab, setActiveTab] = useState<'general' | 'members' | 'tokens'>(initialTab ?? 'general');
+  const tSharing = useTranslations('Sharing');
+  const [activeTab, setActiveTab] = useState<'general' | 'members' | 'tokens' | 'sharing'>(initialTab ?? 'general');
 
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
@@ -89,7 +91,7 @@ export default function WorkspaceSettingsModal({
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-neutral-800 bg-neutral-900/10 px-6 shrink-0">
-          {(['general', 'members', 'tokens'] as const).map((tab) => (
+          {(['general', 'members', 'tokens', 'sharing'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -98,13 +100,17 @@ export default function WorkspaceSettingsModal({
                   ? activeTab === tab
                     ? 'border-amber-400 text-amber-300'
                     : 'border-transparent text-amber-500/70 hover:text-amber-400'
-                  : activeTab === tab
-                    ? 'border-blue-500 text-white'
-                    : 'border-transparent text-neutral-400 hover:text-neutral-200'
+                  : tab === 'sharing'
+                    ? activeTab === tab
+                      ? 'border-green-500 text-green-300'
+                      : 'border-transparent text-neutral-400 hover:text-neutral-200'
+                    : activeTab === tab
+                      ? 'border-blue-500 text-white'
+                      : 'border-transparent text-neutral-400 hover:text-neutral-200'
               }`}
             >
               {tab === 'tokens' && <Zap size={11} className="shrink-0" />}
-              {tab === 'general' ? t('tabGeneral') : tab === 'members' ? t('tabMembers') : t('tabTokens')}
+              {tab === 'general' ? t('tabGeneral') : tab === 'members' ? t('tabMembers') : tab === 'tokens' ? t('tabTokens') : tSharing('tabSharing')}
               {tab === 'tokens' && activeTab !== 'tokens' && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400/70 shrink-0" />
               )}
@@ -141,6 +147,12 @@ export default function WorkspaceSettingsModal({
             <TokensTab
               workspaceId={workspaceId}
               hasPrivilegedAccess={hasPrivilegedAccess}
+            />
+          )}
+          {activeTab === 'sharing' && (
+            <SharingTab
+              workspaceId={workspaceId}
+              isAdmin={currentUser.role === 'admin'}
             />
           )}
         </div>

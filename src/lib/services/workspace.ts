@@ -13,6 +13,7 @@ import {
   users,
   agentActivity,
   agentTokens,
+  sharedPages,
 } from '@/db/schema';
 import { eq, and, like, asc, desc, gte, lte, sql } from 'drizzle-orm';
 
@@ -449,7 +450,40 @@ export async function createPageInWorkspace(
     content: input.content ?? '',
   });
 
+  // Auto-share child if parent is shared
+  if (input.parentId) {
+    autoShareIfParentShared(itemId, input.parentId, agentCtx?.tokenId ?? 'system').catch(() => {});
+  }
+
   return { id: itemId, type: 'page' as const };
+}
+
+async function autoShareIfParentShared(itemId: string, parentId: string, createdBy: string): Promise<void> {
+  const [parentShare] = await db
+    .select({ permission: sharedPages.permission, width: sharedPages.width, workspaceId: sharedPages.workspaceId, inSitemap: sharedPages.inSitemap })
+    .from(sharedPages)
+    .where(eq(sharedPages.pageId, parentId))
+    .limit(1);
+  if (!parentShare) return;
+
+  const [existing] = await db
+    .select({ id: sharedPages.id })
+    .from(sharedPages)
+    .where(eq(sharedPages.pageId, itemId))
+    .limit(1);
+  if (existing) return;
+
+  await db.insert(sharedPages).values({
+    id: crypto.randomUUID(),
+    slug: crypto.randomUUID(),
+    pageId: itemId,
+    workspaceId: parentShare.workspaceId,
+    permission: parentShare.permission,
+    width: parentShare.width ?? 'narrow',
+    inSitemap: Boolean(parentShare.inSitemap),
+    createdBy,
+    createdAt: new Date(),
+  });
 }
 
 // ── Internal recursive delete ─────────────────────────────────────────────────

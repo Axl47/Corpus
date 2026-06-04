@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NodeViewWrapper } from '@tiptap/react';
 import { useRouter } from 'next/navigation';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Lock } from 'lucide-react';
 import PageIcon from '../PageIcon';
 import { deleteWorkspaceItem, checkItemHasContent } from '@/lib/actions/workspace';
 import { useTranslations } from 'next-intl';
@@ -22,17 +22,23 @@ export default function ChildBlockView({
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
-  // For databases: use databaseId (databases.id) if present, else fall back to itemId
-  // (old slash-command blocks stored databases.id in itemId for backward compat)
-  const href = itemType === 'database' ? `/db/${databaseId || itemId}` : `/page/${itemId}`;
+  const ext = editor.extensionManager.extensions.find((e: any) => e.name === 'childBlock');
+  const shareMap = ext?.options?.shareMap as Record<string, string> | null;
+  const sharedSlug = shareMap?.[itemId];
+
+  // In shared view: link to /share/[slug] if child is also shared, otherwise no link
+  // In normal view: link to /page/[id] or /db/[id]
+  const isSharedView = shareMap !== null && shareMap !== undefined;
+  const normalHref = itemType === 'database' ? `/db/${databaseId || itemId}` : `/page/${itemId}`;
+  const href = sharedSlug ? `/share/${sharedSlug}` : normalHref;
 
   const handleNavigate = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isSharedView && !sharedSlug) return; // not shared — block navigation
 
     // Save content immediately before navigating so it persists on return
     const md = (editor as any).getMarkdown?.();
-    const ext = editor.extensionManager.extensions.find((e: any) => e.name === 'childBlock');
     if (md && typeof ext?.options?.onImmediateSave === 'function') {
       try { await ext.options.onImmediateSave(md); } catch {}
     }
@@ -70,12 +76,14 @@ export default function ChildBlockView({
         contentEditable={false}
         className="group/child flex items-center gap-1.5 rounded py-1 px-1 hover:bg-neutral-800/25 transition-colors my-0.5 select-none"
       >
-        <div
-          data-drag-handle
-          className="opacity-0 group-hover/child:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400 shrink-0"
-        >
-          <GripVertical size={13} />
-        </div>
+        {!isSharedView && (
+          <div
+            data-drag-handle
+            className="opacity-0 group-hover/child:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400 shrink-0"
+          >
+            <GripVertical size={13} />
+          </div>
+        )}
 
         <span className="shrink-0">
           <PageIcon icon={icon || null} iconColor={iconColor || null} size={16} fallbackType={itemType} />
@@ -83,18 +91,31 @@ export default function ChildBlockView({
 
         <button
           onClick={handleNavigate}
-          className="flex-1 text-sm text-neutral-300 hover:text-white truncate text-left cursor-pointer"
+          disabled={isSharedView && !sharedSlug}
+          className={`flex-1 text-sm truncate text-left transition-colors ${
+            isSharedView && !sharedSlug
+              ? 'text-neutral-600 cursor-default'
+              : 'text-neutral-300 hover:text-white cursor-pointer'
+          }`}
         >
           {title}
         </button>
 
-        <button
-          onClick={handleDeleteClick}
-          className="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded text-neutral-600 hover:text-red-400 hover:bg-neutral-800/60 cursor-pointer shrink-0 text-base leading-none"
-          title={linkOnly ? t('removeLink') : t('deleteChildConfirm')}
-        >
-          ×
-        </button>
+        {isSharedView && !sharedSlug && (
+          <span title="Not shared" className="shrink-0">
+            <Lock size={11} className="text-neutral-700" />
+          </span>
+        )}
+
+        {!isSharedView && (
+          <button
+            onClick={handleDeleteClick}
+            className="opacity-0 group-hover/child:opacity-100 transition-opacity p-1 rounded text-neutral-600 hover:text-red-400 hover:bg-neutral-800/60 cursor-pointer shrink-0 text-base leading-none"
+            title={linkOnly ? t('removeLink') : t('deleteChildConfirm')}
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {showConfirm &&

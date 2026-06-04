@@ -40,6 +40,8 @@ type Props = {
   workspaceId?: string;
   parentId?: string;
   initialSubItems?: WorkspaceItemRow[];
+  shareMap?: Record<string, string> | null;
+  editable?: boolean;
 };
 
 // Block-level markdown patterns that HTML clipboard cannot reliably represent.
@@ -98,6 +100,8 @@ export default function BlockEditor({
   workspaceId,
   parentId,
   initialSubItems,
+  shareMap,
+  editable = true,
 }: Props) {
   const editorRef = useRef<any>(null);
   const router = useRouter();
@@ -118,6 +122,7 @@ export default function BlockEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    editable,
     extensions: [
       StarterKit.configure({
         heading: false,
@@ -156,6 +161,7 @@ export default function BlockEditor({
         workspaceId: workspaceId ?? null,
         parentId: parentId ?? null,
         onImmediateSave: onImmediateSave ?? null,
+        shareMap: shareMap ?? null,
       }),
       SlashCommand.configure({
         workspaceId: workspaceId ?? null,
@@ -268,6 +274,37 @@ export default function BlockEditor({
   useEffect(() => {
     editorRef.current = editor;
   }, [editor]);
+
+  // Sync child block title/icon/iconColor from initialSubItems.
+  // The markdown stores these attrs at save time; if a sub-page was renamed
+  // after the last save the stale values would show. This patches the editor
+  // state on mount (and whenever initialSubItems changes) so the display is
+  // always up-to-date. The resulting onChange will re-persist the fresh values.
+  useEffect(() => {
+    if (!editor || !initialSubItems?.length) return;
+    const map = new Map(initialSubItems.map(i => [i.id, i]));
+    let changed = false;
+    const tr = editor.view.state.tr;
+
+    editor.view.state.doc.descendants((node: any, pos: number) => {
+      if (node.type.name !== 'childBlock') return;
+      const item = map.get(node.attrs.itemId);
+      if (!item) return;
+      const next = {
+        ...node.attrs,
+        title: item.title || node.attrs.title,
+        icon: item.icon ?? null,
+        iconColor: item.iconColor ?? null,
+      };
+      if (next.title !== node.attrs.title || next.icon !== node.attrs.icon || next.iconColor !== node.attrs.iconColor) {
+        tr.setNodeMarkup(pos, undefined, next);
+        changed = true;
+      }
+    });
+
+    if (changed) editor.view.dispatch(tr);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, initialSubItems]);
 
   if (!editor) return null;
 

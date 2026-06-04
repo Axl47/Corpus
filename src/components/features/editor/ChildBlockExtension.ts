@@ -13,6 +13,8 @@ export const ChildBlock = Node.create({
       workspaceId: null as string | null,
       parentId: null as string | null,
       onImmediateSave: null as ((md: string) => Promise<void>) | null,
+      // pageId → slug map injected on public share pages so child blocks link to /share/[slug]
+      shareMap: null as Record<string, string> | null,
     };
   },
 

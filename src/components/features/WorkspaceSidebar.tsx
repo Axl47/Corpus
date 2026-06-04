@@ -3,6 +3,7 @@ import { useState, useTransition, useRef, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import ShareModal from '@/components/share/ShareModal';
 import {
   Plus,
   X,
@@ -21,6 +22,7 @@ import {
   ArrowLeft,
   Monitor,
   Bot,
+  Globe,
 } from 'lucide-react';
 import PageIcon from './PageIcon';
 import {
@@ -82,6 +84,7 @@ export default function WorkspaceSidebar({
   hideBrandHeader?: boolean;
 }) {
   const t = useTranslations('Workspace');
+  const tSharing = useTranslations('Sharing');
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -160,7 +163,8 @@ export default function WorkspaceSidebar({
   const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false);
   const [agentsModalOpen, setAgentsModalOpen] = useState(false);
   const [agentTokenCount, setAgentTokenCount] = useState(0);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'members' | 'tokens'>('general');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'members' | 'tokens' | 'sharing'>('general');
+  const [shareModalItemId, setShareModalItemId] = useState<string | null>(null);
 
   // Expand / collapse states for workspaces (All expanded by default)
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>(() => {
@@ -1130,6 +1134,16 @@ export default function WorkspaceSidebar({
               <Copy size={15} className="text-neutral-500 shrink-0" />
               {t('duplicate')}
             </button>
+            <button
+              onClick={() => {
+                setOpenMenuItemId(null);
+                setShareModalItemId(activeMenuItem.id);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-neutral-300 active:bg-neutral-800 transition-colors"
+            >
+              <Globe size={15} className="text-neutral-500 shrink-0" />
+              {tSharing('shareButton')}
+            </button>
             <div className="border-t border-neutral-800 mx-4 my-1" />
             <button
               onClick={() => handleDeleteItem(activeMenuItem)}
@@ -1168,6 +1182,16 @@ export default function WorkspaceSidebar({
                 <Copy size={12} className="text-neutral-500" />
                 {t('duplicate')}
               </button>
+              <button
+                onClick={() => {
+                  setOpenMenuItemId(null);
+                  setShareModalItemId(activeMenuItem.id);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+              >
+                <Globe size={12} className="text-neutral-500" />
+                {tSharing('shareButton')}
+              </button>
               <div className="border-t border-neutral-800 my-1" />
               <button
                 onClick={() => handleDeleteItem(activeMenuItem)}
@@ -1179,6 +1203,15 @@ export default function WorkspaceSidebar({
             </div>
           )}
         </>
+      )}
+
+      {shareModalItemId && (
+        <ShareModal
+          pageId={shareModalItemId}
+          workspaceId={activeWorkspace.id}
+          isAdmin={currentUser.role === 'admin'}
+          onClose={() => setShareModalItemId(null)}
+        />
       )}
 
       {templatePickerWorkspaceId && (
