@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
 const TOOLS = [
@@ -149,9 +150,9 @@ export default async function LandingTools() {
             >
               <span className="text-dim">{t('bridgeToolsFooterText')}</span>
               <span className="flex-1" />
-              <a href="#" className="font-mono text-accent-strong text-[12.5px]">
+              <Link href="/share/docs/mcp/read-tools" className="font-mono text-accent-strong text-[12.5px] hover:underline">
                 {t('bridgeToolsReferenceLink')} ↗
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -201,6 +202,14 @@ export default async function LandingTools() {
                 );
               })}
             </div>
+            <div
+              className="flex items-center justify-end px-4 lg:px-4.5 py-3.5 bg-neutral-850"
+              style={{ borderTop: '1px solid var(--color-neutral-800)' }}
+            >
+              <Link href="/share/docs/mcp/resources" className="font-mono text-accent-strong text-[12.5px] hover:underline">
+                {t('bridgeToolsReferenceLink')} ↗
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -238,6 +247,14 @@ export default async function LandingTools() {
                   <span className="text-dim">{t(row.descKey)}</span>
                 </div>
               ))}
+            </div>
+            <div
+              className="flex items-center justify-end px-4 lg:px-4.5 py-3.5 bg-neutral-850"
+              style={{ borderTop: '1px solid var(--color-neutral-800)' }}
+            >
+              <Link href="/share/docs/mcp/prompts" className="font-mono text-accent-strong text-[12.5px] hover:underline">
+                {t('bridgeToolsReferenceLink')} ↗
+              </Link>
             </div>
           </div>
         </div>

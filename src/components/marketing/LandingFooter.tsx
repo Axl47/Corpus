@@ -8,6 +8,15 @@ export default async function LandingFooter() {
 
   const cols = [
     {
+      head: t('bridgeFooterColProtocol'),
+      links: [
+        { label: t('bridgeFooterProtocolMcp'),      href: '/share/docs/mcp' },
+        { label: t('bridgeFooterProtocolSdk'),       href: '/share/docs/mcp/getting-started' },
+        { label: t('bridgeFooterProtocolTools'),     href: '/share/docs/mcp/read-tools' },
+        { label: t('bridgeFooterProtocolResources'), href: '/share/docs/mcp/resources' },
+      ],
+    },
+    {
       head: t('bridgeFooterColIntegrations'),
       links: [
         { label: 'Claude',   href: '/#integrations' },
@@ -29,7 +38,7 @@ export default async function LandingFooter() {
 
   return (
     <footer className="px-4 sm:px-8 lg:px-14 py-12 lg:py-16 border-t border-neutral-800">
-      <div className="max-w-7xl mx-auto grid gap-10 lg:gap-16 grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="max-w-7xl mx-auto grid gap-10 lg:gap-16 grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         {/* Left: logo + tagline + copyright */}
         <div className="flex flex-col gap-4 col-span-2 sm:col-span-3 lg:col-span-1">
           <Link href="/" className="inline-flex items-center gap-2.5">
@@ -44,7 +53,7 @@ export default async function LandingFooter() {
           </span>
         </div>
 
-        {/* 2 link columns */}
+        {/* 3 link columns */}
         {cols.map((col) => (
           <div key={col.head} className="flex flex-col gap-3">
             <span className="font-mono text-[11px] text-dim uppercase tracking-[0.12em] mb-1">
