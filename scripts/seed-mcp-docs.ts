@@ -2,8 +2,8 @@
 // Idempotent script: seeds docs/mcp/ markdown files as public shared pages
 // with custom admin slugs and in_sitemap=true.
 //
-// Local:  DATABASE_URL="file:local.db" npx tsx scripts/seed-mcp-docs.ts
 // Turso:  npx tsx scripts/seed-mcp-docs.ts
+// Local:  DATABASE_URL="file:local.db" npx tsx scripts/seed-mcp-docs.ts
 //
 // Run once after initial deployment, or again whenever doc content changes.
 // Existing pages are updated in-place; missing pages are created from scratch.
@@ -15,8 +15,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local', override: true });
+dotenv.config();
 
 // Import schema using relative path (no tsconfig path aliases needed)
 import * as schema from '../src/db/schema';
@@ -99,8 +98,18 @@ const DOCS: DocPage[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Rewrites relative .md links to /share/docs/mcp/ paths for the Remnus context.
+// e.g. [Getting Started](getting-started.md) → [Getting Started](/share/docs/mcp/getting-started)
+// e.g. [query_audit_log](read-tools.md#query_audit_log) → [...](/share/docs/mcp/read-tools#query_audit_log)
+function transformContent(content: string): string {
+  return content.replace(
+    /\[([^\]]+)\]\(([a-z0-9-]+)\.md(#[^)]+)?\)/g,
+    (_, text, file, anchor = '') => `[${text}](/share/docs/mcp/${file}${anchor})`,
+  );
+}
+
 function readDoc(file: string): string {
-  return readFileSync(join('docs', 'mcp', file), 'utf8');
+  return transformContent(readFileSync(join('docs', 'mcp', file), 'utf8'));
 }
 
 async function findAdminUser(): Promise<string> {

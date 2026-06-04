@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import {
-  Bold, Italic, Strikethrough, Code, ChevronDown,
-  Pilcrow, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code2, Check,
+  Bold, Italic, Strikethrough, Code, ChevronDown, Link2, ArrowLeft, Check, X,
+  Pilcrow, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code2,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -46,6 +46,7 @@ function getActiveType(editor: Editor): BlockType {
 
 type Bounds = { minTop: number; maxBottom: number; minLeft: number; maxRight: number };
 type Layout = { top: number; left: number; bounds: Bounds };
+type Mode = 'format' | 'link';
 
 function findScrollableAncestor(el: HTMLElement): HTMLElement | null {
   let cur = el.parentElement;
@@ -59,10 +60,11 @@ function findScrollableAncestor(el: HTMLElement): HTMLElement | null {
 
 type Props = { editor: Editor };
 
-function Btn({ onClick, active, children }: { onClick: () => void; active: boolean; children: React.ReactNode }) {
+function Btn({ onClick, active, children, title }: { onClick: () => void; active: boolean; children: React.ReactNode; title?: string }) {
   return (
     <button
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      title={title}
       className={`px-2 py-1.5 transition-colors text-xs font-medium ${
         active ? 'text-white bg-neutral-700' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/60'
       }`}
@@ -73,8 +75,15 @@ function Btn({ onClick, active, children }: { onClick: () => void; active: boole
 }
 
 const TOOLBAR_H = 36;
-const DROP_H = BLOCK_TYPES.length * 36 + 28; // approximate dropdown height
+const DROP_H = BLOCK_TYPES.length * 36 + 28;
 const MARGIN = 6;
+
+function normalizeHref(raw: string): string {
+  const h = raw.trim();
+  if (!h) return '';
+  if (/^(https?:\/\/|\/|#|mailto:)/.test(h)) return h;
+  return `https://${h}`;
+}
 
 export default function BubbleMenuBar({ editor }: Props) {
   const t = useTranslations('Editor');
@@ -99,16 +108,97 @@ export default function BubbleMenuBar({ editor }: Props) {
 
   const [layout, setLayout] = useState<Layout | null>(null);
   const [blockMenuOpen, setBlockMenuOpen] = useState(false);
+  const [modeState, setModeState] = useState<Mode>('format');
+  const [linkText, setLinkText] = useState('');
+  const [linkHref, setLinkHref] = useState('');
+  const modeRef = useRef<Mode>('format');
+  const linkWasActive = useRef(false);
+  const linkInitialText = useRef('');
   const menuRef = useRef<HTMLDivElement>(null);
   const blockMenuRef = useRef<HTMLDivElement>(null);
-  // Anchor at fixed(0,0) inside the editor subtree — its rect reveals the
-  // actual origin of the fixed coordinate system (displaced by any ancestor transform).
   const anchorRef = useRef<HTMLDivElement>(null);
+  const linkHrefInputRef = useRef<HTMLInputElement>(null);
+  const linkTextInputRef = useRef<HTMLInputElement>(null);
+
+  const setMode = (m: Mode) => { modeRef.current = m; setModeState(m); };
+
+  // ── Link editor logic ────────────────────────────────────────────────────────
+
+  const openLinkEditor = () => {
+    // Extend selection to full link range when cursor is inside one
+    if (editor.isActive('link')) {
+      editor.chain().focus().extendMarkRange('link').run();
+    }
+    const { from, to } = editor.state.selection;
+    const text = editor.state.doc.textBetween(from, to, '');
+    const href = editor.getAttributes('link').href ?? '';
+    linkWasActive.current = editor.isActive('link');
+    linkInitialText.current = text;
+    setLinkText(text);
+    setLinkHref(href);
+    setMode('link');
+  };
+
+  const cancelLink = () => {
+    setMode('format');
+    editor.chain().focus().run();
+  };
+
+  const applyLink = () => {
+    const href = normalizeHref(linkHref);
+    if (!href) {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      setMode('format');
+      return;
+    }
+
+    const textChanged = linkWasActive.current && linkText !== linkInitialText.current && linkText.length > 0;
+
+    if (textChanged) {
+      // Replace text content + set link mark
+      editor.chain()
+        .focus()
+        .extendMarkRange('link')
+        .command(({ tr, state, dispatch }) => {
+          if (!dispatch) return true;
+          const { from, to } = state.selection;
+          const mark = state.schema.marks.link?.create({ href });
+          const node = mark
+            ? state.schema.text(linkText, [mark])
+            : state.schema.text(linkText);
+          tr.replaceWith(from, to, node);
+          return true;
+        })
+        .run();
+    } else {
+      // Update URL only — preserves existing marks on the selection
+      editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+    }
+    setMode('format');
+  };
+
+  const removeLink = () => {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    setMode('format');
+  };
+
+  // Focus URL input on entering link mode; focus text if URL already set
+  useEffect(() => {
+    if (modeState !== 'link') return;
+    const target = linkWasActive.current && linkHref ? linkTextInputRef : linkHrefInputRef;
+    setTimeout(() => target.current?.focus(), 30);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modeState]);
+
+  // ── Position tracking ────────────────────────────────────────────────────────
 
   useEffect(() => {
     const update = () => {
       const { empty } = editor.state.selection;
-      if (empty || !editor.isFocused) { setLayout(null); return; }
+      if (empty || (!editor.isFocused && modeRef.current !== 'link')) {
+        setLayout(null);
+        return;
+      }
 
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) { setLayout(null); return; }
@@ -117,17 +207,13 @@ export default function BubbleMenuBar({ editor }: Props) {
 
       const anchor = anchorRef.current;
       if (!anchor) { setLayout(null); return; }
-      // anchorRect.{left,top} = where fixed(0,0) sits in the viewport.
-      // Subtract from viewport coords to get coords in the fixed container space.
       const anchorRect = anchor.getBoundingClientRect();
 
-      // Find the nearest scrollable container to use as the visible-area boundary.
       const scrollable = findScrollableAncestor(editor.view.dom);
       const vp = scrollable
         ? scrollable.getBoundingClientRect()
         : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
 
-      // Convert viewport boundary → fixed-container coords
       const bounds: Bounds = {
         minTop:    vp.top    - anchorRect.top  + MARGIN,
         maxBottom: vp.bottom - anchorRect.top  - MARGIN,
@@ -135,21 +221,28 @@ export default function BubbleMenuBar({ editor }: Props) {
         maxRight:  vp.right  - anchorRect.left - MARGIN,
       };
 
-      const menuWidth = menuRef.current?.offsetWidth ?? Math.min(300, window.innerWidth - 32);
-
-      // Vertical: prefer above selection; flip below when clipped.
+      const menuWidth = menuRef.current?.offsetWidth ?? Math.min(380, window.innerWidth - 32);
       const topAbove = selRect.top    - TOOLBAR_H - 8 - anchorRect.top;
       const topBelow = selRect.bottom + 8              - anchorRect.top;
       const top = topAbove >= bounds.minTop ? topAbove : topBelow;
-
-      // Horizontal: center on selection, clamped to visible area.
       const idealLeft = selRect.left + selRect.width / 2 - menuWidth / 2 - anchorRect.left;
       const left = Math.max(bounds.minLeft, Math.min(idealLeft, bounds.maxRight - menuWidth));
 
       setLayout({ top, left, bounds });
     };
 
-    const hide = () => setLayout(null);
+    const hide = () => {
+      setTimeout(() => {
+        const active = document.activeElement;
+        const inMenu = menuRef.current?.contains(active);
+        const inDrop = blockMenuRef.current?.contains(active);
+        if (!inMenu && !inDrop) {
+          setLayout(null);
+          setMode('format');
+        }
+      }, 0);
+    };
+
     editor.on('selectionUpdate', update);
     editor.on('blur', hide);
     return () => { editor.off('selectionUpdate', update); editor.off('blur', hide); };
@@ -170,17 +263,23 @@ export default function BubbleMenuBar({ editor }: Props) {
 
   const activeType = getActiveType(editor);
   const currentOpt = BLOCK_OPTIONS.find((o) => o.type === activeType);
-
-  // Dropdown: open below toolbar if room, otherwise above.
   const dropTop = layout
     ? (layout.top + TOOLBAR_H + DROP_H <= layout.bounds.maxBottom
         ? layout.top + TOOLBAR_H + 2
         : layout.top - DROP_H - 2)
     : 0;
 
+  // ── Input class helpers ──────────────────────────────────────────────────────
+
+  const inputCls = 'bg-transparent text-neutral-200 text-xs outline-none placeholder-neutral-600 py-1 px-1 min-w-0';
+  const iconBtnCls = (active?: boolean) =>
+    `flex items-center justify-center px-2 py-1.5 transition-colors ${
+      active ? 'text-white bg-neutral-700' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/60'
+    }`;
+
   return (
     <>
-      {/* Coordinate-system probe — always rendered, never visible */}
+      {/* Coordinate-system probe */}
       <div
         ref={anchorRef}
         style={{ position: 'fixed', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none', visibility: 'hidden', zIndex: -1 }}
@@ -193,29 +292,109 @@ export default function BubbleMenuBar({ editor }: Props) {
           onMouseDown={(e) => e.preventDefault()}
           className="flex items-center bg-neutral-900 border border-neutral-800 rounded-md shadow-xl overflow-hidden"
         >
-          <button
-            onMouseDown={(e) => { e.preventDefault(); setBlockMenuOpen((v) => !v); }}
-            className={`flex items-center gap-1 px-2 py-1.5 transition-colors ${
-              blockMenuOpen ? 'text-neutral-100 bg-neutral-800' : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/60'
-            }`}
-            title={t('bubbleTurnInto')}
-          >
-            {currentOpt?.icon}
-            <ChevronDown size={10} />
-          </button>
+          {modeState === 'format' ? (
+            <>
+              {/* Block-type picker */}
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setBlockMenuOpen((v) => !v); }}
+                className={`flex items-center gap-1 px-2 py-1.5 transition-colors ${
+                  blockMenuOpen ? 'text-neutral-100 bg-neutral-800' : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/60'
+                }`}
+                title={t('bubbleTurnInto')}
+              >
+                {currentOpt?.icon}
+                <ChevronDown size={10} />
+              </button>
 
-          <div className="w-px h-4 bg-neutral-700 self-center" />
+              <div className="w-px h-4 bg-neutral-700 self-center" />
 
-          <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}><Bold size={13} /></Btn>
-          <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}><Italic size={13} /></Btn>
-          <Btn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')}><Strikethrough size={13} /></Btn>
-          <Btn onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')}><Code size={13} /></Btn>
+              <Btn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title={t('bubbleBold')}>
+                <Bold size={13} />
+              </Btn>
+              <Btn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title={t('bubbleItalic')}>
+                <Italic size={13} />
+              </Btn>
+              <Btn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title={t('bubbleStrike')}>
+                <Strikethrough size={13} />
+              </Btn>
+              <Btn onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')} title={t('bubbleCode')}>
+                <Code size={13} />
+              </Btn>
 
-          <div className="w-px h-4 bg-neutral-700 self-center mx-0.5" />
+              <div className="w-px h-4 bg-neutral-700 self-center mx-0.5" />
 
-          <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })}>H1</Btn>
-          <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}>H2</Btn>
-          <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}>H3</Btn>
+              <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })}>H1</Btn>
+              <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}>H2</Btn>
+              <Btn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}>H3</Btn>
+
+              <div className="w-px h-4 bg-neutral-700 self-center mx-0.5" />
+
+              <Btn onClick={openLinkEditor} active={editor.isActive('link')} title={t('bubbleLinkEdit')}>
+                <Link2 size={13} />
+              </Btn>
+            </>
+          ) : (
+            <>
+              {/* Link editor */}
+              <button
+                onMouseDown={(e) => { e.preventDefault(); cancelLink(); }}
+                className={iconBtnCls()}
+                title="Back"
+              >
+                <ArrowLeft size={13} />
+              </button>
+
+              <div className="w-px h-4 bg-neutral-700 self-center" />
+
+              <span className="text-xs text-neutral-600 px-1.5 select-none whitespace-nowrap">{t('bubbleLinkText')}</span>
+              <input
+                ref={linkTextInputRef}
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                  if (e.key === 'Escape') { e.preventDefault(); cancelLink(); }
+                }}
+                className={`${inputCls} w-28`}
+                placeholder={t('bubbleLinkText')}
+              />
+
+              <div className="w-px h-4 bg-neutral-700 self-center" />
+
+              <span className="text-xs text-neutral-600 px-1.5 select-none whitespace-nowrap">{t('bubbleLinkUrl')}</span>
+              <input
+                ref={linkHrefInputRef}
+                value={linkHref}
+                onChange={(e) => setLinkHref(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                  if (e.key === 'Escape') { e.preventDefault(); cancelLink(); }
+                }}
+                className={`${inputCls} w-44`}
+                placeholder="https://"
+              />
+
+              <div className="w-px h-4 bg-neutral-700 self-center mx-0.5" />
+
+              <button
+                onMouseDown={(e) => { e.preventDefault(); applyLink(); }}
+                className={iconBtnCls()}
+                title="Apply"
+              >
+                <Check size={13} />
+              </button>
+
+              {linkWasActive.current && (
+                <button
+                  onMouseDown={(e) => { e.preventDefault(); removeLink(); }}
+                  className={`${iconBtnCls()} hover:text-red-400`}
+                  title={t('removeLink')}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
 
