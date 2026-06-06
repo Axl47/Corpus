@@ -15,9 +15,12 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  // Allow large file uploads (Notion ZIP imports up to 100 MB) through middleware
+  // Raise the Next.js proxy body limit for file uploads (/api/upload accepts up
+  // to 25 MB attachments). NOTE: on Vercel the platform still caps serverless
+  // function request bodies at ~4.5 MB regardless of this setting — large Notion
+  // imports avoid that by parsing the ZIP in the browser and never uploading it.
   experimental: {
-    proxyClientMaxBodySize: '150mb',
+    proxyClientMaxBodySize: '30mb',
   },
 };
 

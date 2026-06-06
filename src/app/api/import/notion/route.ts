@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
-import JSZip from 'jszip';
 import { db } from '@/db';
 import { workspaces, workspaceMembers, databases } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
-import {
-  parseNotionExport,
-  NotionTreeItem,
-  normalizeNotionDate,
-  stripImagePlaceholders,
-  applyImageMap,
-  type NotionImageEntry,
-} from '@/lib/import/notion-parser';
+import { normalizeNotionDate, type ImportItem, type ImportSpacePayload } from '@/lib/import/notion-parser';
 import { createPageInWorkspace, createDatabaseInWorkspace } from '@/lib/services/workspace';
-import { recordAsset } from '@/lib/services/assets';
 import { SELECT_COLOR_ORDER, type SelectOptionColor } from '@/lib/types/properties';
+
+// ── Import flow ──────────────────────────────────────────────────────────────────
+// The Notion export ZIP is parsed ENTIRELY in the browser (JSZip) and images are
+// uploaded individually from the browser straight to Cloudinary. This route only
+// receives the final, fully-materialized JSON tree (content already contains real
+// image URLs) and writes it to the DB — so the (potentially huge) ZIP never has to
+// be uploaded anywhere, sidestepping both Vercel's 4.5 MB body limit and
+// Cloudinary's 10 MB single-file limit. The client sends one request per space.
 
 const PALETTE = SELECT_COLOR_ORDER.filter(c => c !== 'default') as SelectOptionColor[];
 function assignColors(options: string[]): { value: string; color: SelectOptionColor }[] {
@@ -27,10 +25,6 @@ function randomIconColor(): string {
   return ICON_PALETTE[Math.floor(Math.random() * ICON_PALETTE.length)];
 }
 
-const MAX_ZIP_SIZE = 100 * 1024 * 1024;
-
-// ── Workspace creation ─────────────────────────────────────────────────────────
-
 async function createWorkspaceForUser(userId: string, name: string): Promise<string> {
   const id = crypto.randomUUID();
   await db.insert(workspaces).values({ id, name: name.trim() || 'Untitled', createdAt: new Date() });
@@ -38,102 +32,26 @@ async function createWorkspaceForUser(userId: string, name: string): Promise<str
   return id;
 }
 
-// ── Image upload ───────────────────────────────────────────────────────────────
-
-async function uploadImageFromZip(
-  zip: JSZip,
-  zipPath: string,
-  userId: string,
-  workspaceId: string,
-): Promise<string | null> {
-  try {
-    const file = zip.files[zipPath];
-    if (!file) return null;
-    const buffer = await file.async('nodebuffer');
-
-    const result = await new Promise<any>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'remnus/images',
-          resource_type: 'image',
-          transformation: [{ width: 1600, crop: 'limit' }],
-        },
-        (err, res) => (err ? reject(err) : resolve(res)),
-      );
-      stream.end(buffer);
-    });
-
-    await recordAsset({
-      publicId: result.public_id,
-      resourceType: result.resource_type,
-      kind: 'image',
-      bytes: result.bytes,
-      url: result.secure_url,
-      userId,
-      workspaceId,
-    });
-
-    return result.secure_url as string;
-  } catch {
-    return null; // best-effort: skip failed image
-  }
-}
-
-/**
- * Upload all images for a space and return zipPath → cloudinaryUrl map.
- * Failed uploads are silently skipped (image ref will be stripped from content).
- */
-async function buildImageMap(
-  zip: JSZip,
-  images: NotionImageEntry[],
-  userId: string,
-  workspaceId: string,
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
-  // Upload concurrently in batches of 4 to avoid rate limits
-  const BATCH = 4;
-  for (let i = 0; i < images.length; i += BATCH) {
-    const batch = images.slice(i, i + BATCH);
-    const results = await Promise.all(
-      batch.map(async ({ zipPath }) => {
-        const url = await uploadImageFromZip(zip, zipPath, userId, workspaceId);
-        return { zipPath, url };
-      }),
-    );
-    for (const { zipPath, url } of results) {
-      if (url) map.set(zipPath, url);
-    }
-  }
-  return map;
-}
-
-// ── Recursive import ───────────────────────────────────────────────────────────
-
 async function importItems(
-  items: NotionTreeItem[],
+  items: ImportItem[],
   workspaceId: string,
   parentId: string | undefined,
-  counters: { pages: number; databases: number; rows: number; images: number },
-  imageMap: Map<string, string>,
+  counters: { pages: number; databases: number; rows: number },
 ) {
   for (const item of items) {
-    const content = imageMap.size > 0
-      ? applyImageMap(item.content, imageMap)
-      : stripImagePlaceholders(item.content);
-
     if (item.type === 'page') {
       const result = await createPageInWorkspace(workspaceId, {
         title: item.title || 'Untitled',
-        content,
+        content: item.content,
         parentId,
         iconColor: randomIconColor(),
       });
       counters.pages++;
       if (item.children.length > 0) {
-        await importItems(item.children, workspaceId, result.id, counters, imageMap);
+        await importItems(item.children, workspaceId, result.id, counters);
       }
     } else {
-      const { id: _itemId, databaseId } = await createDatabaseInWorkspace(workspaceId, {
+      const { databaseId } = await createDatabaseInWorkspace(workspaceId, {
         name: item.title || 'Untitled',
         parentId,
         iconColor: randomIconColor(),
@@ -147,7 +65,7 @@ async function importItems(
       });
       counters.databases++;
 
-      // Fetch schema to get generated column IDs
+      // Fetch schema to map column names → generated IDs.
       const [dbRecord] = await db
         .select({ schema: databases.schema })
         .from(databases)
@@ -179,14 +97,10 @@ async function importItems(
           }
         }
 
-        const rowContent = imageMap.size > 0
-          ? applyImageMap(row.content, imageMap)
-          : stripImagePlaceholders(row.content);
-
         await createPageInWorkspace(workspaceId, {
           databaseId,
           title: row.title || 'Untitled',
-          content: rowContent,
+          content: row.content,
           properties: Object.keys(properties).length > 0 ? properties : undefined,
         });
         counters.rows++;
@@ -203,61 +117,19 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await getCurrentUser();
-
-    const url = new URL(req.url);
-    const isPreview = url.searchParams.get('preview') === '1';
-
-    const contentLength = Number(req.headers.get('content-length') ?? 0);
-    if (contentLength > MAX_ZIP_SIZE) {
-      return NextResponse.json({ error: 'File too large (max 100 MB)' }, { status: 413 });
-    }
-
-    const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    if (!file) return NextResponse.json({ error: 'Missing file' }, { status: 400 });
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const parsed = await parseNotionExport(buffer);
-
-    if (isPreview) {
-      return NextResponse.json({
-        spaces: parsed.spaces.map(s => ({
-          name: s.name,
-          stats: s.stats,
-        })),
-      });
-    }
-
-    // Full import
     const user = await getCurrentUser();
-    const selectedRaw  = formData.get('selectedSpaces');
-    const importImages = formData.get('importImages') === '1';
-    const selectedSpaces: string[] = selectedRaw
-      ? JSON.parse(selectedRaw as string)
-      : parsed.spaces.map(s => s.name);
 
-    const results: {
-      name: string;
-      workspaceId: string;
-      imported: { pages: number; databases: number; rows: number; images: number };
-    }[] = [];
-
-    for (const space of parsed.spaces) {
-      if (!selectedSpaces.includes(space.name)) continue;
-      const workspaceId = await createWorkspaceForUser(user.id, space.name);
-
-      let imageMap = new Map<string, string>();
-      if (importImages && space.images.length > 0) {
-        imageMap = await buildImageMap(parsed.zip, space.images, user.id, workspaceId);
-      }
-
-      const counters = { pages: 0, databases: 0, rows: 0, images: imageMap.size };
-      await importItems(space.items, workspaceId, undefined, counters, imageMap);
-      results.push({ name: space.name, workspaceId, imported: counters });
+    const body = (await req.json().catch(() => null)) as { space?: ImportSpacePayload } | null;
+    const space = body?.space;
+    if (!space || typeof space.name !== 'string' || !Array.isArray(space.items)) {
+      return NextResponse.json({ error: 'Invalid import payload' }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, results });
+    const workspaceId = await createWorkspaceForUser(user.id, space.name);
+    const counters = { pages: 0, databases: 0, rows: 0 };
+    await importItems(space.items, workspaceId, undefined, counters);
+
+    return NextResponse.json({ ok: true, name: space.name, workspaceId, imported: counters });
   } catch (err: any) {
     if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
     console.error('[import/notion]', err);

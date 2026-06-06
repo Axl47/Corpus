@@ -387,12 +387,17 @@ function collectSpaceStats(items: NotionTreeItem[], acc: NotionSpaceStats): void
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
-export async function parseNotionExport(buffer: Buffer): Promise<NotionParseResult> {
-  let workingZip = await JSZip.loadAsync(buffer);
+// Isomorphic: accepts a Node Buffer (server) or ArrayBuffer/Uint8Array (browser).
+// JSZip handles all three; we read entries as 'uint8array' so this never touches
+// the Node-only `Buffer` / 'nodebuffer' APIs.
+export async function parseNotionExport(
+  input: Buffer | ArrayBuffer | Uint8Array,
+): Promise<NotionParseResult> {
+  let workingZip = await JSZip.loadAsync(input);
 
   const innerZipName = Object.keys(workingZip.files).find(f => f.endsWith('.zip'));
   if (innerZipName) {
-    const innerBuf = await workingZip.files[innerZipName].async('nodebuffer');
+    const innerBuf = await workingZip.files[innerZipName].async('uint8array');
     workingZip = await JSZip.loadAsync(innerBuf);
   }
 
@@ -461,4 +466,51 @@ export async function parseNotionExport(buffer: Buffer): Promise<NotionParseResu
   for (const s of spaces) { pages += s.stats.pages; databases += s.stats.databases; rows += s.stats.rows; }
 
   return { spaces, stats: { pages, databases, rows }, zip: workingZip };
+}
+
+// ── Client-side import helpers (browser) ─────────────────────────────────────────
+// These let us parse + materialize the export entirely in the browser, so the ZIP
+// never has to be uploaded anywhere. The server only receives the final JSON tree.
+
+// Serializable item tree sent to the import API (no JSZip, no imageRefs).
+export interface ImportItem {
+  type: 'page' | 'database';
+  title: string;
+  content: string;
+  children: ImportItem[];
+  columns: NotionColumn[];
+  rows: { title: string; properties: Record<string, string>; content: string }[];
+}
+
+export interface ImportSpacePayload {
+  name: string;
+  items: ImportItem[];
+}
+
+// Read a single image entry from the ZIP as a Blob (browser) for direct upload.
+export async function getImageBlobFromZip(zip: JSZip, zipPath: string): Promise<Blob | null> {
+  const file = zip.files[zipPath];
+  if (!file) return null;
+  return file.async('blob');
+}
+
+// Walk a parsed item tree and produce the serializable payload, substituting
+// __NOTION_IMG__ placeholders with real URLs from `imageMap` (or stripping them
+// when no URL is available).
+export function materializeItems(items: NotionTreeItem[], imageMap: Map<string, string>): ImportItem[] {
+  const apply = (content: string): string =>
+    imageMap.size > 0 ? applyImageMap(content, imageMap) : stripImagePlaceholders(content);
+
+  return items.map(item => ({
+    type: item.type,
+    title: item.title,
+    content: apply(item.content),
+    children: materializeItems(item.children, imageMap),
+    columns: item.columns,
+    rows: item.rows.map(r => ({
+      title: r.title,
+      properties: r.properties,
+      content: apply(r.content),
+    })),
+  }));
 }

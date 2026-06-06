@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getShareBySlug } from '@/lib/actions/sharing';
+import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
 import {
   getShareMapForWorkspace,
   checkUserHasWorkspaceAccess,
@@ -130,9 +131,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = page.title || 'Untitled';
   const description = (page.content || '').replace(/[#*`\[\]]/g, '').slice(0, 160) || undefined;
   return {
+    metadataBase: new URL(METADATA_BASE_URL),
     title,
     description,
-    openGraph: { title, description, type: 'article' },
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      images: [DEFAULT_OG_IMAGE],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [DEFAULT_TWITTER_IMAGE],
+    },
   };
 }
 

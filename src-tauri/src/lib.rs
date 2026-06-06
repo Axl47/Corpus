@@ -8,9 +8,66 @@ use tauri_plugin_updater::UpdaterExt;
 
 const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('remnus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";
 
+/// Bring the existing main window to the foreground (used when a second
+/// instance is launched or the tray icon is clicked).
+fn focus_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+    }
+}
+
+/// Handle a `remnus://auth?token=<jwt>` deep-link URL by navigating the main
+/// webview to the client-activate endpoint. Shared between the macOS
+/// `on_open_url` handler and the Windows/Linux single-instance argv path.
+fn handle_deep_link_url<R: tauri::Runtime>(app: &tauri::AppHandle<R>, url: &url::Url) {
+    if url.scheme() != "remnus" {
+        return;
+    }
+    let token = url
+        .query_pairs()
+        .find(|(k, _)| k == "token")
+        .map(|(_, v)| v.into_owned());
+    if let Some(token) = token {
+        #[cfg(not(debug_assertions))]
+        let base = "https://remnus.com/api/auth/client-activate";
+        #[cfg(debug_assertions)]
+        let base = "http://localhost:3000/api/auth/client-activate";
+        // Build a parsed URL and navigate via the typed API instead of
+        // interpolating the token into a JS string (eval) — avoids code
+        // injection from a crafted remnus:// deep-link (argv on Windows/Linux).
+        // The token is set via the URL API so it is properly percent-encoded and
+        // cannot inject extra query params / fragments.
+        if let Ok(mut target) = url::Url::parse(base) {
+            target.query_pairs_mut().append_pair("token", &token);
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.set_focus();
+                let _ = w.navigate(target);
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // MUST be the first plugin. When a second instance is launched, this
+        // callback runs in the already-running (primary) instance and the new
+        // process exits immediately — preventing duplicate windows/processes.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // Windows/Linux deliver deep-link URLs as a process argument to the
+            // second instance; forward any remnus:// URL to the primary window.
+            for arg in &argv {
+                if let Ok(url) = url::Url::parse(arg) {
+                    if url.scheme() == "remnus" {
+                        handle_deep_link_url(app, &url);
+                    }
+                }
+            }
+            focus_main_window(app);
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
@@ -50,30 +107,7 @@ pub fn run() {
             let handle = app.handle().clone();
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
-                    if url.scheme() == "remnus" {
-                        let token = url
-                            .query_pairs()
-                            .find(|(k, _)| k == "token")
-                            .map(|(_, v)| v.into_owned());
-                        if let Some(token) = token {
-                            #[cfg(not(debug_assertions))]
-                            let activate_url = format!(
-                                "https://remnus.com/api/auth/client-activate?token={}",
-                                token
-                            );
-                            #[cfg(debug_assertions)]
-                            let activate_url = format!(
-                                "http://localhost:3000/api/auth/client-activate?token={}",
-                                token
-                            );
-                            if let Some(w) = handle.get_webview_window("main") {
-                                let _ = w.eval(&format!(
-                                    "window.location.replace('{}')",
-                                    activate_url
-                                ));
-                            }
-                        }
-                    }
+                    handle_deep_link_url(&handle, &url);
                 }
             });
 
@@ -107,12 +141,7 @@ pub fn run() {
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
-                    "show" => {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                        }
-                    }
+                    "show" => focus_main_window(app),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -121,11 +150,7 @@ pub fn run() {
                         ..
                     } = event
                     {
-                        let app = tray.app_handle();
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                        }
+                        focus_main_window(tray.app_handle());
                     }
                 })
                 .build(app)?;

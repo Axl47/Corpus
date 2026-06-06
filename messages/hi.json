@@ -565,6 +565,7 @@
     "ownerOnlyRemove": "केवल कार्यक्षेत्र स्वामी सदस्य हटा सकते हैं",
     "adminRequired": "व्यवस्थापक पहुंच आवश्यक है",
     "cannotDeleteSelf": "आप अपना खाता नहीं हटा सकते",
+    "cannotDeleteDemoUser": "डेमो खाता हटाया नहीं जा सकता",
     "ownerOnlyUpdateRole": "केवल कार्यक्षेत्र स्वामी सदस्य भूमिकाएं अपडेट कर सकते हैं",
     "memberNotFound": "लक्ष्य उपयोगकर्ता इस कार्यक्षेत्र का सदस्य नहीं है",
     "cannotChangeOwnerRole": "कार्यक्षेत्र स्वामी की भूमिका नहीं बदली जा सकती। पहले स्वामित्व हस्तांतरित करें।",
@@ -631,6 +632,8 @@
     "bridgeHeroSubhead": "पेज, डेटाबेस, कानबान। MCP के साथ, तुम्हारी AI उसी सतह पर काम करती है जहाँ तुम्हारी टीम।",
     "bridgeHeroCtaPrimary": "Workspace शुरू करें",
     "bridgeHeroCtaSecondary": "इंटीग्रेशन देखें",
+    "bridgeHeroDemoButton": "डेमो देखें",
+    "bridgeHeroDemoLoading": "डेमो लोड हो रहा है…",
     "bridgeHeroStat1Num": "12",
     "bridgeHeroStat1Label": "MCP टूल",
     "bridgeHeroStat2Num": "4",
@@ -951,7 +954,9 @@
     "widthLabel": "पेज चौड़ाई",
     "widthWide": "चौड़ा",
     "editShare": "शेयर सेटिंग्स",
-    "addToSitemap": "साइटमैप में जोड़ें"
+    "addToSitemap": "साइटमैप में जोड़ें",
+    "privateSharingHint": "विशिष्ट उपयोगकर्ताओं के साथ पृष्ठों को निजी रूप से साझा करने के लिए उन्हें workspace सदस्य के रूप में जोड़ें।",
+    "goToMembers": "सदस्यों पर जाएं"
   },
   "UserSettings": {
     "title": "सेटिंग्स",

@@ -565,6 +565,7 @@
     "ownerOnlyRemove": "Yalnızca çalışma alanı sahipleri üye kaldırabilir",
     "adminRequired": "Yönetici erişimi gerekli",
     "cannotDeleteSelf": "Kendi hesabınızı silemezsiniz",
+    "cannotDeleteDemoUser": "Demo hesabı silinemez",
     "ownerOnlyUpdateRole": "Yalnızca çalışma alanı sahipleri üye rollerini güncelleyebilir",
     "memberNotFound": "Hedef kullanıcı bu çalışma alanının üyesi değil",
     "cannotChangeOwnerRole": "Çalışma alanı sahibinin rolü değiştirilemez. Önce sahipliği devredin.",
@@ -631,6 +632,8 @@
     "bridgeHeroSubhead": "Sayfalar, veritabanları, kanban. Yerleşik MCP ile yapay zekan, ekibinin çalıştığı yüzeyde çalışır.",
     "bridgeHeroCtaPrimary": "Çalışma alanını oluştur",
     "bridgeHeroCtaSecondary": "Entegrasyonlara bak",
+    "bridgeHeroDemoButton": "Demoyu incele",
+    "bridgeHeroDemoLoading": "Demo yükleniyor…",
     "bridgeHeroStat1Num": "12",
     "bridgeHeroStat1Label": "MCP aracı",
     "bridgeHeroStat2Num": "4",
@@ -951,7 +954,9 @@
     "widthLabel": "Sayfa genişliği",
     "widthWide": "Geniş",
     "editShare": "Paylaşım ayarları",
-    "addToSitemap": "Sitemap'e ekle"
+    "addToSitemap": "Sitemap'e ekle",
+    "privateSharingHint": "Sayfaları belirli kişilerle özel paylaşmak için onları workspace üyesi olarak ekleyin.",
+    "goToMembers": "Üyelere Git"
   },
   "UserSettings": {
     "title": "Ayarlar",

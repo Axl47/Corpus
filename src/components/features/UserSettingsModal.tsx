@@ -143,13 +143,13 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 md:p-6"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6"
       onClick={onClose}
     >
       <div
         className="w-full max-w-full sm:max-w-2xl bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: '88vh', minHeight: '480px' }}
+        style={{ maxHeight: '92vh', minHeight: 'min(480px, 85vh)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/30 shrink-0">
@@ -162,11 +162,29 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
           </button>
         </div>
 
+        {/* Mobile tab strip */}
+        <div className="flex sm:hidden border-b border-neutral-800 bg-neutral-900/50 shrink-0 overflow-x-auto scrollbar-none">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-xs whitespace-nowrap border-b-2 transition-colors cursor-pointer shrink-0 ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-neutral-100 font-medium'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-300'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* Body: left nav + content */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* Left nav */}
-          <div className="w-44 shrink-0 border-r border-neutral-800 flex flex-col bg-neutral-900/50">
+          {/* Desktop left nav */}
+          <div className="hidden sm:flex w-44 shrink-0 border-r border-neutral-800 flex-col bg-neutral-900/50">
             <nav className="flex-1 p-2 space-y-0.5 pt-3">
               {tabs.map(tab => (
                 <button
@@ -186,7 +204,7 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
           </div>
 
           {/* Tab content */}
-          <div key={activeTab} className="flex-1 overflow-y-auto p-6 animate-tab-fade">
+          <div key={activeTab} className="flex-1 overflow-y-auto p-4 sm:p-6 animate-tab-fade">
 
           {/* Account */}
           {activeTab === 'account' && (

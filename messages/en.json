@@ -565,6 +565,7 @@
     "ownerOnlyRemove": "Only workspace owners can remove members",
     "adminRequired": "Admin access required",
     "cannotDeleteSelf": "You cannot delete your own account",
+    "cannotDeleteDemoUser": "The demo account cannot be deleted",
     "ownerOnlyUpdateRole": "Only workspace owners can update member roles",
     "memberNotFound": "Target user is not a member of this workspace",
     "cannotChangeOwnerRole": "Cannot change the role of the workspace owner. Transfer ownership first.",
@@ -631,6 +632,8 @@
     "bridgeHeroSubhead": "Pages, databases, kanban. With MCP built in, so your AI works the same surface your team does.",
     "bridgeHeroCtaPrimary": "Start your workspace",
     "bridgeHeroCtaSecondary": "See the integrations",
+    "bridgeHeroDemoButton": "Try the demo",
+    "bridgeHeroDemoLoading": "Loading demo…",
     "bridgeHeroStat1Num": "12",
     "bridgeHeroStat1Label": "MCP tools",
     "bridgeHeroStat2Num": "4",
@@ -951,7 +954,9 @@
     "widthLabel": "Page width",
     "widthWide": "Wide",
     "editShare": "Share settings",
-    "addToSitemap": "Add to sitemap"
+    "addToSitemap": "Add to sitemap",
+    "privateSharingHint": "To share pages privately with specific users, add them as workspace members.",
+    "goToMembers": "Go to Members"
   },
   "UserSettings": {
     "title": "Settings",

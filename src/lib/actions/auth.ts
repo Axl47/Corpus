@@ -182,6 +182,12 @@ export async function adminDeleteUser(userId: string) {
   if (session.user.id === userId) {
     return { error: t('cannotDeleteSelf') };
   }
+  // Protect the shared demo account — deleting it would wipe its session history
+  // and force loginAsDemo to create a new UUID, losing all engagement tracking.
+  const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+  if (target?.role === 'demo') {
+    return { error: t('cannotDeleteDemoUser') };
+  }
   // Delete dependent rows explicitly. ON DELETE CASCADE only fires when
   // PRAGMA foreign_keys=ON, which we don't enable on the serverless/Turso
   // connection — so relying on it would leave orphaned auth rows in prod

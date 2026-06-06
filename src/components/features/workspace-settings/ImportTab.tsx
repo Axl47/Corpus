@@ -3,6 +3,13 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Upload, FileArchive, CheckCircle, AlertCircle, Loader2, Layers, FileText, Database, Image, ArrowLeft } from 'lucide-react';
+import {
+  parseNotionExport,
+  materializeItems,
+  getImageBlobFromZip,
+  type NotionParseResult,
+  type NotionSpace,
+} from '@/lib/import/notion-parser';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -94,6 +101,9 @@ function NotionImport({ onBack }: { onBack: () => void }) {
   const [importImages, setImportImages] = useState(false);
   const [results, setResults] = useState<ImportResult[]>([]);
   const [error, setError] = useState('');
+  // Parsed export is held in a ref — it contains a JSZip instance (not
+  // serializable) and never needs to trigger a re-render.
+  const parsedRef = useRef<NotionParseResult | null>(null);
 
   function reset() {
     setFile(null);
@@ -103,7 +113,56 @@ function NotionImport({ onBack }: { onBack: () => void }) {
     setImportImages(false);
     setResults([]);
     setError('');
+    parsedRef.current = null;
     if (inputRef.current) inputRef.current.value = '';
+  }
+
+  // Parse the ZIP entirely in the browser (no upload). Reuses a prior parse of
+  // the same file.
+  async function parseFile(f: File): Promise<NotionParseResult> {
+    if (parsedRef.current) return parsedRef.current;
+    const buf = await f.arrayBuffer();
+    const parsed = await parseNotionExport(buf);
+    parsedRef.current = parsed;
+    return parsed;
+  }
+
+  // Upload one image straight to Cloudinary via our existing /api/upload route
+  // (each image is small — well under the per-file limits). Best-effort: a
+  // failed image is simply skipped and its placeholder stripped from content.
+  async function uploadImage(blob: Blob, name: string): Promise<string | null> {
+    try {
+      const form = new FormData();
+      form.append('file', blob, name);
+      form.append('kind', 'image');
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return (data.url as string) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Build a zipPath → Cloudinary URL map for one space's images.
+  async function buildImageMap(parsed: NotionParseResult, space: NotionSpace): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    const BATCH = 4;
+    for (let i = 0; i < space.images.length; i += BATCH) {
+      const batch = space.images.slice(i, i + BATCH);
+      const uploaded = await Promise.all(
+        batch.map(async ({ zipPath }) => {
+          const blob = await getImageBlobFromZip(parsed.zip, zipPath);
+          if (!blob) return { zipPath, url: null as string | null };
+          const name = zipPath.split('/').pop() || 'image';
+          return { zipPath, url: await uploadImage(blob, name) };
+        }),
+      );
+      for (const { zipPath, url } of uploaded) {
+        if (url) map.set(zipPath, url);
+      }
+    }
+    return map;
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -123,13 +182,10 @@ function NotionImport({ onBack }: { onBack: () => void }) {
     setStep('analyzing');
     setError('');
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/import/notion?preview=1', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Analysis failed');
-      setSpaces(data.spaces);
-      setSelected(new Set<string>(data.spaces.map((s: SpacePreview) => s.name)));
+      const parsed = await parseFile(file);
+      const previews: SpacePreview[] = parsed.spaces.map(s => ({ name: s.name, stats: s.stats }));
+      setSpaces(previews);
+      setSelected(new Set<string>(previews.map(s => s.name)));
       setStep('preview');
     } catch (err: any) {
       setError(err.message ?? 'Unknown error');
@@ -142,14 +198,36 @@ function NotionImport({ onBack }: { onBack: () => void }) {
     setStep('importing');
     setError('');
     try {
-      const body = new FormData();
-      body.append('file', file);
-      body.append('selectedSpaces', JSON.stringify([...selected]));
-      body.append('importImages', importImages ? '1' : '0');
-      const res = await fetch('/api/import/notion', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Import failed');
-      setResults(data.results);
+      const parsed = await parseFile(file);
+      const collected: ImportResult[] = [];
+
+      // One request per space keeps each JSON payload small (well under Vercel's
+      // 4.5 MB body limit) and naturally splits very large imports.
+      for (const space of parsed.spaces) {
+        if (!selected.has(space.name)) continue;
+
+        const imageMap = importImages && space.images.length > 0
+          ? await buildImageMap(parsed, space)
+          : new Map<string, string>();
+
+        const items = materializeItems(space.items, imageMap);
+
+        const res = await fetch('/api/import/notion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ space: { name: space.name, items } }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? 'Import failed');
+
+        collected.push({
+          name: data.name,
+          workspaceId: data.workspaceId,
+          imported: { ...data.imported, images: imageMap.size },
+        });
+      }
+
+      setResults(collected);
       setStep('done');
       router.refresh();
     } catch (err: any) {

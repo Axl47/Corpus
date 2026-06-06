@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, agentTokens } from '@/db/schema';
+import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, agentTokens, agentActivity } from '@/db/schema';
 
 export async function createSeedWorkspace(userId: string, userName?: string | null) {
   const workspaceName = userName ? `${userName} Workspace` : 'Personal Workspace';
@@ -8,351 +8,417 @@ export async function createSeedWorkspace(userId: string, userName?: string | nu
 
 // ── Demo seed data ─────────────────────────────────────────────────────────
 
-const GETTING_STARTED = `## Getting Started with Remnus
+const START_HERE_CONTENT = `### Hey everyone!
 
-Remnus is a workspace for notes, databases, and project management — all in one sidebar. This guide walks you through everything in this demo workspace.
+To show you how **Remnus helps** us stay on top of a project while building with AI agents, I'm building a basic *clone of Microsoft Paint as an example project*.
 
----
+Everything you see here was put together by *Claude Code* and *Remnus* working side by side!
 
-### What's in this workspace?
+<div data-yt-id="OVi9pjY_p84"></div>
 
-This workspace is organized into **nested pages and databases** to help you explore every feature:
+**Watch the video to see how this workspace was created!**
 
-- **📁 Projects** — A top-level folder page. Expand it in the sidebar to reveal two nested projects, each with their own sub-pages and databases.
-  - **🚀 Remnus v2 Launch** — A project page with a brief, meeting notes, and a kanban task board — all nested inside.
-  - **🎨 Design System** — A design project with component specs and a component library database.
-- **Sprint Board** — Kanban + Table views. Tasks with status, priority, assignee, and story points.
-- **Bug Tracker** — Three views: All Bugs (table), Open (filtered), and Board (kanban). Row colors reflect severity.
-- **Team Calendar** — Calendar view for scheduling, plus a Schedule table view sorted by date.
-- **Reading List** — Table database with row color tinting and a filtered "Finished" view.
+<div data-callout-icon="⚡" data-callout-color="blue" data-callout-text="Every row with an agent badge in the Sprint Board was written by a real AI agent over MCP. Open the AI Agents panel (bottom-left) to see the live activity log."></div>
 
----
+### What the AI agent actually did
 
-### Nested Pages
+Here's a trace of the real session that built this workspace, pulled straight from Remnus's agent audit log:
 
-Click the **▶** chevron next to any page in the sidebar to expand it and reveal its children. Pages can contain:
-- Other pages (notes, docs, briefs)
-- Databases (tables, kanban boards, calendars)
-- Any mix of both — infinitely nested
+| When | Action | What happened |
+|------|--------|---------------|
+| Connected | \`list_workspace\` | Agent scanned the workspace to orient itself |
+| Planning | \`create_page\` | Drafted the **Product Spec** for the Paint clone |
+| Setup | \`create_database\` | Built the **Sprint Board** from the spec |
+| Backlog | \`create_page\` ×16 | Generated every task with its own acceptance criteria |
+| Building | \`update_page\` | Marked *scaffold*, *brush* & *eraser* tasks **Done** as it shipped them |
+| Reviewing | \`query_database\` | Re-read the board to pick the next task |
+| In flight | \`update_page\` | Moved *line tool* to **In Progress** |
 
-Try expanding **Projects → Remnus v2 Launch** to see a full project workspace nested inside a single sidebar item.
+Want the full story in writing? Open the page below 👇
 
-**To create a nested item:** hover any page in the sidebar and click the **+** icon that appears. The new item will be created as a child of that page.
-
----
-
-### Pages
-
-Standalone pages like this one hold freeform **markdown content** — great for notes, docs, meeting minutes, and long-form writing.
-
-A few things to try:
-- Press \`/\` at the start of any line to open the **slash command menu** — insert headings, bullet lists, numbered lists, code blocks, quotes, and more.
-- Select any text to reveal the **bubble toolbar** for bold, italic, strikethrough, code, and heading shortcuts.
-- Click the **icon** at the top of this page to pick any emoji or Lucide icon with a custom color.
-- Use the **width toggle** (top-right toolbar) to switch between Narrow, Wide, and Full width layouts.
-
----
-
-### Databases
-
-Databases are like spreadsheets where every row is also a full page. Each cell is editable inline — no need to open the row to change a value.
-
-#### Views
-Every database can have multiple named views — each with its own layout, visible columns, filters, and sorts. Click the **view tabs** at the top of a database to switch between them.
-
-Supported view types:
-- **Table** — Spreadsheet layout with sortable columns, resizable widths, and row color tinting
-- **Kanban** — Card board grouped by any select property; supports card colors and column background tints
-- **Calendar** — Monthly or weekly calendar placing cards by a date property
-
-#### Properties
-Open any database row to see its full property panel on the right. Supported types: Text, Number, Date, DateTime, Select, and Multi-select. Select and multi-select options have 9 color options.
-
-#### Filters & Sorts
-Click the **Properties** button (top-right of any database) to open the sidebar. From there you can:
-- Show/hide columns per view
-- Add filters (applied only to the current view)
-- Add sorts
-- Configure group-by for kanban, date column for calendar
-- Set page open behavior (center peek, side peek, or full page)
-
----
-
-### Sidebar
-
-- **Workspaces** — You can have multiple workspaces. Click the **+** button or hover a workspace to access its settings.
-- **Drag to reorder** — Drag any item or workspace to rearrange the sidebar.
-- **Settings** — Hover a workspace and click the gear icon to rename it, manage members, or delete it.
-- **New items** — Click the **+** next to any page or workspace to open the template picker and choose from pages and database templates.
+{{HOW_BUILT_CB}}
 `;
 
-// ── Nested page content strings ───────────────────────────────────────────
+const HOW_THIS_WAS_BUILT_CONTENT = `This workspace wasn't filled in by hand. An AI agent (**Claude Code**) connected to Remnus over **MCP** and built the whole thing: the spec, the task board, and the progress tracking, while a human watched it all happen in real time.
 
-const PROJECTS_PAGE_CONTENT = `## Projects
+This page is the written companion to the video on **Start Here**: same story, just readable at your own pace.
 
-This is your projects folder. Expand it in the sidebar to navigate between active projects.
+## The workflow
 
-Each project contains its own pages and databases — all nested inside this single sidebar item.
+1. **Connect:** The agent authenticated to this workspace with an MCP token and called \`list_workspace\` to see what was already here.
+2. **Plan:** It wrote a **Product Spec** for a browser-based Paint clone (you can open it in the sidebar).
+3. **Break it down:** From that spec it created the **Sprint Board** database and generated **16 tasks**, each with its own acceptance criteria and notes.
+4. **Build and track:** As it implemented features, it moved tasks across the board (\`Backlog → In Progress → Done\`) and wrote its actual output back into each task page.
+5. **Stay in sync:** A human can jump in at any point, edit anything, and the agent picks up the new state on its next query. No copy-paste, no context loss.
 
----
+## How to read the signals
 
-### Active Projects
+Remnus makes the agent's work **visible and auditable**. This is the part that doesn't show up in other tools:
 
-| Project | Status | Owner | Due |
-|---------|--------|-------|-----|
-| Remnus v2 Launch | 🟡 In Progress | Alice | June 30, 2026 |
-| Design System | 🟢 Active | Bob | Ongoing |
+<div data-callout-icon="⚡" data-callout-color="blue" data-callout-text="The agent badge on a row means an AI agent last edited it. Hover it to see which token made the change and when."></div>
 
----
+- **The ⚡ agent badge:** Any Sprint Board row an agent touched is stamped. You always know what was human-written and what was machine-written.
+- **The AI Agents panel:** Click **AI Agents** at the bottom-left of the sidebar. You'll see every token, its scope, and a live log of recent tool calls (\`create_page\`, \`update_page\`, \`query_database\`…).
 
-> **Tip:** Click the **▶** chevron next to "Projects" in the sidebar to expand it and see all nested projects.
+## Try it yourself
+
+You can point your own AI agent at your own workspace in under a minute:
+
+1. Open **Workspace Settings → Tokens** and create an MCP token (read or write scope).
+2. Add Remnus as an MCP server in your client (Cursor, VS Code, or Claude). The endpoint and auth header are shown right after you create the token, and there are one-click install buttons too.
+3. Ask your agent to plan a project, fill a database, or summarize a page. Every action it takes shows up in the audit log, stamped and reversible.
+
+<div data-callout-icon="🔒" data-callout-color="green" data-callout-text="You stay in control: tokens are scoped, every write is logged, and you can revoke access at any time."></div>
+
+That's the whole idea behind Remnus. Your AI agents get a real workspace to work in, and you keep full visibility over everything they do.
 `;
 
-const REMNUS_LAUNCH_CONTENT = `## Remnus v2 Launch
+const PRODUCT_SPEC_CONTENT = `# Product Spec: Paint Clone
 
-This project covers the full product launch of Remnus v2 — from planning to go-live.
+A minimal, browser-based paint application. No dependencies, no accounts, no install needed.
 
----
+## MVP Features
 
-### Objectives
+### Canvas & Drawing
 
-- Ship the nested page system and new sidebar navigation
-- Complete the design system overhaul
-- Deliver a polished onboarding experience for new users
-- Achieve public launch by end of Q2 2026
+- Freehand brush / pencil tool
+- Adjustable brush size
+- Eraser tool
+- Fill bucket (flood fill)
+- Clear canvas button
 
-### Key Milestones
+### Color
 
-| Milestone | Date | Status |
-|-----------|------|--------|
-| Feature freeze | June 10, 2026 | 🔵 Upcoming |
-| Internal beta | June 17, 2026 | 🔵 Upcoming |
-| Public launch | June 30, 2026 | 🔵 Upcoming |
+- Color picker (native \`<input type="color">\`)
+- Palette of preset colors
+- Current color preview swatch
 
----
+### Shapes
 
-### Pages in this project
+- Line tool
+- Rectangle tool (outline + filled)
+- Circle / ellipse tool (outline + filled)
 
-Expand this page in the sidebar to find:
-- **📋 Project Brief** — Full goals, scope, and team assignments
-- **🗓️ Kickoff Meeting Notes** — Notes and action items from the kickoff call
-- **✅ Launch Tasks** — Kanban board tracking all launch tasks
+### File
+
+- Save canvas as PNG (download)
+- Load / open an image file onto the canvas
+
+### UI
+
+- Toolbar with tool icons
+- Keyboard shortcuts for common tools (B = brush, E = eraser, F = fill, etc.)
+- Undo (single-level or multi-step via history stack)
+
+## Out of Scope (v1)
+
+- Layers
+- Text tool
+- Cloud save
+- Collaboration
+
 `;
 
-const PROJECT_BRIEF_CONTENT = `## Project Brief — Remnus v2
+// ── Sprint Board task content strings ─────────────────────────────────────
 
-### Overview
+const TASK_SCAFFOLD = `# Set up project scaffold
 
-Remnus v2 is a major product update introducing nested pages, a redesigned sidebar, and an improved database experience. The goal is to make Remnus the go-to tool for solo creators and small teams who need a lightweight but powerful Notion alternative.
+Create the base HTML/CSS/JS structure for the paint clone. No frameworks or build tools, plain files only.
 
-### Problem Statement
+## Tasks
+- [x] Create \`index.html\` with \`<canvas>\` element and toolbar placeholder
+- [x] Create \`style.css\` (reset, layout for sidebar + canvas area, basic theming)
+- [x] Create \`main.js\` (entry point, canvas context init)
+- [x] Verify canvas fills available viewport space and resizes correctly
 
-Current users report friction when organizing large workspaces. Everything lives at the top level — there's no way to group related pages and databases under a shared parent. This creates cluttered sidebars and makes it hard to find things.
+## Acceptance Criteria
+- Opening \`index.html\` in a browser shows a blank canvas and an empty toolbar ✅
+- No console errors on load ✅
 
-### Solution
+## Output
 
-Introduce a fully recursive nested page system:
-- Any page can contain sub-pages and sub-databases
-- The sidebar shows a collapsible tree view
-- Sub-items are created via the **+** button next to any page
+### Files Created
+- \`index.html\`: shell with \`<aside id="toolbar">\` + \`<canvas id="canvas">\` inside \`<main id="canvas-area">\`
+- \`style.css\`: CSS reset, flex layout (sidebar 56px + canvas area fills remainder), white canvas with dark chrome surround
+- \`main.js\`: canvas context init, \`resizeCanvas()\` that fills the available area and preserves the drawing across window resizes via \`getImageData\`/\`putImageData\`
 
-### Goals
-
-- Reduce sidebar clutter by enabling project-based grouping
-- Keep navigation fast — no full-page reloads when expanding/collapsing
-- Preserve all existing functionality (drag-to-reorder, icons, etc.)
-
-### Scope
-
-**In scope:**
-- Nested pages and databases with unlimited depth
-- Collapsible sidebar tree with smart auto-expansion
-- Template picker available on sub-pages
-- Drag-and-drop reorder within parent scope
-
-**Out of scope (v2):**
-- Cross-parent drag-and-drop
-- Breadcrumb navigation in header
-- Page backlinks
-
-### Team
-
-| Role | Person |
-|------|--------|
-| Product | Alice Chen |
-| Engineering Lead | Marcus Johnson |
-| Design | Aisha Patel |
-| QA | Kai Rivera |
-
-### Success Metrics
-
-- 70% of active users organize items into nested structures within 30 days
-- Sidebar load time remains under 100ms with 200+ items
-- Zero regressions in existing database/page functionality
+### Notes
+- Canvas is sized to the available area minus 32px padding on each axis, recomputed on every \`window.resize\`
+- White background is painted on every resize so the saved PNG will never be transparent
+- Toolbar is a vertical \`<aside>\` ready to receive injected tool buttons from subsequent tasks
 `;
 
-const KICKOFF_NOTES_CONTENT = `## Kickoff Meeting Notes
+const TASK_BRUSH = `# Implement freehand brush / pencil tool
 
-**Date:** May 19, 2026
-**Attendees:** Alice Chen, Marcus Johnson, Aisha Patel, Kai Rivera
+Allow the user to draw freehand strokes on the canvas using mouse or touch.
 
----
+## Tasks
+- [x] Track \`mousedown\`, \`mousemove\`, \`mouseup\` events on the canvas
+- [x] Use \`ctx.beginPath()\` / \`ctx.lineTo()\` / \`ctx.stroke()\` to draw smooth paths
+- [x] Apply current color and brush size to strokes
+- [x] Prevent drawing when mouse button is not held
 
-## Agenda
+## Acceptance Criteria
+- Clicking and dragging draws a continuous stroke ✅
+- Stroke color and size reflect the currently selected values ✅
+- Releasing the mouse stops drawing ✅
 
-1. Review project brief and scope
-2. Technical approach for nested items
-3. Design handoff timeline
-4. Q&A and open issues
+## Output
 
----
-
-## Notes
-
-**Alice** opened the meeting by walking through the project brief. The team aligned on scope — nested pages are the core deliverable; breadcrumbs and backlinks are deferred to a future sprint.
-
-**Marcus** presented the technical approach:
-- \`parent_id\` column added to \`workspace_items\` table (nullable, self-referential FK)
-- Sidebar renders a recursive tree using a flat item list built on the client
-- Server actions already support \`parentId\` option on both \`createStandalonePage\` and \`createWorkspaceDatabase\`
-- Auto-expansion of ancestor nodes when navigating to a deeply nested page
-
-**Aisha** shared initial wireframes for the sidebar tree view. Key design decisions:
-- Chevron (▶ / ▼) replaces the old expand behavior
-- Vertical connector lines use Dusk Blue for visual hierarchy
-- Hover \`+\` button creates a child item inline
-
-**Kai** will handle regression testing. Will write an end-to-end test covering:
-- Creating a nested page
-- Navigating to it
-- Deleting the parent (cascade)
-
----
-
-## Action Items
-
-- [ ] Marcus: merge \`parent_id\` migration to main by May 21
-- [ ] Aisha: finalize sidebar component designs by May 23
-- [ ] Kai: set up regression test suite by May 26
-- [ ] Alice: update project brief with final milestone dates
+### Changes to \`main.js\`
+- Added \`state\` object tracking \`tool\`, \`color\`, \`size\`, \`isDrawing\`, \`lastX\`, \`lastY\`
+- \`getPos(e)\`: normalises mouse and touch coordinates relative to canvas bounds
+- \`applyBrushStyle()\`: sets \`strokeStyle\`, \`lineWidth\`, \`lineCap\`, \`lineJoin\`, \`globalCompositeOperation\` before each stroke
+- \`onPointerDown\`: records start position, draws a dot for single clicks
+- \`onPointerMove\`: draws a line segment from last position to current on each frame
+- \`onPointerUp\` / \`mouseleave\`: stops drawing
+- Touch events wired alongside mouse events (\`touchstart\`, \`touchmove\`, \`touchend\`) with \`passive: false\` to allow \`preventDefault\`
 `;
 
-const DESIGN_SYSTEM_CONTENT = `## Design System
+const TASK_ERASER = `# Implement eraser tool
 
-A single source of truth for all UI components, tokens, and patterns used across Remnus.
+Allow the user to erase portions of the canvas by drawing with the background color.
 
----
+## Tasks
+- [x] Add eraser tool to the toolbar
+- [x] When eraser is active, set \`ctx.globalCompositeOperation = 'destination-out'\`
+- [x] Respect current brush size for eraser width
+- [x] Restore composite operation when switching back to brush
 
-### Design Principles
+## Acceptance Criteria
+- Eraser removes drawn content on drag ✅
+- Eraser size is controlled by the brush size slider ✅
+- Switching tools restores normal drawing behavior ✅
 
-1. **Flat & Borderless** — No shadows, no nested cards. Borders only for separation.
-2. **Three-tier backgrounds** — \`neutral-950\` (frame) → \`neutral-900\` (sidebars/panels) → \`neutral-850\` (canvas/content)
-3. **Motion with purpose** — Micro-animations only where they communicate state changes.
-4. **Dark-first** — All components are designed in dark mode. Light mode is not planned.
+## Output
 
----
-
-### Color Tokens
-
-| Role | Token | Hex |
-|------|-------|-----|
-| Canvas background | \`neutral-850\` | \`#282c34\` |
-| Sidebar background | \`neutral-900\` | \`#21252b\` |
-| Frame background | \`neutral-950\` | \`#1d1f23\` |
-| Border / divider | \`neutral-800\` | \`#383b41\` |
-| Primary text | \`neutral-100\` | \`#cccccc\` |
-| Muted text | \`neutral-50\` | \`#d7dae0\` |
-| Accent / primary | \`blue-500\` | \`#445c95\` |
-| Destructive | \`red-400\` | \`#cd4d55\` |
-| Success | \`green-400\` | \`#7fc36d\` |
-| Warning | \`amber-500\` | \`#cc7d45\` |
-
----
-
-### Pages in this project
-
-- **📐 Component Specs** — Detailed spec for each component category
-- **🧩 Component Library** — Database tracking all components with status and owner
+### Changes to \`main.js\`
+- \`applyBrushStyle()\` now branches on \`state.tool === 'eraser'\`: sets \`globalCompositeOperation = 'destination-out'\` and uses opaque black stroke (erases alpha channel pixels)
+- \`onPointerDown\` dot-paint also applies \`destination-out\` when erasing, then resets composite operation after the fill
+- Eraser shares \`state.size\` with the brush, no separate size needed
+- Switching to any non-eraser tool automatically restores \`source-over\` on the next stroke via \`applyBrushStyle()\`
 `;
 
-const COMPONENT_SPECS_CONTENT = `## Component Specs
+const TASK_BRUSH_SIZE = `# Implement adjustable brush size
 
-This page documents the specification and usage guidelines for each component category in Remnus's design system.
+Provide a slider or input that controls the stroke/eraser width.
 
----
+## Tasks
+- [ ] Add \`<input type="range">\` to the toolbar (min 1, max 64)
+- [ ] Display the current size value next to the slider
+- [ ] Apply selected size to \`ctx.lineWidth\` before each stroke
+- [ ] Default size: 4px
 
-## Layout Components
+## Acceptance Criteria
+- Moving the slider changes the brush width immediately
+- Both brush and eraser tools respect the current size value
+`;
 
-### Sidebar
-- **Background:** \`bg-neutral-900\`
-- **Width:** 260px fixed
-- **Border:** \`border-r border-neutral-800\`
-- **Items:** Full-width, flat, \`hover:bg-neutral-800/20\`
-- **Active item:** \`bg-neutral-800/40\` + \`text-neutral-100\`
+const TASK_FILL = `# Implement flood fill (bucket tool)
 
-### Canvas
-- **Background:** \`bg-neutral-850\`
-- **Max content width:** 720px (narrow), 1024px (wide), 100% (full)
-- **Padding:** \`px-16 py-12\` (narrow), \`px-8 py-12\` (wide/full)
+Fill a contiguous region of the canvas with the current color on click.
 
----
+## Tasks
+- [ ] Read pixel data with \`ctx.getImageData()\`
+- [ ] Implement iterative BFS/DFS flood fill algorithm starting from the clicked pixel
+- [ ] Write filled pixels back with \`ctx.putImageData()\`
+- [ ] Add tolerance threshold (e.g. ±15) to handle anti-aliased edges
 
-## Form Components
+## Acceptance Criteria
+- Clicking inside a closed region fills it with the current color
+- Fill does not bleed across hard edges
+- Performance is acceptable for typical canvas sizes (≤1920×1080)
+`;
 
-### Input
-\`\`\`
-bg-neutral-800 border border-neutral-700
-rounded-none h-9 px-3
-focus:outline-none focus:ring-1 focus:ring-blue-500
-text-neutral-100 placeholder:text-neutral-500
-\`\`\`
+const TASK_CLEAR = `# Implement clear canvas button
 
-### Button (Primary)
-\`\`\`
-bg-blue-500 hover:bg-blue-600
-text-white font-medium
-rounded-none h-9 px-4
-transition-colors duration-150
-\`\`\`
+Wipe the entire canvas back to a blank white state.
 
-### Button (Destructive)
-\`\`\`
-bg-red-400 hover:bg-red-500
-text-white font-medium
-rounded-none h-9 px-4
-\`\`\`
+## Tasks
+- [ ] Add "Clear" button to the toolbar
+- [ ] On click, call \`ctx.clearRect(0, 0, canvas.width, canvas.height)\` then fill white
+- [ ] Push a history snapshot before clearing so it can be undone
 
----
+## Acceptance Criteria
+- Clicking Clear removes all drawn content
+- The action is undoable via Undo
+`;
 
-## Feedback Components
+const TASK_COLOR_PICKER = `# Implement color picker
 
-### Empty State
-- Centered in the available canvas
-- Muted icon (Lucide, \`text-neutral-600\`, size 40)
-- Title: \`text-neutral-400 text-sm font-medium\`
-- Subtitle: \`text-neutral-600 text-xs\`
+Let the user choose any color for drawing using the native browser color input.
 
-### Toast / Notification
-- Bottom-right anchored
-- \`bg-neutral-900 border border-neutral-800\`
-- Auto-dismiss after 4 seconds
-- Stack up to 3 toasts
+## Tasks
+- [ ] Add \`<input type="color">\` to the toolbar
+- [ ] Store the selected color in a global \`currentColor\` state variable
+- [ ] Update \`ctx.strokeStyle\` and \`ctx.fillStyle\` on every color change event
+- [ ] Default color: \`#000000\`
 
----
+## Acceptance Criteria
+- Opening the color picker shows the OS color chooser
+- Selecting a color immediately affects subsequent strokes and fills
+`;
 
-## Auth Pages Exception
+const TASK_PALETTE = `# Implement preset color palette
 
-The \`/login\` and \`/register\` pages use a softly rounded style (\`rounded-xl\` card, \`rounded-lg\` inputs/buttons) to visually separate the auth flow from the workspace canvas. Do **not** apply this rounded style inside the workspace.
+Show a row of swatchable preset colors for quick selection.
+
+## Tasks
+- [ ] Define an array of ~16 classic paint colors (black, white, red, green, blue, yellow, etc.)
+- [ ] Render each as a small clickable \`<div>\` swatch in the toolbar
+- [ ] On click, set \`currentColor\` and sync the color picker input value
+- [ ] Highlight the active swatch with a border/ring
+
+## Acceptance Criteria
+- Clicking a swatch immediately switches the active color
+- The color picker input reflects the chosen swatch color
+- Active swatch is visually indicated
+`;
+
+const TASK_LINE = `# Implement line tool
+
+Allow the user to draw a straight line between two points.
+
+## Tasks
+- [ ] On \`mousedown\`, record the start point and save a canvas snapshot
+- [ ] On \`mousemove\`, restore the snapshot then draw a preview line to the cursor
+- [ ] On \`mouseup\`, commit the final line to the canvas
+- [ ] Hold Shift to constrain to 45° increments
+
+## Acceptance Criteria
+- Dragging draws a live-preview straight line
+- Releasing the mouse commits the line permanently
+- Shift constrains the angle
+`;
+
+const TASK_RECT = `# Implement rectangle tool
+
+Draw outline or filled rectangles by click-and-drag.
+
+## Tasks
+- [ ] On \`mousedown\`, record origin and snapshot canvas
+- [ ] On \`mousemove\`, restore snapshot and draw preview rectangle
+- [ ] On \`mouseup\`, commit the rectangle
+- [ ] Toggle between outline (\`ctx.strokeRect\`) and filled (\`ctx.fillRect\`) via a toolbar option
+- [ ] Hold Shift to constrain to a square
+
+## Acceptance Criteria
+- Dragging draws a live rectangle preview
+- Outline / filled mode toggle works
+- Shift constrains to square
+`;
+
+const TASK_ELLIPSE = `# Implement circle / ellipse tool
+
+Draw outline or filled ellipses by click-and-drag.
+
+## Tasks
+- [ ] On \`mousedown\`, record origin and snapshot canvas
+- [ ] On \`mousemove\`, restore snapshot and draw preview ellipse using \`ctx.ellipse()\`
+- [ ] On \`mouseup\`, commit the ellipse
+- [ ] Reuse the outline/filled toggle from the rectangle tool
+- [ ] Hold Shift to constrain to a perfect circle
+
+## Acceptance Criteria
+- Dragging draws a live ellipse preview
+- Outline / filled mode toggle works
+- Shift constrains to circle
+`;
+
+const TASK_SAVE = `# Implement save as PNG
+
+Let the user download the current canvas as a PNG file.
+
+## Tasks
+- [ ] Add a "Save" button to the toolbar
+- [ ] On click, call \`canvas.toDataURL('image/png')\`
+- [ ] Programmatically trigger a download via a temporary \`<a download>\` element
+- [ ] Default filename: \`painting.png\`
+
+## Acceptance Criteria
+- Clicking Save downloads a PNG that matches what is on the canvas
+- White background is preserved (canvas is not transparent)
+`;
+
+const TASK_OPEN = `# Implement open / load image
+
+Allow the user to open a local image file and draw it onto the canvas.
+
+## Tasks
+- [ ] Add an "Open" button that triggers a hidden \`<input type="file" accept="image/*">\`
+- [ ] Read the selected file with \`FileReader.readAsDataURL()\`
+- [ ] Draw the loaded image onto the canvas with \`ctx.drawImage()\`, scaled to fit
+- [ ] Push a history snapshot before drawing so it can be undone
+
+## Acceptance Criteria
+- Opening an image renders it on the canvas
+- Image is scaled proportionally to fit the canvas dimensions
+- Action is undoable
+`;
+
+const TASK_UNDO = `# Implement undo history
+
+Allow the user to step back through canvas states.
+
+## Tasks
+- [ ] Maintain a \`history\` array of \`ImageData\` snapshots (cap at 50 entries)
+- [ ] Push a snapshot before every committed draw operation
+- [ ] On Undo (\`Ctrl+Z\`), pop the last snapshot and restore it with \`ctx.putImageData()\`
+- [ ] Add an Undo button to the toolbar as a fallback for non-keyboard users
+- [ ] Disable the Undo button when history is empty
+
+## Acceptance Criteria
+- \`Ctrl+Z\` steps back one operation at a time
+- Up to 50 steps of history are available
+- Undo button is visually disabled when there is nothing to undo
+`;
+
+const TASK_TOOLBAR = `# Implement toolbar UI and tool icons
+
+Build the sidebar toolbar that houses all tool buttons and controls.
+
+## Tasks
+- [ ] Design a vertical left-side toolbar in CSS
+- [ ] Add icon buttons for: Brush, Eraser, Fill, Line, Rectangle, Ellipse, Open, Save, Undo, Clear
+- [ ] Use Unicode symbols or simple SVG icons (no external icon library)
+- [ ] Highlight the active tool button with a selected state style
+- [ ] Add tooltips (\`title\` attribute) to each button
+
+## Acceptance Criteria
+- All tools are accessible from the toolbar
+- Active tool is clearly highlighted
+- Toolbar is readable at 1080p and doesn't overflow on smaller viewports
+`;
+
+const TASK_SHORTCUTS = `# Implement keyboard shortcuts
+
+Wire up keyboard shortcuts for fast tool switching and common actions.
+
+## Shortcut Map
+| Key | Action |
+|-----|--------|
+| B | Brush |
+| E | Eraser |
+| F | Fill (bucket) |
+| L | Line |
+| R | Rectangle |
+| C | Circle / ellipse |
+| Ctrl+Z | Undo |
+| Ctrl+S | Save as PNG |
+| Delete | Clear canvas |
+
+## Tasks
+- [ ] Add a \`keydown\` listener on \`document\`
+- [ ] Dispatch to the correct tool or action based on \`event.key\`
+- [ ] Guard \`Ctrl+\` combos with \`event.ctrlKey\` / \`event.metaKey\`
+- [ ] Do not fire shortcuts when focus is inside an input element
+
+## Acceptance Criteria
+- Each shortcut activates the correct tool or action
+- Shortcuts do not interfere with browser defaults (except Ctrl+S, which should be intentionally overridden)
 `;
 
 async function createRichWorkspaceData(userId: string, workspaceName: string) {
-  const d = (n: number) => {
-    const dt = new Date();
-    dt.setDate(dt.getDate() + n);
-    return dt.toISOString().split('T')[0];
-  };
-
-  // Returns a Date offset by n hours from now (for realistic agent edit timestamps)
   const h = (n: number) => {
     const dt = new Date();
     dt.setHours(dt.getHours() + n);
@@ -381,314 +447,54 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
     lastUsedAt: h(-1),
   });
 
-  // ── Getting Started page ────────────────────────────────────────────────────
+  // ── Start Here page ─────────────────────────────────────────────────────────
 
-  const gettingStartedItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({ id: gettingStartedItem, workspaceId: ws1, type: 'page', title: 'Getting Started', sortOrder: 0, icon: '👋', iconColor: 'default' });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: gettingStartedItem, content: GETTING_STARTED });
+  const startHereItem = crypto.randomUUID();
+  const howBuiltItem = crypto.randomUUID();   // child page of Start Here; id needed for the inline link below
+  const howBuiltCb = `<div data-cb-id="${howBuiltItem}" data-cb-dbid="" data-cb-type="page" data-cb-title="How This Was Built" data-cb-icon="🛠️" data-cb-iconcolor="" data-cb-link=""></div>`;
+  await db.insert(workspaceItems).values({ id: startHereItem, workspaceId: ws1, type: 'page', title: 'Start Here', sortOrder: 0, icon: '⭐', iconColor: 'default' });
+  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: startHereItem, content: START_HERE_CONTENT.replace('{{HOW_BUILT_CB}}', howBuiltCb) });
 
-  // ── Projects parent page ────────────────────────────────────────────────────
-  // This top-level page acts as a "folder" — its children are the actual projects.
+  // ── Product Spec page ───────────────────────────────────────────────────────
 
-  const projectsItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: projectsItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Projects',
-    sortOrder: 1,
-    icon: '📁',
-    iconColor: 'default',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: projectsItem, content: PROJECTS_PAGE_CONTENT });
+  const productSpecItem = crypto.randomUUID();
+  await db.insert(workspaceItems).values({ id: productSpecItem, workspaceId: ws1, type: 'page', title: 'Product Spec', sortOrder: 1, icon: '🎨', iconColor: 'default' });
+  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: productSpecItem, content: PRODUCT_SPEC_CONTENT });
 
-  // ── Remnus v2 Launch — child of Projects ────────────────────────────────────
+  // ── How This Was Built page — nested under Start Here ────────────────────────
 
-  const remnusLaunchItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: remnusLaunchItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Remnus v2 Launch',
-    parentId: projectsItem,       // ← nested inside "Projects"
-    sortOrder: 0,
-    icon: '🚀',
-    iconColor: 'blue',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: remnusLaunchItem, content: REMNUS_LAUNCH_CONTENT });
-
-  // Project Brief — child of Remnus v2 Launch
-  const projectBriefItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: projectBriefItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Project Brief',
-    parentId: remnusLaunchItem,    // ← nested inside "Remnus v2 Launch"
-    sortOrder: 0,
-    icon: '📋',
-    iconColor: 'default',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: projectBriefItem, content: PROJECT_BRIEF_CONTENT });
-
-  // Kickoff Meeting Notes — child of Remnus v2 Launch
-  const kickoffItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: kickoffItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Kickoff Meeting Notes',
-    parentId: remnusLaunchItem,    // ← nested inside "Remnus v2 Launch"
-    sortOrder: 1,
-    icon: '🗓️',
-    iconColor: 'default',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: kickoffItem, content: KICKOFF_NOTES_CONTENT });
-
-  // Launch Tasks database — child of Remnus v2 Launch
-  const launchTasksItemId = crypto.randomUUID();
-  const launchTasksDbId = crypto.randomUUID();
-  const launchTasksSchema = [
-    { id: 'title', name: 'Title', type: 'text' as const },
-    {
-      id: 'status', name: 'Status', type: 'select' as const, options: [
-        { value: 'Backlog', color: 'default' as const },
-        { value: 'In Progress', color: 'blue' as const },
-        { value: 'Review', color: 'yellow' as const },
-        { value: 'Done', color: 'green' as const },
-      ],
-    },
-    {
-      id: 'area', name: 'Area', type: 'select' as const, options: [
-        { value: 'Engineering', color: 'teal' as const },
-        { value: 'Design', color: 'pink' as const },
-        { value: 'QA', color: 'purple' as const },
-        { value: 'Product', color: 'blue' as const },
-      ],
-    },
-    { id: 'assignee', name: 'Assignee', type: 'text' as const },
-    { id: 'dueDate', name: 'Due Date', type: 'date' as const, dateFormat: 'default' as const },
-  ];
-  const launchTasksViews = [
-    {
-      id: 'v-lt-1',
-      name: 'Board',
-      config: {
-        type: 'kanban' as const,
-        groupByCol: 'status',
-        groupOrder: ['Backlog', 'In Progress', 'Review', 'Done'],
-        filters: [],
-        sorts: [],
-        openBehavior: 'center' as const,
-        cardProperties: ['area', 'assignee', 'dueDate'],
-        showPropertyLabels: true,
-        propertyTextClamp: 'truncate' as const,
-        cardColorCol: 'area',
-        groupColBg: true,
-      },
-    },
-    {
-      id: 'v-lt-2',
-      name: 'Table',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'status', 'area', 'assignee', 'dueDate'],
-        hiddenColumns: [],
-        filters: [],
-        sorts: [],
-        openBehavior: 'center' as const,
-        rowColorCol: 'status',
-      },
-    },
-  ];
-  await db.insert(workspaceItems).values({
-    id: launchTasksItemId,
-    workspaceId: ws1,
-    type: 'database',
-    title: 'Launch Tasks',
-    parentId: remnusLaunchItem,    // ← nested inside "Remnus v2 Launch"
-    sortOrder: 2,
-    icon: '✅',
-    iconColor: 'green',
-  });
-  await db.insert(databases).values({ id: launchTasksDbId, name: 'Launch Tasks', itemId: launchTasksItemId, schema: launchTasksSchema, views: launchTasksViews });
-
-  const launchTasks = [
-    { title: 'Add parent_id column to workspace_items', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-4) },
-    { title: 'Build recursive sidebar tree renderer', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-2), agentAt: h(-30) },
-    { title: 'Implement auto-expand for active nested page', status: 'Done', area: 'Engineering', assignee: 'Marcus', dueDate: d(-1) },
-    { title: 'Design sidebar chevron & connector lines', status: 'Done', area: 'Design', assignee: 'Aisha', dueDate: d(-3) },
-    { title: 'Add nested item creation via + button', status: 'In Progress', area: 'Engineering', assignee: 'Marcus', dueDate: d(1), agentAt: h(-5) },
-    { title: 'Write end-to-end regression tests', status: 'In Progress', area: 'QA', assignee: 'Kai', dueDate: d(3), agentAt: h(-2) },
-    { title: 'Update Getting Started demo content', status: 'Review', area: 'Product', assignee: 'Alice', dueDate: d(2) },
-    { title: 'Support drag-and-drop within parent scope', status: 'Backlog', area: 'Engineering', assignee: 'Marcus', dueDate: d(7) },
-    { title: 'Breadcrumb navigation in page header', status: 'Backlog', area: 'Design', assignee: 'Aisha', dueDate: d(14) },
-    { title: 'Public launch announcement', status: 'Backlog', area: 'Product', assignee: 'Alice', dueDate: d(21) },
-  ];
-  for (let i = 0; i < launchTasks.length; i++) {
-    const t = launchTasks[i] as typeof launchTasks[0] & { agentAt?: Date };
-    await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: launchTasksDbId,
-      title: t.title,
-      content: '',
-      properties: { title: t.title, status: t.status, area: t.area, assignee: t.assignee, dueDate: t.dueDate },
-      sortOrder: i,
-      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
-    });
-  }
-
-  // ── Design System — child of Projects ──────────────────────────────────────
-
-  const designSystemItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: designSystemItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Design System',
-    parentId: projectsItem,       // ← nested inside "Projects"
-    sortOrder: 1,
-    icon: '🎨',
-    iconColor: 'pink',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: designSystemItem, content: DESIGN_SYSTEM_CONTENT });
-
-  // Component Specs — child of Design System
-  const componentSpecsItem = crypto.randomUUID();
-  await db.insert(workspaceItems).values({
-    id: componentSpecsItem,
-    workspaceId: ws1,
-    type: 'page',
-    title: 'Component Specs',
-    parentId: designSystemItem,   // ← nested inside "Design System"
-    sortOrder: 0,
-    icon: '📐',
-    iconColor: 'default',
-  });
-  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: componentSpecsItem, content: COMPONENT_SPECS_CONTENT });
-
-  // Component Library database — child of Design System
-  const compLibItemId = crypto.randomUUID();
-  const compLibDbId = crypto.randomUUID();
-  const compLibSchema = [
-    { id: 'title', name: 'Component', type: 'text' as const },
-    {
-      id: 'category', name: 'Category', type: 'select' as const, options: [
-        { value: 'Layout', color: 'blue' as const },
-        { value: 'Form', color: 'teal' as const },
-        { value: 'Navigation', color: 'purple' as const },
-        { value: 'Feedback', color: 'green' as const },
-        { value: 'Data', color: 'orange' as const },
-      ],
-    },
-    {
-      id: 'status', name: 'Status', type: 'select' as const, options: [
-        { value: 'Planned', color: 'default' as const },
-        { value: 'In Progress', color: 'yellow' as const },
-        { value: 'Done', color: 'green' as const },
-        { value: 'Deprecated', color: 'red' as const },
-      ],
-    },
-    { id: 'owner', name: 'Owner', type: 'text' as const },
-    { id: 'notes', name: 'Notes', type: 'text' as const },
-  ];
-  const compLibViews = [
-    {
-      id: 'v-cl-1',
-      name: 'All Components',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'category', 'status', 'owner', 'notes'],
-        hiddenColumns: [],
-        filters: [],
-        sorts: [],
-        openBehavior: 'side' as const,
-        rowColorCol: 'status',
-      },
-    },
-    {
-      id: 'v-cl-2',
-      name: 'Board',
-      config: {
-        type: 'kanban' as const,
-        groupByCol: 'status',
-        groupOrder: ['Planned', 'In Progress', 'Done', 'Deprecated'],
-        filters: [],
-        sorts: [],
-        openBehavior: 'side' as const,
-        cardProperties: ['category', 'owner'],
-        showPropertyLabels: true,
-        propertyTextClamp: 'truncate' as const,
-        cardColorCol: 'category',
-        groupColBg: false,
-      },
-    },
-  ];
-  await db.insert(workspaceItems).values({
-    id: compLibItemId,
-    workspaceId: ws1,
-    type: 'database',
-    title: 'Component Library',
-    parentId: designSystemItem,   // ← nested inside "Design System"
-    sortOrder: 1,
-    icon: '🧩',
-    iconColor: 'purple',
-  });
-  await db.insert(databases).values({ id: compLibDbId, name: 'Component Library', itemId: compLibItemId, schema: compLibSchema, views: compLibViews });
-
-  const components = [
-    { title: 'Sidebar', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'Collapsible tree, drag-and-drop, nested items' },
-    { title: 'WorkspaceItem', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'Icon, title, chevron, action buttons' },
-    { title: 'DatabaseView', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Orchestrates Table, Kanban, Calendar views', agentAt: h(-18) },
-    { title: 'TableLayout', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Inline editing, resizable columns, row tint', agentAt: h(-17) },
-    { title: 'KanbanBoard', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Grouped columns, card colors, group bg tint', agentAt: h(-16) },
-    { title: 'CalendarView', category: 'Data', status: 'Done', owner: 'Marcus', notes: 'Month/week modes, card color, date placement' },
-    { title: 'ViewsBar', category: 'Navigation', status: 'Done', owner: 'Aisha', notes: 'View tabs, inline rename, add/delete view' },
-    { title: 'PropertiesSidebar', category: 'Form', status: 'Done', owner: 'Aisha', notes: 'Schema editing, filters, sorts, group-by' },
-    { title: 'PageEditor', category: 'Layout', status: 'Done', owner: 'Marcus', notes: 'Markdown editor with bubble toolbar and slash commands' },
-    { title: 'IconPicker', category: 'Feedback', status: 'Done', owner: 'Aisha', notes: 'Emoji + Lucide icons with color selection' },
-    { title: 'TemplatePickerModal', category: 'Feedback', status: 'Done', owner: 'Aisha', notes: '2-step modal: pick template → name item' },
-    { title: 'WorkspaceSettingsModal', category: 'Feedback', status: 'Done', owner: 'Aisha', notes: 'General + Members tabs, role management' },
-    { title: 'Breadcrumb', category: 'Navigation', status: 'Planned', owner: '', notes: 'Show ancestor path for deeply nested pages' },
-    { title: 'CommandPalette', category: 'Navigation', status: 'Planned', owner: '', notes: 'Quick-open any page or database via ⌘K' },
-    { title: 'Toast', category: 'Feedback', status: 'In Progress', owner: 'Aisha', notes: 'Auto-dismiss, stack up to 3' },
-  ];
-  for (let i = 0; i < components.length; i++) {
-    const c = components[i] as typeof components[0] & { agentAt?: Date };
-    await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: compLibDbId,
-      title: c.title,
-      content: '',
-      properties: { title: c.title, category: c.category, status: c.status, owner: c.owner, notes: c.notes },
-      sortOrder: i,
-      ...(c.agentAt ? { agentEditedAt: c.agentAt, agentTokenId: demoTokenId } : {}),
-    });
-  }
+  await db.insert(workspaceItems).values({ id: howBuiltItem, workspaceId: ws1, type: 'page', title: 'How This Was Built', parentId: startHereItem, sortOrder: 0, icon: '🛠️', iconColor: 'default' });
+  await db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: howBuiltItem, content: HOW_THIS_WAS_BUILT_CONTENT });
 
   // ── Sprint Board database ───────────────────────────────────────────────────
 
   const sprintSchema = [
     { id: 'title', name: 'Title', type: 'text' as const },
-    { id: 'status', name: 'Status', type: 'select' as const, options: [
-      { value: 'To Do', color: 'blue' as const },
-      { value: 'In Progress', color: 'yellow' as const },
-      { value: 'In Review', color: 'teal' as const },
-      { value: 'Done', color: 'green' as const },
-    ]},
-    { id: 'priority', name: 'Priority', type: 'select' as const, options: [
-      { value: 'P1 — Critical', color: 'red' as const },
-      { value: 'P2 — High', color: 'orange' as const },
-      { value: 'P3 — Medium', color: 'yellow' as const },
-      { value: 'P4 — Low', color: 'green' as const },
-    ]},
-    { id: 'assignee', name: 'Assignee', type: 'text' as const },
-    { id: 'sprint', name: 'Sprint', type: 'select' as const, options: [
-      { value: 'Sprint 12', color: 'purple' as const },
-      { value: 'Sprint 13', color: 'blue' as const },
-    ]},
-    { id: 'points', name: 'Points', type: 'number' as const },
+    {
+      id: 'status', name: 'Status', type: 'select' as const, options: [
+        { value: 'Backlog', color: 'default' as const },
+        { value: 'In Progress', color: 'orange' as const },
+        { value: 'Done', color: 'green' as const },
+      ],
+    },
+    {
+      id: 'priority', name: 'Priority', type: 'select' as const, options: [
+        { value: 'High', color: 'red' as const },
+        { value: 'Medium', color: 'yellow' as const },
+        { value: 'Low', color: 'green' as const },
+      ],
+    },
+    {
+      id: 'category', name: 'Category', type: 'select' as const, options: [
+        { value: 'Canvas', color: 'red' as const },
+        { value: 'Color', color: 'orange' as const },
+        { value: 'Shapes', color: 'yellow' as const },
+        { value: 'File', color: 'green' as const },
+        { value: 'UI', color: 'teal' as const },
+      ],
+    },
   ];
+
   const sprintViews = [
     {
       id: 'v-sprint-1',
@@ -696,14 +502,14 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       config: {
         type: 'kanban' as const,
         groupByCol: 'status',
-        groupOrder: ['To Do', 'In Progress', 'In Review', 'Done'],
+        groupOrder: ['Backlog', 'In Progress', 'Done'],
         filters: [],
         sorts: [],
         openBehavior: 'center' as const,
-        cardProperties: ['priority', 'assignee', 'points'],
+        cardProperties: ['priority', 'category'],
         showPropertyLabels: true,
         propertyTextClamp: 'truncate' as const,
-        cardColorCol: 'priority',
+        cardColorCol: 'category',
         groupColBg: true,
       },
     },
@@ -712,251 +518,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       name: 'Table',
       config: {
         type: 'table' as const,
-        columnOrder: ['title', 'status', 'priority', 'assignee', 'sprint', 'points'],
-        hiddenColumns: [],
-        filters: [],
-        sorts: [],
-        openBehavior: 'center' as const,
-        rowColorCol: 'priority',
-      },
-    },
-  ];
-  const sprintDbItem = crypto.randomUUID();
-  const sprintDb = crypto.randomUUID();
-  await db.insert(workspaceItems).values({ id: sprintDbItem, workspaceId: ws1, type: 'database', title: 'Sprint Board', sortOrder: 2, icon: '✅', iconColor: 'green' });
-  await db.insert(databases).values({ id: sprintDb, name: 'Sprint Board', itemId: sprintDbItem, schema: sprintSchema, views: sprintViews });
-
-  const sprintTasks = [
-    { title: 'Implement OAuth login flow', status: 'In Progress', priority: 'P1 — Critical', assignee: 'Alice', sprint: 'Sprint 12', points: 8, agentAt: h(-3) },
-    { title: 'Design new onboarding screens', status: 'In Review', priority: 'P2 — High', assignee: 'Bob', sprint: 'Sprint 12', points: 5 },
-    { title: 'Fix mobile navigation bug', status: 'To Do', priority: 'P2 — High', assignee: 'Charlie', sprint: 'Sprint 12', points: 3 },
-    { title: 'Add export to CSV feature', status: 'In Progress', priority: 'P3 — Medium', assignee: 'Alice', sprint: 'Sprint 12', points: 5 },
-    { title: 'Write API documentation', status: 'To Do', priority: 'P3 — Medium', assignee: 'Bob', sprint: 'Sprint 12', points: 3 },
-    { title: 'Set up CI/CD pipeline', status: 'Done', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 12', points: 8, agentAt: h(-26) },
-    { title: 'Database query optimization', status: 'Done', priority: 'P2 — High', assignee: 'Alice', sprint: 'Sprint 12', points: 5, agentAt: h(-25) },
-    { title: 'User dashboard redesign', status: 'In Progress', priority: 'P2 — High', assignee: 'Bob', sprint: 'Sprint 13', points: 8 },
-    { title: 'Push notification system', status: 'To Do', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 13', points: 13 },
-    { title: 'Performance monitoring setup', status: 'To Do', priority: 'P3 — Medium', assignee: 'Alice', sprint: 'Sprint 13', points: 5 },
-    { title: 'Customer portal MVP', status: 'To Do', priority: 'P2 — High', assignee: 'Bob', sprint: 'Sprint 13', points: 13 },
-    { title: 'Security audit remediation', status: 'Done', priority: 'P1 — Critical', assignee: 'Charlie', sprint: 'Sprint 12', points: 8 },
-  ];
-  for (let i = 0; i < sprintTasks.length; i++) {
-    const t = sprintTasks[i] as typeof sprintTasks[0] & { agentAt?: Date };
-    await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: sprintDb,
-      title: t.title,
-      content: '',
-      properties: { title: t.title, status: t.status, priority: t.priority, assignee: t.assignee, sprint: t.sprint, points: t.points },
-      sortOrder: i,
-      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
-    });
-  }
-
-  // ── Bug Tracker database ────────────────────────────────────────────────────
-
-  const bugSchema = [
-    { id: 'title', name: 'Title', type: 'text' as const },
-    { id: 'severity', name: 'Severity', type: 'select' as const, options: [
-      { value: 'Critical', color: 'red' as const },
-      { value: 'High', color: 'orange' as const },
-      { value: 'Medium', color: 'yellow' as const },
-      { value: 'Low', color: 'green' as const },
-    ]},
-    { id: 'status', name: 'Status', type: 'select' as const, options: [
-      { value: 'Open', color: 'red' as const },
-      { value: 'In Progress', color: 'yellow' as const },
-      { value: 'Resolved', color: 'green' as const },
-      { value: 'Closed', color: 'default' as const },
-    ]},
-    { id: 'module', name: 'Module', type: 'select' as const, options: [
-      { value: 'Auth', color: 'blue' as const },
-      { value: 'Dashboard', color: 'teal' as const },
-      { value: 'API', color: 'purple' as const },
-      { value: 'Settings', color: 'default' as const },
-      { value: 'Mobile', color: 'orange' as const },
-    ]},
-    { id: 'reporter', name: 'Reporter', type: 'text' as const },
-    { id: 'reported', name: 'Reported', type: 'date' as const, dateFormat: 'default' as const },
-  ];
-  const bugViews = [
-    {
-      id: 'v-bug-1',
-      name: 'All Bugs',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'severity', 'status', 'module', 'reporter', 'reported'],
-        hiddenColumns: [],
-        filters: [],
-        sorts: [{ id: 's1', columnId: 'severity', direction: 'asc' as const }],
-        openBehavior: 'side' as const,
-        rowColorCol: 'severity',
-      },
-    },
-    {
-      id: 'v-bug-2',
-      name: 'Open',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'severity', 'module', 'reporter', 'reported'],
-        hiddenColumns: [],
-        filters: [{ id: 'f1', columnId: 'status', operator: 'equals' as const, value: 'Open' }],
-        sorts: [{ id: 's1', columnId: 'severity', direction: 'asc' as const }],
-        openBehavior: 'side' as const,
-      },
-    },
-    {
-      id: 'v-bug-3',
-      name: 'Board',
-      config: {
-        type: 'kanban' as const,
-        groupByCol: 'status',
-        groupOrder: ['Open', 'In Progress', 'Resolved', 'Closed'],
-        filters: [],
-        sorts: [],
-        openBehavior: 'side' as const,
-        cardProperties: ['severity', 'module', 'reporter'],
-        showPropertyLabels: true,
-        propertyTextClamp: 'truncate' as const,
-        cardColorCol: 'severity',
-        groupColBg: false,
-      },
-    },
-  ];
-  const bugDbItem = crypto.randomUUID();
-  const bugDb = crypto.randomUUID();
-  await db.insert(workspaceItems).values({ id: bugDbItem, workspaceId: ws1, type: 'database', title: 'Bug Tracker', sortOrder: 3, icon: '🐛', iconColor: 'red' });
-  await db.insert(databases).values({ id: bugDb, name: 'Bug Tracker', itemId: bugDbItem, schema: bugSchema, views: bugViews });
-
-  const bugs = [
-    { title: 'Login fails after password reset', severity: 'Critical', status: 'Open', module: 'Auth', reporter: 'Alice', reported: d(-5) },
-    { title: 'Dashboard charts not loading on Safari', severity: 'High', status: 'In Progress', module: 'Dashboard', reporter: 'Bob', reported: d(-8) },
-    { title: 'API rate limiting not working correctly', severity: 'Critical', status: 'In Progress', module: 'API', reporter: 'Charlie', reported: d(-3), agentAt: h(-8) },
-    { title: 'Settings page crashes on mobile iOS', severity: 'High', status: 'Open', module: 'Mobile', reporter: 'Alice', reported: d(-6) },
-    { title: 'CSV export includes soft-deleted rows', severity: 'Medium', status: 'Open', module: 'API', reporter: 'Bob', reported: d(-2) },
-    { title: 'Dark mode toggle resets on page refresh', severity: 'Low', status: 'Resolved', module: 'Settings', reporter: 'Charlie', reported: d(-12) },
-    { title: 'Search results showing duplicate entries', severity: 'Medium', status: 'In Progress', module: 'Dashboard', reporter: 'Alice', reported: d(-4), agentAt: h(-1) },
-    { title: 'Email notifications delayed by ~30 minutes', severity: 'High', status: 'Open', module: 'API', reporter: 'Bob', reported: d(-1) },
-  ];
-  for (let i = 0; i < bugs.length; i++) {
-    const b = bugs[i] as typeof bugs[0] & { agentAt?: Date };
-    await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: bugDb,
-      title: b.title,
-      content: '',
-      properties: { title: b.title, severity: b.severity, status: b.status, module: b.module, reporter: b.reporter, reported: b.reported },
-      sortOrder: i,
-      ...(b.agentAt ? { agentEditedAt: b.agentAt, agentTokenId: demoTokenId } : {}),
-    });
-  }
-
-  // ── Team Calendar database ──────────────────────────────────────────────────
-
-  const calSchema = [
-    { id: 'title', name: 'Title', type: 'text' as const },
-    { id: 'date', name: 'Date', type: 'date' as const, dateFormat: 'default' as const },
-    { id: 'type', name: 'Type', type: 'select' as const, options: [
-      { value: 'Meeting', color: 'blue' as const },
-      { value: 'Review', color: 'teal' as const },
-      { value: 'Release', color: 'green' as const },
-      { value: 'Sprint', color: 'purple' as const },
-      { value: 'Social', color: 'pink' as const },
-    ]},
-    { id: 'attendees', name: 'Attendees', type: 'text' as const },
-  ];
-  const calViews = [
-    {
-      id: 'v-cal-1',
-      name: 'Calendar',
-      config: {
-        type: 'calendar' as const,
-        dateCol: 'date',
-        viewMode: 'month' as const,
-        firstDayOfWeek: 'monday' as const,
-        filters: [],
-        sorts: [],
-        openBehavior: 'center' as const,
-        cardColorCol: 'type',
-        cardProperties: ['attendees'],
-        showPropertyLabels: false,
-        propertyTextClamp: 'truncate' as const,
-      },
-    },
-    {
-      id: 'v-cal-2',
-      name: 'Schedule',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'date', 'type', 'attendees'],
-        hiddenColumns: [],
-        filters: [],
-        sorts: [{ id: 's1', columnId: 'date', direction: 'asc' as const }],
-        openBehavior: 'center' as const,
-      },
-    },
-  ];
-  const calDbItem = crypto.randomUUID();
-  const calDb = crypto.randomUUID();
-  await db.insert(workspaceItems).values({ id: calDbItem, workspaceId: ws1, type: 'database', title: 'Team Calendar', sortOrder: 4, icon: '📅', iconColor: 'teal' });
-  await db.insert(databases).values({ id: calDb, name: 'Team Calendar', itemId: calDbItem, schema: calSchema, views: calViews });
-
-  const events = [
-    { title: 'Daily Standup', date: d(-2), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
-    { title: 'Daily Standup', date: d(-1), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
-    { title: 'Daily Standup', date: d(0), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
-    { title: 'Daily Standup', date: d(1), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
-    { title: 'Daily Standup', date: d(2), type: 'Meeting', attendees: 'Alice, Bob, Charlie, Diana' },
-    { title: 'Sprint 12 Review', date: d(-3), type: 'Review', attendees: 'Full team' },
-    { title: 'Design Critique', date: d(-1), type: 'Review', attendees: 'Alice, Bob' },
-    { title: 'Sprint 13 Planning', date: d(1), type: 'Sprint', attendees: 'Full team', agentAt: h(-4) },
-    { title: 'API Architecture Review', date: d(3), type: 'Review', attendees: 'Charlie, Alice' },
-    { title: 'Team Lunch', date: d(4), type: 'Social', attendees: 'All team' },
-    { title: 'Customer Demo', date: d(6), type: 'Meeting', attendees: 'Bob, Diana', agentAt: h(-6) },
-    { title: 'Tech Debt Session', date: d(8), type: 'Meeting', attendees: 'Charlie, Alice' },
-    { title: 'Team Retrospective', date: d(10), type: 'Review', attendees: 'Full team' },
-    { title: 'Sprint 13 Review', date: d(14), type: 'Review', attendees: 'Full team' },
-    { title: 'Q3 Release — v2.1', date: d(16), type: 'Release', attendees: 'Full team' },
-  ];
-  for (let i = 0; i < events.length; i++) {
-    const e = events[i] as typeof events[0] & { agentAt?: Date };
-    await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: calDb,
-      title: e.title,
-      content: '',
-      properties: { title: e.title, date: e.date, type: e.type, attendees: e.attendees },
-      sortOrder: i,
-      ...(e.agentAt ? { agentEditedAt: e.agentAt, agentTokenId: demoTokenId } : {}),
-    });
-  }
-
-  // ── Reading List database ───────────────────────────────────────────────────
-
-  const readingSchema = [
-    { id: 'title', name: 'Title', type: 'text' as const },
-    { id: 'author', name: 'Author', type: 'text' as const },
-    { id: 'status', name: 'Status', type: 'select' as const, options: [
-      { value: 'To Read', color: 'blue' as const },
-      { value: 'Reading', color: 'yellow' as const },
-      { value: 'Finished', color: 'green' as const },
-    ]},
-    { id: 'rating', name: 'Rating', type: 'number' as const },
-    { id: 'category', name: 'Category', type: 'select' as const, options: [
-      { value: 'Tech', color: 'blue' as const },
-      { value: 'Business', color: 'teal' as const },
-      { value: 'Design', color: 'pink' as const },
-      { value: 'Self-Help', color: 'green' as const },
-      { value: 'Fiction', color: 'purple' as const },
-    ]},
-  ];
-  const readingViews = [
-    {
-      id: 'v-reading-1',
-      name: 'All Books',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'author', 'status', 'rating', 'category'],
+        columnOrder: ['title', 'status', 'priority', 'category'],
         hiddenColumns: [],
         filters: [],
         sorts: [],
@@ -964,44 +526,78 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
         rowColorCol: 'status',
       },
     },
-    {
-      id: 'v-reading-2',
-      name: 'Finished',
-      config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'author', 'rating', 'category'],
-        hiddenColumns: [],
-        filters: [{ id: 'f1', columnId: 'status', operator: 'equals' as const, value: 'Finished' }],
-        sorts: [{ id: 's1', columnId: 'rating', direction: 'asc' as const }],
-        openBehavior: 'center' as const,
-      },
-    },
   ];
-  const readingDbItem = crypto.randomUUID();
-  const readingDb = crypto.randomUUID();
-  await db.insert(workspaceItems).values({ id: readingDbItem, workspaceId: ws1, type: 'database', title: 'Reading List', sortOrder: 5, icon: '📚', iconColor: 'purple' });
-  await db.insert(databases).values({ id: readingDb, name: 'Reading List', itemId: readingDbItem, schema: readingSchema, views: readingViews });
 
-  const books = [
-    { title: 'The Pragmatic Programmer', author: 'David Thomas', status: 'Finished', rating: 5, category: 'Tech' },
-    { title: 'Design Systems', author: 'Alla Kholmatova', status: 'Reading', rating: 4, category: 'Design' },
-    { title: 'Zero to One', author: 'Peter Thiel', status: 'Finished', rating: 5, category: 'Business' },
-    { title: 'Clean Code', author: 'Robert C. Martin', status: 'Finished', rating: 4, category: 'Tech' },
-    { title: 'Shape Up', author: 'Ryan Singer', status: 'To Read', rating: null, category: 'Business' },
-    { title: "Don't Make Me Think", author: 'Steve Krug', status: 'Finished', rating: 5, category: 'Design' },
-    { title: 'The Lean Startup', author: 'Eric Ries', status: 'Finished', rating: 4, category: 'Business' },
-    { title: 'Atomic Habits', author: 'James Clear', status: 'Reading', rating: 5, category: 'Self-Help' },
-    { title: 'An Elegant Puzzle', author: 'Will Larson', status: 'To Read', rating: null, category: 'Tech' },
+  const sprintDbItem = crypto.randomUUID();
+  const sprintDb = crypto.randomUUID();
+  await db.insert(workspaceItems).values({ id: sprintDbItem, workspaceId: ws1, type: 'database', title: 'Sprint Board', sortOrder: 2, icon: '📋', iconColor: 'default' });
+  await db.insert(databases).values({ id: sprintDb, name: 'Sprint Board', itemId: sprintDbItem, schema: sprintSchema, views: sprintViews });
+
+  const sprintTasks = [
+    { title: 'Set up project scaffold', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_SCAFFOLD, agentAt: h(-30) },
+    { title: 'Implement freehand brush / pencil tool', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_BRUSH, agentAt: h(-28) },
+    { title: 'Implement eraser tool', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_ERASER, agentAt: h(-24) },
+    { title: 'Implement adjustable brush size', status: 'Backlog', priority: 'High', category: 'Canvas', content: TASK_BRUSH_SIZE },
+    { title: 'Implement flood fill (bucket tool)', status: 'Backlog', priority: 'Medium', category: 'Canvas', content: TASK_FILL },
+    { title: 'Implement clear canvas button', status: 'Backlog', priority: 'Medium', category: 'Canvas', content: TASK_CLEAR },
+    { title: 'Implement color picker', status: 'Backlog', priority: 'High', category: 'Color', content: TASK_COLOR_PICKER },
+    { title: 'Implement preset color palette', status: 'Backlog', priority: 'Medium', category: 'Color', content: TASK_PALETTE },
+    { title: 'Implement line tool', status: 'In Progress', priority: 'Medium', category: 'Shapes', content: TASK_LINE, agentAt: h(-2) },
+    { title: 'Implement rectangle tool', status: 'Backlog', priority: 'Medium', category: 'Shapes', content: TASK_RECT },
+    { title: 'Implement circle / ellipse tool', status: 'Backlog', priority: 'Medium', category: 'Shapes', content: TASK_ELLIPSE },
+    { title: 'Implement save as PNG', status: 'Backlog', priority: 'High', category: 'File', content: TASK_SAVE },
+    { title: 'Implement open / load image', status: 'Backlog', priority: 'Medium', category: 'File', content: TASK_OPEN },
+    { title: 'Implement undo history', status: 'Backlog', priority: 'High', category: 'UI', content: TASK_UNDO },
+    { title: 'Implement toolbar UI and tool icons', status: 'Backlog', priority: 'High', category: 'UI', content: TASK_TOOLBAR },
+    { title: 'Implement keyboard shortcuts', status: 'Backlog', priority: 'Low', category: 'UI', content: TASK_SHORTCUTS },
   ];
-  for (let i = 0; i < books.length; i++) {
-    const b = books[i];
+
+  const taskRowIds: string[] = [];
+  for (let i = 0; i < sprintTasks.length; i++) {
+    const t = sprintTasks[i] as typeof sprintTasks[0] & { agentAt?: Date };
+    const rowId = crypto.randomUUID();
+    taskRowIds.push(rowId);
     await db.insert(pages).values({
-      id: crypto.randomUUID(),
-      databaseId: readingDb,
-      title: b.title,
-      content: '',
-      properties: { title: b.title, author: b.author, status: b.status, rating: b.rating, category: b.category },
+      id: rowId,
+      databaseId: sprintDb,
+      title: t.title,
+      content: t.content,
+      properties: { title: t.title, status: t.status, priority: t.priority, category: t.category },
       sortOrder: i,
+      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
+    });
+  }
+
+  // ── Agent audit log ─────────────────────────────────────────────────────────
+  // Mirrors the real Claude Code session that built this workspace (from Remnus's
+  // own MCP audit log). Powers the live activity feed in the "AI Agents" panel.
+
+  const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000);
+  const activity: { tool: string; targetType: string | null; targetId: string | null; at: Date }[] = [
+    { tool: 'list_workspace', targetType: null, targetId: null, at: at(32) },
+    { tool: 'create_page', targetType: 'page', targetId: productSpecItem, at: at(31.7) },
+    { tool: 'create_database', targetType: 'database', targetId: sprintDb, at: at(31.5) },
+    // 16 task rows generated one after another
+    ...taskRowIds.map((id, i) => ({
+      tool: 'create_page', targetType: 'db-row' as const, targetId: id, at: at(31.3 - i * 0.07),
+    })),
+    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[0], at: at(30) },  // scaffold → Done
+    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[1], at: at(28) },  // brush → Done
+    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[2], at: at(24) },  // eraser → Done
+    { tool: 'query_database', targetType: 'database', targetId: sprintDb, at: at(6) },
+    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[8], at: at(2) },   // line tool → In Progress
+    { tool: 'get_page', targetType: 'page', targetId: productSpecItem, at: at(1) },
+  ];
+  for (const a of activity) {
+    await db.insert(agentActivity).values({
+      id: crypto.randomUUID(),
+      tokenId: demoTokenId,
+      workspaceId: ws1,
+      tool: a.tool,
+      targetType: a.targetType,
+      targetId: a.targetId,
+      status: 'success',
+      createdAt: a.at,
     });
   }
 }

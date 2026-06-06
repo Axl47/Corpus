@@ -43,7 +43,8 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
     demoUser = { id, name: 'Demo User' };
   }
 
-  // Reset: delete all workspaces belonging to the demo user (cascades items/pages/tokens)
+  // Reset workspaces only — user_sessions are intentionally preserved so the
+  // admin panel can track cumulative demo engagement across all visitors.
   const memberships = await db
     .select({ workspaceId: workspaceMembers.workspaceId })
     .from(workspaceMembers)

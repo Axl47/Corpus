@@ -17,8 +17,10 @@ import PostHogPageView from '@/components/providers/PostHogPageView';
 import PostHogIdentify from '@/components/providers/PostHogIdentify';
 import UpdateBanner from '@/components/features/UpdateBanner';
 import ActivityTracker from '@/components/providers/ActivityTracker';
+import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(METADATA_BASE_URL),
   title: {
     default: 'Remnus',
     template: '%s | Remnus',
@@ -38,16 +40,16 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Remnus | MCP-Native workspace for vibe coders',
     description: 'Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP.',
-    url: 'https://remnus.com',
+    url: METADATA_BASE_URL,
     siteName: 'Remnus',
-    images: [{ url: 'https://remnus.com/OG_1200x630.png?v=2', width: 1200, height: 630, alt: 'Remnus | MCP-Native workspace for vibe coders' }],
+    images: [DEFAULT_OG_IMAGE],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Remnus | MCP-Native workspace for vibe coders',
     description: 'Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP.',
-    images: ['https://remnus.com/OG_1200x630.png?v=2'],
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 

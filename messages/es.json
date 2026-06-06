@@ -565,6 +565,7 @@
     "ownerOnlyRemove": "Solo los propietarios del espacio pueden eliminar miembros",
     "adminRequired": "Se requiere acceso de administrador",
     "cannotDeleteSelf": "No puedes eliminar tu propia cuenta",
+    "cannotDeleteDemoUser": "La cuenta de demostración no puede eliminarse",
     "ownerOnlyUpdateRole": "Solo los propietarios del espacio pueden actualizar roles",
     "memberNotFound": "El usuario objetivo no es miembro de este espacio",
     "cannotChangeOwnerRole": "No se puede cambiar el rol del propietario. Transfiere la propiedad primero.",
@@ -631,6 +632,8 @@
     "bridgeHeroSubhead": "Páginas, bases de datos, kanban. Con MCP integrado, tu IA trabaja en la misma superficie que tu equipo.",
     "bridgeHeroCtaPrimary": "Crea tu workspace",
     "bridgeHeroCtaSecondary": "Ver integraciones",
+    "bridgeHeroDemoButton": "Explorar el demo",
+    "bridgeHeroDemoLoading": "Cargando demo…",
     "bridgeHeroStat1Num": "12",
     "bridgeHeroStat1Label": "herramientas MCP",
     "bridgeHeroStat2Num": "4",
@@ -951,7 +954,9 @@
     "widthLabel": "Ancho de página",
     "widthWide": "Amplio",
     "editShare": "Configuración de compartir",
-    "addToSitemap": "Añadir al sitemap"
+    "addToSitemap": "Añadir al sitemap",
+    "privateSharingHint": "Para compartir páginas de forma privada con usuarios específicos, agréguelos como miembros del workspace.",
+    "goToMembers": "Ir a Miembros"
   },
   "UserSettings": {
     "title": "Configuración",

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import AIMark from './AIMark';
+import { HeroDemoOverlay } from './HeroDemoOverlay';
 
 const AI_TILES = [
   { id: 'claude',      name: 'Claude',      sub: 'Desktop · Claude Code', color: '#d97757', action: 'creating page' },
@@ -50,7 +51,7 @@ export default async function LandingHero() {
     <section className="relative overflow-hidden px-4 sm:px-8 lg:px-14 pt-16 pb-12 lg:pt-[110px] lg:pb-[90px]">
       {/* radial bg glow */}
       <div
-        className="absolute top-20 -right-60 w-[700px] h-[700px] pointer-events-none"
+        className="absolute top-20 -left-60 w-175 h-175 pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(68,92,149,0.18), transparent 60%)' }}
       />
 
@@ -141,7 +142,7 @@ export default async function LandingHero() {
               out past the layout and symmetry is kept. The AI tiles are left at
               their natural size so they never overflow; only the board is scaled. */}
           <div
-            className="relative hidden lg:block overflow-hidden"
+            className="relative hidden lg:block overflow-hidden group"
             style={{ height: 580 }}
           >
             {/* AI tiles */}
@@ -195,16 +196,28 @@ export default async function LandingHero() {
               <HeroWorkspaceShot />
             </div>
 
-            {/* Edge fades — dissolve the enlarged board into the page background
-                at the right + bottom so the overflow disappears softly instead of
-                a hard crop. Start below the tiles/pill so the agents stay crisp. */}
+            {/* Edge fades — dissolve the enlarged board into the page background.
+                Right fade starts earlier and widens for a gentler dissolve.
+                Bottom fade grows to meet it so the corner blends smoothly. */}
             <div
               className="absolute right-0 z-20 pointer-events-none"
-              style={{ top: 116, bottom: 0, width: 140, background: 'linear-gradient(to right, transparent, var(--color-neutral-950))' }}
+              style={{ top: 116, bottom: 0, width: 220, background: 'linear-gradient(to right, transparent 0%, var(--color-neutral-950) 72%)' }}
             />
             <div
               className="absolute left-0 right-0 bottom-0 z-20 pointer-events-none"
-              style={{ height: 90, background: 'linear-gradient(to bottom, transparent, var(--color-neutral-950))' }}
+              style={{ height: 130, background: 'linear-gradient(to bottom, transparent 0%, var(--color-neutral-950) 75%)' }}
+            />
+
+            {/* Hover dim — radial: dark at centre, fades to transparent at corners */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ top: 116, zIndex: 25, background: 'radial-gradient(ellipse 65% 55% at 50% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.12) 60%, transparent 100%)' }}
+            />
+
+            {/* Demo CTA — fades in on hover, centered over the workspace shot */}
+            <HeroDemoOverlay
+              buttonLabel={t('bridgeHeroDemoButton')}
+              loadingLabel={t('bridgeHeroDemoLoading')}
             />
           </div>
         </div>

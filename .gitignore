@@ -66,3 +66,6 @@ next-env.d.ts
 /ios/Pods/
 /ios/build/
 /ios/DerivedData/
+
+# Notion export ZIPs (test/import data — never commit)
+*.zip

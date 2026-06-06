@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import MarketingShell from '@/components/marketing/MarketingShell';
 import { Shield, Eye, Lock, Mail } from 'lucide-react';
+import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(METADATA_BASE_URL),
   title: 'Privacy Policy',
   description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
   alternates: { canonical: 'https://remnus.com/privacy' },
@@ -11,6 +13,15 @@ export const metadata: Metadata = {
     title: 'Privacy Policy | Remnus',
     description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
     url: 'https://remnus.com/privacy',
+    siteName: 'Remnus',
+    images: [DEFAULT_OG_IMAGE],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | Remnus',
+    description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
+    images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 

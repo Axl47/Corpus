@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { Globe, Copy, Check, Trash2, Lock, PenLine, ExternalLink, AlertCircle } from 'lucide-react';
+import { Globe, Copy, Check, Trash2, Lock, PenLine, ExternalLink, AlertCircle, Users } from 'lucide-react';
 import {
   getSharesByWorkspace,
   revokeShare,
@@ -11,6 +11,7 @@ import {
 interface Props {
   workspaceId: string;
   isAdmin: boolean;
+  onNavigateToMembers?: () => void;
 }
 
 function shareUrl(slug: string) {
@@ -18,7 +19,7 @@ function shareUrl(slug: string) {
   return `${window.location.origin}/share/${slug}`;
 }
 
-export default function SharingTab({ workspaceId, isAdmin }: Props) {
+export default function SharingTab({ workspaceId, isAdmin, onNavigateToMembers }: Props) {
   const t = useTranslations('Sharing');
   const [shares, setShares] = useState<ShareRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,19 @@ export default function SharingTab({ workspaceId, isAdmin }: Props) {
           <span>{t('slugHint')}</span>
         </div>
       )}
+
+      <div className="flex items-start gap-2 text-[11px] text-neutral-500 border border-neutral-800 rounded-md px-3 py-2.5 bg-neutral-900/50">
+        <Users size={12} className="mt-0.5 shrink-0 text-blue-400/70" />
+        <span className="flex-1">{t('privateSharingHint')}</span>
+        {onNavigateToMembers && (
+          <button
+            onClick={onNavigateToMembers}
+            className="shrink-0 text-blue-400 hover:text-blue-300 transition-colors font-medium"
+          >
+            {t('goToMembers')} →
+          </button>
+        )}
+      </div>
     </div>
   );
 }
