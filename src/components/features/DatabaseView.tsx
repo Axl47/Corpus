@@ -719,6 +719,12 @@ export default function DatabaseView({
   const handleCardColorColChange = (cardColorCol: string) =>
     mutateConfig((cfg) => ({ ...cfg, cardColorCol: cardColorCol || undefined }));
 
+  const handleCardBorderSideChange = (side: 'left' | 'top' | 'right' | 'bottom') =>
+    mutateConfig((cfg) => ({ ...cfg, cardBorderSide: side }));
+
+  const handleCardBgColChange = (cardBgCol: string) =>
+    mutateConfig((cfg) => ({ ...cfg, cardBgCol: cardBgCol || undefined }));
+
   const handleRowColorColChange = (rowColorCol: string) =>
     mutateConfig((cfg) => ({ ...cfg, rowColorCol: rowColorCol || undefined }));
 
@@ -933,6 +939,8 @@ export default function DatabaseView({
               showPropertyLabels={kanbanConfig.showPropertyLabels ?? true}
               propertyTextClamp={kanbanConfig.propertyTextClamp ?? 'truncate'}
               cardColorCol={kanbanConfig.cardColorCol}
+              cardBorderSide={kanbanConfig.cardBorderSide ?? 'left'}
+              cardBgCol={kanbanConfig.cardBgCol}
               groupColBg={kanbanConfig.groupColBg ?? false}
               onUpdatePageProperties={handleUpdatePageProperties}
               onCreatePage={handleAddRow}
@@ -953,6 +961,8 @@ export default function DatabaseView({
               onDeletePage={handleDeletePage}
               onDuplicatePage={handleDuplicatePage}
               cardColorCol={calendarConfig.cardColorCol}
+              cardBorderSide={calendarConfig.cardBorderSide ?? 'left'}
+              cardBgCol={calendarConfig.cardBgCol}
               cardProperties={calendarConfig.cardProperties}
               showPropertyLabels={calendarConfig.showPropertyLabels ?? true}
               propertyTextClamp={calendarConfig.propertyTextClamp ?? 'truncate'}
@@ -1014,6 +1024,10 @@ export default function DatabaseView({
               onFirstDayOfWeekChange={handleFirstDayOfWeekChange}
               cardColorCol={kanbanConfig?.cardColorCol ?? calendarConfig?.cardColorCol}
               onCardColorColChange={handleCardColorColChange}
+              cardBorderSide={kanbanConfig?.cardBorderSide ?? calendarConfig?.cardBorderSide}
+              onCardBorderSideChange={handleCardBorderSideChange}
+              cardBgCol={kanbanConfig?.cardBgCol ?? calendarConfig?.cardBgCol}
+              onCardBgColChange={handleCardBgColChange}
               rowColorCol={(config as TableViewConfig).rowColorCol}
               onRowColorColChange={handleRowColorColChange}
               groupColBg={kanbanConfig?.groupColBg ?? false}
@@ -1021,11 +1035,16 @@ export default function DatabaseView({
               defaultPageIcon={config.defaultPageIcon}
               defaultPageIconColor={config.defaultPageIconColor}
               onDefaultPageIconChange={(icon, color) =>
-                mutateConfig((cfg) => ({
-                  ...cfg,
-                  defaultPageIcon: icon || undefined,
-                  defaultPageIconColor: color || undefined,
-                }))
+                mutateViews((vs) =>
+                  vs.map((v) => ({
+                    ...v,
+                    config: {
+                      ...v.config,
+                      defaultPageIcon: icon || undefined,
+                      defaultPageIconColor: color || undefined,
+                    },
+                  }))
+                )
               }
               hiddenGroups={kanbanConfig?.hiddenGroups}
               onHiddenGroupsChange={(hidden) =>

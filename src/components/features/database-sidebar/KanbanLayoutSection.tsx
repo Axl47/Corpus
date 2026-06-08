@@ -1,9 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, ArrowLeft, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
 import { normalizeOption } from '@/lib/types/properties';
-import { getPropertyIcon, Checkbox, selectCls } from './shared';
+import { getPropertyIcon, Checkbox, selectCls, CollapsibleSection } from './shared';
 
 interface KanbanLayoutSectionProps {
   schema: any[];
@@ -17,6 +17,10 @@ interface KanbanLayoutSectionProps {
   onPropertyTextClampChange?: (clamp: 'truncate' | 'wrap') => void;
   cardColorCol?: string;
   onCardColorColChange?: (colId: string) => void;
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom';
+  onCardBorderSideChange?: (side: 'left' | 'top' | 'right' | 'bottom') => void;
+  cardBgCol?: string;
+  onCardBgColChange?: (colId: string) => void;
   groupColBg?: boolean;
   onGroupColBgChange?: (enabled: boolean) => void;
   hiddenGroups?: string[];
@@ -35,6 +39,10 @@ export default function KanbanLayoutSection({
   onPropertyTextClampChange,
   cardColorCol,
   onCardColorColChange,
+  cardBorderSide = 'left',
+  onCardBorderSideChange,
+  cardBgCol,
+  onCardBgColChange,
   groupColBg,
   onGroupColBgChange,
   hiddenGroups = [],
@@ -83,23 +91,48 @@ export default function KanbanLayoutSection({
 
   return (
     <>
-      {/* Group by */}
-      <div className="px-4 py-3">
-        <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">{t('groupBy')}</span>
-        {selectColumns.length > 0 ? (
-          <select value={groupByCol} onChange={(e) => onGroupByColChange?.(e.target.value)} className={`${selectCls} w-full text-xs py-1.5 px-2`}>
-            {selectColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
-          </select>
-        ) : (
-          <span className="text-xs text-amber-500/80">{t('addSelectForGroup')}</span>
-        )}
-      </div>
-
-      {/* Card properties */}
-      <div>
-        <div className="px-4 py-2.5">
-          <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('cardProperties')}</span>
+      {/* Grouping */}
+      <CollapsibleSection label={t('sectionGrouping')}>
+        <div className="px-4 pb-3 flex flex-col gap-2">
+          {selectColumns.length > 0 ? (
+            <div>
+              <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('groupBy')}</span>
+              <select value={groupByCol} onChange={(e) => onGroupByColChange?.(e.target.value)} className={`${selectCls} w-full`}>
+                {selectColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <span className="text-xs text-amber-500/80">{t('addSelectForGroup')}</span>
+          )}
+          <button onClick={() => onGroupColBgChange?.(!groupColBg)} className="w-full flex items-center justify-between py-1.5 hover:bg-neutral-800/10 transition-colors cursor-pointer rounded">
+            <span className="text-xs text-neutral-300">{t('groupBackground')}</span>
+            <Checkbox checked={!!groupColBg} />
+          </button>
         </div>
+
+        {groupColumn && (
+          <div className="pb-2">
+            <div className="flex flex-col">
+              {[...options, 'Uncategorized'].map((colName) => {
+                const isHidden = hiddenGroups.includes(colName);
+                return (
+                  <button
+                    key={colName}
+                    onClick={() => onHiddenGroupsChange?.(isHidden ? hiddenGroups.filter((g) => g !== colName) : [...hiddenGroups, colName])}
+                    className="w-full flex items-center justify-between px-4 py-2 border-b border-neutral-800/30 hover:bg-neutral-800/10 transition-colors cursor-pointer text-left"
+                  >
+                    <span className="text-xs text-neutral-300 truncate">{colName === 'Uncategorized' ? t('uncategorized') : colName}</span>
+                    <Checkbox checked={!isHidden} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CollapsibleSection>
+
+      {/* Cards */}
+      <CollapsibleSection label={t('sectionCards')}>
         {availableCardProps.length === 0 ? (
           <p className="text-[11px] text-neutral-700 text-center pb-3">{t('noAdditionalProperties')}</p>
         ) : (
@@ -130,67 +163,65 @@ export default function KanbanLayoutSection({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Show labels */}
-      <button onClick={() => onShowPropertyLabelsChange?.(!showPropertyLabels)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30">
-        <span className="text-xs text-neutral-300">{t('showLabels')}</span>
-        <Checkbox checked={showPropertyLabels} />
-      </button>
-
-      {/* Property text clamp */}
-      <div className="flex items-center justify-between px-4 py-2.5">
-        <span className="text-xs text-neutral-300">{t('propertyText')}</span>
-        <div className="flex items-center gap-2">
-          <select value={propertyTextClamp} onChange={(e) => onPropertyTextClampChange?.(e.target.value as 'truncate' | 'wrap')} className={`${selectCls} text-neutral-400 py-1 px-1.5 w-28 cursor-pointer truncate`}>
-            <option value="truncate">{t('truncate')}</option>
-            <option value="wrap">{t('wrap')}</option>
-          </select>
-          <span className="w-5 shrink-0" />
-        </div>
-      </div>
-
-      {/* Card color */}
-      <div className="px-4 py-3 border-b border-neutral-800/30 flex items-center justify-between gap-3">
-        <span className="text-xs text-neutral-300 shrink-0">{t('cardColor')}</span>
-        <div className="flex items-center gap-2">
-          <select value={cardColorCol ?? ''} onChange={(e) => onCardColorColChange?.(e.target.value)} className={`${selectCls} text-neutral-400 py-1 px-1.5 w-28 shrink-0 cursor-pointer truncate`}>
-            <option value="">None</option>
-            {colorColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
-          </select>
-          <span className="w-5 shrink-0" />
-        </div>
-      </div>
-
-      {/* Group column background */}
-      <button onClick={() => onGroupColBgChange?.(!groupColBg)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-neutral-800/10 transition-colors cursor-pointer border-b border-neutral-800/30">
-        <span className="text-xs text-neutral-300">{t('groupBackground')}</span>
-        <Checkbox checked={!!groupColBg} />
-      </button>
-
-      {/* Visible groups */}
-      {groupColumn && (
-        <div>
-          <div className="px-4 py-2.5">
-            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('visibleGroups')}</span>
-          </div>
-          <div className="flex flex-col">
-            {[...options, 'Uncategorized'].map((colName) => {
-              const isHidden = hiddenGroups.includes(colName);
-              return (
-                <button
-                  key={colName}
-                  onClick={() => onHiddenGroupsChange?.(isHidden ? hiddenGroups.filter((g) => g !== colName) : [...hiddenGroups, colName])}
-                  className="w-full flex items-center justify-between px-4 py-2 border-b border-neutral-800/30 hover:bg-neutral-800/10 transition-colors cursor-pointer text-left"
-                >
-                  <span className="text-xs text-neutral-300 truncate">{colName === 'Uncategorized' ? t('uncategorized') : colName}</span>
-                  <Checkbox checked={!isHidden} />
-                </button>
-              );
-            })}
+        <div className="px-4 py-2.5 flex flex-col gap-2">
+          <button onClick={() => onShowPropertyLabelsChange?.(!showPropertyLabels)} className="w-full flex items-center justify-between cursor-pointer">
+            <span className="text-xs text-neutral-300">{t('showLabels')}</span>
+            <Checkbox checked={showPropertyLabels} />
+          </button>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-neutral-300 shrink-0">{t('propertyText')}</span>
+            <select value={propertyTextClamp} onChange={(e) => onPropertyTextClampChange?.(e.target.value as 'truncate' | 'wrap')} className={`${selectCls} w-28 shrink-0 cursor-pointer`}>
+              <option value="truncate">{t('truncate')}</option>
+              <option value="wrap">{t('wrap')}</option>
+            </select>
           </div>
         </div>
-      )}
+      </CollapsibleSection>
+
+      {/* Card colors */}
+      <CollapsibleSection label={t('cardColors')} defaultOpen={false}>
+        <div className="px-4 pb-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-neutral-300 shrink-0">{t('cardBackground')}</span>
+            <select value={cardBgCol ?? ''} onChange={(e) => onCardBgColChange?.(e.target.value)} className={`${selectCls} w-32 shrink-0 cursor-pointer truncate`}>
+              <option value="">None</option>
+              {colorColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-neutral-300 shrink-0">{t('accentLine')}</span>
+            <select value={cardColorCol ?? ''} onChange={(e) => onCardColorColChange?.(e.target.value)} className={`${selectCls} w-32 shrink-0 cursor-pointer truncate`}>
+              <option value="">None</option>
+              {colorColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
+            </select>
+          </div>
+          {cardColorCol && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-neutral-500 shrink-0 pl-3">{t('accentPosition')}</span>
+              <div className="flex gap-1">
+                {([
+                  { side: 'left', Icon: ArrowLeft },
+                  { side: 'top', Icon: ArrowUp },
+                  { side: 'right', Icon: ArrowRight },
+                  { side: 'bottom', Icon: ArrowDown },
+                ] as const).map(({ side, Icon }) => (
+                  <button
+                    key={side}
+                    onClick={() => onCardBorderSideChange?.(side)}
+                    className={`w-7 h-7 flex items-center justify-center border rounded transition-colors cursor-pointer ${
+                      cardBorderSide === side
+                        ? 'border-blue-500/60 text-blue-400 bg-blue-500/10'
+                        : 'border-neutral-700 text-neutral-500 hover:border-neutral-600 hover:text-neutral-400'
+                    }`}
+                  >
+                    <Icon size={12} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
     </>
   );
 }

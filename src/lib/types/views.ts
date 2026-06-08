@@ -44,7 +44,9 @@ export interface KanbanViewConfig {
   cardProperties?: string[];              // visible property IDs in display order; undefined = first 2
   showPropertyLabels?: boolean;           // show property name before value; default true
   propertyTextClamp?: 'truncate' | 'wrap'; // single-line truncate or multi-line wrap; default truncate
-  cardColorCol?: string;                  // property ID whose select value drives the card's left-border color
+  cardColorCol?: string;                  // property ID whose select value drives the card's accent line color
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom'; // which edge the accent line appears on; default 'left'
+  cardBgCol?: string;                     // property ID whose select value drives the card's full background tint
   groupColBg?: boolean;                   // tint each column background with the group option's color
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
@@ -59,7 +61,9 @@ export interface CalendarViewConfig {
   filters: ViewFilter[];
   sorts: ViewSort[];
   openBehavior?: OpenBehavior;
-  cardColorCol?: string;                  // property ID whose select value drives the card's left-border color
+  cardColorCol?: string;                  // property ID whose select value drives the card's accent line color
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom'; // which edge the accent line appears on; default 'left'
+  cardBgCol?: string;                     // property ID whose select value drives the card's full background tint
   cardProperties?: string[];              // visible property IDs in display order; undefined = first 1
   showPropertyLabels?: boolean;           // show property name before value; default true
   propertyTextClamp?: 'truncate' | 'wrap'; // single-line truncate or multi-line wrap; default truncate

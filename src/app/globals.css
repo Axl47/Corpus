@@ -413,11 +413,9 @@ pre,
 [data-editor-size="sm"] .prose-editor h3 { font-size: 1.1rem; }
 [data-editor-size="lg"] .prose-editor h3 { font-size: 1.3rem; }
 
-/* ProseMirror selection — suppress outline on React NodeViews (child blocks) */
+/* ProseMirror selection — NodeViews manage their own selected state visually;
+   suppress the rectangular outline entirely for all atom node views. */
 .prose-editor .ProseMirror-selectednode {
-  outline: 2px solid var(--color-neutral-700);
-}
-.prose-editor .ProseMirror-selectednode[data-node-view-wrapper] {
   outline: none;
 }
 

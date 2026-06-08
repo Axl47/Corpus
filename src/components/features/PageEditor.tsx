@@ -187,7 +187,7 @@ export default function PageEditor({
   };
 
   const containerClass = isPeek
-    ? 'p-4 md:p-8 lg:p-10'
+    ? 'p-6 md:p-10 lg:py-16 lg:px-24'
     : widthMode === 'full'
     ? 'px-4 sm:px-8 md:px-16 py-6 sm:py-10'
     : widthMode === 'wide'

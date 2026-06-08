@@ -229,12 +229,36 @@ export function stripImagePlaceholders(content: string): string {
   return content.replace(/!\[([^\]]*)\]\(__NOTION_IMG__:[^)]+\)/g, '');
 }
 
-// Replace __NOTION_IMG__ placeholders with real URLs from the map
+function escAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+// Replace __NOTION_IMG__ placeholders with ImageBlock HTML (the format Tiptap's
+// ImageBlock extension recognises). Standard markdown ![alt](url) syntax is not
+// used because the editor has no standard Image extension — only ImageBlock which
+// serialises/parses <div data-img-src>.
 export function applyImageMap(content: string, imageMap: Map<string, string>): string {
   return content.replace(/!\[([^\]]*)\]\(__NOTION_IMG__:([^)]+)\)/g, (_, alt, zipPath) => {
     const url = imageMap.get(zipPath);
-    return url ? `![${alt}](${url})` : '';
+    if (!url) return '';
+    return `<div data-img-src="${escAttr(url)}" data-img-alt="${escAttr(alt)}" data-img-align="center"></div>`;
   });
+}
+
+// A line whose entire content (trimmed) is a single external markdown link is
+// treated as a bookmark block, not inline text. List items (`- [...]`) are
+// excluded because they don't start with `[` after trimming.
+const STANDALONE_LINK_LINE_RE = /^\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/;
+
+function convertStandaloneLinksToBookmarks(content: string): string {
+  return content
+    .split('\n')
+    .map(line => {
+      const m = STANDALONE_LINK_LINE_RE.exec(line.trim());
+      if (!m) return line;
+      return `<div data-bm-url="${escAttr(m[2])}" data-bm-title="${escAttr(m[1])}"></div>`;
+    })
+    .join('\n');
 }
 
 // Convert [Title](relative/path.md) → **Title**  (dead relative links).
@@ -563,8 +587,10 @@ export async function getImageBlobFromZip(zip: JSZip, zipPath: string): Promise<
 // __NOTION_IMG__ placeholders with real URLs from `imageMap` (or stripping them
 // when no URL is available).
 export function materializeItems(items: NotionTreeItem[], imageMap: Map<string, string>): ImportItem[] {
-  const apply = (content: string): string =>
-    imageMap.size > 0 ? applyImageMap(content, imageMap) : stripImagePlaceholders(content);
+  const apply = (content: string): string => {
+    const withImages = imageMap.size > 0 ? applyImageMap(content, imageMap) : stripImagePlaceholders(content);
+    return convertStandaloneLinksToBookmarks(withImages);
+  };
 
   return items.map(item => ({
     type: item.type,

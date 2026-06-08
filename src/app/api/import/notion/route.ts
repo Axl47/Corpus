@@ -60,22 +60,20 @@ function inferViews(schema: { id: string; name: string; type: string }[]) {
   ];
 
   if (firstSelect) {
-    // Color cards by a select other than the group-by column when possible, so
-    // the tint adds info rather than echoing the column it already sits in.
+    // Background tint from groupByCol so each card visually belongs to its column.
+    // Accent line from a different select when possible to add extra info.
     const cardColorCol = (selects.find(c => c.id !== firstSelect.id) ?? firstSelect).id;
     views.push({
       id: uid(),
       name: 'Board',
       config: {
         type: 'kanban', groupByCol: firstSelect.id, groupOrder: [], filters: [], sorts: [],
-        openBehavior: 'center', cardColorCol, groupColBg: true,
+        openBehavior: 'center', cardBgCol: firstSelect.id, cardColorCol, groupColBg: true,
       },
     });
   }
 
   if (firstDate) {
-    // Show a couple of meaningful properties on calendar cards (like Kanban does),
-    // skipping the title and the date the card is already placed by.
     const cardProperties = schema
       .filter(c => c.id !== 'title' && c.id !== firstDate.id && c.type !== 'date' && c.type !== 'datetime')
       .slice(0, 2)
@@ -86,7 +84,7 @@ function inferViews(schema: { id: string; name: string; type: string }[]) {
       config: {
         type: 'calendar', dateCol: firstDate.id, viewMode: 'month', filters: [], sorts: [],
         openBehavior: 'center',
-        ...(firstSelect ? { cardColorCol: firstSelect.id } : {}),
+        ...(firstSelect ? { cardBgCol: firstSelect.id, cardColorCol: firstSelect.id } : {}),
         ...(cardProperties.length ? { cardProperties } : {}),
       },
     });
@@ -195,6 +193,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = (await req.json().catch(() => null)) as { space?: ImportSpacePayload } | null;
     const space = body?.space;

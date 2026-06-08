@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getOptionColorByValue, getCardBorderDots, formatDateValue } from '@/lib/types/properties';
+import { getOptionColorByValue, getCardBorderDots, getCardBgColor, formatDateValue } from '@/lib/types/properties';
 import { ChevronLeft, ChevronRight, GripVertical, Settings, Trash2, Calendar as CalendarIcon, Clock, Plus, Copy } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import PageIcon from './PageIcon';
@@ -22,6 +22,8 @@ interface CalendarViewProps {
   onDeletePage: (pageId: string) => void;
   onDuplicatePage: (pageId: string) => void;
   cardColorCol?: string;
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom';
+  cardBgCol?: string;
   cardProperties?: string[];
   showPropertyLabels?: boolean;
   propertyTextClamp?: 'truncate' | 'wrap';
@@ -112,6 +114,8 @@ export default function CalendarView({
   onDeletePage,
   onDuplicatePage,
   cardColorCol,
+  cardBorderSide = 'left',
+  cardBgCol,
   cardProperties,
   showPropertyLabels = true,
   propertyTextClamp = 'truncate',
@@ -376,6 +380,16 @@ export default function CalendarView({
                   {dayPages.map((page) => {
                     const colorColSchema = cardColorCol ? schema.find((c) => c.id === cardColorCol) : null;
                     const borderDots = getCardBorderDots(colorColSchema, page.properties[cardColorCol ?? '']);
+                    const bgColSchema = cardBgCol ? schema.find((c) => c.id === cardBgCol) : null;
+                    const bgColor = getCardBgColor(bgColSchema, page.properties[cardBgCol ?? '']);
+                    const isHorizontalBorder = cardBorderSide === 'top' || cardBorderSide === 'bottom';
+                    const borderLineClass = cardBorderSide === 'top'
+                      ? 'absolute top-0 inset-x-0 h-0.75 flex flex-row'
+                      : cardBorderSide === 'right'
+                      ? 'absolute right-0 inset-y-0 w-0.75 flex flex-col'
+                      : cardBorderSide === 'bottom'
+                      ? 'absolute bottom-0 inset-x-0 h-0.75 flex flex-row'
+                      : 'absolute left-0 inset-y-0 w-0.75 flex flex-col';
                     return (
                     <div
                       key={page.id}
@@ -391,12 +405,13 @@ export default function CalendarView({
                         setDraggedCardId(page.id);
                         setIsCardDragReady(false);
                       }}
-                      className={`relative py-2.5 px-2 bg-neutral-800/45 cursor-pointer hover:bg-neutral-800/75 transition-colors group flex flex-col select-none overflow-hidden rounded ${
+                      className={`relative py-2.5 px-2 cursor-pointer transition-colors group flex flex-col select-none overflow-hidden rounded ${
                         draggedCardId === page.id ? 'opacity-25' : ''
                       }`}
+                      style={{ backgroundColor: bgColor ?? 'rgba(64,68,75,0.45)' }}
                     >
                       {borderDots.length > 0 && (
-                        <div className="absolute left-0 inset-y-0 w-0.75 flex flex-col pointer-events-none" aria-hidden>
+                        <div className={`${borderLineClass} pointer-events-none`} aria-hidden>
                           {borderDots.map((dot, i) => (
                             <div key={i} className="flex-1" style={{ backgroundColor: dot }} />
                           ))}

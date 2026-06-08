@@ -70,6 +70,30 @@ export function getCardBorderDots(
   return [];
 }
 
+/**
+ * Returns the groupBg tint color for the card background based on a select/multi_select value.
+ * For multi_select, uses the first selected value's color. Returns null when nothing to paint.
+ */
+export function getCardBgColor(
+  colSchema: { type: string; options?: (string | SelectOption)[] } | null | undefined,
+  value: unknown,
+): string | null {
+  if (!colSchema) return null;
+  const opts = colSchema.options ?? [];
+
+  if (colSchema.type === 'select') {
+    if (typeof value !== 'string' || !value) return null;
+    return getOptionColorByValue(opts, value).groupBg;
+  }
+
+  if (colSchema.type === 'multi_select') {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    return getOptionColorByValue(opts, (value as string[])[0]).groupBg;
+  }
+
+  return null;
+}
+
 export function formatDateValue(val: string, type: 'date' | 'datetime', format?: string): string {
   if (!val) return '—';
   // Date range: "start/end"

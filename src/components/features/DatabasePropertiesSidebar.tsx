@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { X, Database, LayoutTemplate } from 'lucide-react';
+import { CollapsibleSection } from './database-sidebar/shared';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import { updateDatabaseSchema } from '@/lib/actions/database';
@@ -46,6 +47,10 @@ interface DatabasePropertiesSidebarProps {
   onFirstDayOfWeekChange?: (day: 'sunday' | 'monday') => void;
   cardColorCol?: string;
   onCardColorColChange?: (colId: string) => void;
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom';
+  onCardBorderSideChange?: (side: 'left' | 'top' | 'right' | 'bottom') => void;
+  cardBgCol?: string;
+  onCardBgColChange?: (colId: string) => void;
   rowColorCol?: string;
   onRowColorColChange?: (colId: string) => void;
   groupColBg?: boolean;
@@ -88,6 +93,10 @@ export default function DatabasePropertiesSidebar({
   onFirstDayOfWeekChange,
   cardColorCol,
   onCardColorColChange,
+  cardBorderSide,
+  onCardBorderSideChange,
+  cardBgCol,
+  onCardBgColChange,
   rowColorCol,
   onRowColorColChange,
   groupColBg,
@@ -181,59 +190,93 @@ export default function DatabasePropertiesSidebar({
         )}
 
         {activeTab === 'layout' && (
-          <div className="flex flex-col divide-y divide-neutral-800/60">
-            {/* Open behavior */}
-            <div className="px-4 py-3">
-              <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Open pages as</span>
-              <select value={openBehavior} onChange={(e) => onOpenBehaviorChange(e.target.value as 'center' | 'side' | 'full')} className={`${selectCls} w-full text-xs py-1.5 px-2`}>
-                <option value="full">{t('openFull')}</option>
-                <option value="side">{t('openSide')}</option>
-                <option value="center">{t('openCenter')}</option>
-              </select>
-            </div>
-
-            {/* Default page icon */}
-            <div className="px-4 py-3 relative">
-              <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">{t('defaultPageIcon')}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  ref={defaultIconBtnRef}
-                  onClick={() => setShowDefaultIconPicker(!showDefaultIconPicker)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white transition-colors rounded text-xs cursor-pointer shrink-0 font-medium"
-                >
-                  <PageIcon icon={defaultPageIcon || null} iconColor={defaultPageIconColor || null} size={14} fallbackType="page" />
-                  <span>{defaultPageIcon ? tPage('changeIcon') : tPage('addIcon')}</span>
-                </button>
-                {defaultPageIcon && (
-                  <button onClick={() => onDefaultPageIconChange?.(null, null)} className="text-[10px] text-neutral-500 hover:text-red-400 transition-colors cursor-pointer">
-                    Remove
-                  </button>
-                )}
-              </div>
-              {showDefaultIconPicker && (
-                <IconPicker
-                  currentIcon={defaultPageIcon || null}
-                  currentIconColor={defaultPageIconColor || null}
-                  onSelect={(icon, color) => { onDefaultPageIconChange?.(icon, color); setShowDefaultIconPicker(false); }}
-                  onClose={() => setShowDefaultIconPicker(false)}
-                  anchorRef={defaultIconBtnRef}
-                />
-              )}
-            </div>
-
-            {/* Table: row color */}
-            {viewType === 'table' && (
-              <div className="px-4 py-3">
-                <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Row color</span>
-                {colorColumns.length > 0 ? (
-                  <select value={rowColorCol ?? ''} onChange={(e) => onRowColorColChange?.(e.target.value)} className={`${selectCls} w-full text-xs py-1.5 px-2`}>
-                    <option value="">None</option>
-                    {colorColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
+          <div className="flex flex-col">
+            {/* Pages group */}
+            <CollapsibleSection label={t('sectionPages')}>
+              <div className="px-4 pb-3 flex flex-col gap-3 relative">
+                <div>
+                  <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('openPagesAs')}</span>
+                  <select value={openBehavior} onChange={(e) => onOpenBehaviorChange(e.target.value as 'center' | 'side' | 'full')} className={`${selectCls} w-full`}>
+                    <option value="full">{t('openFull')}</option>
+                    <option value="side">{t('openSide')}</option>
+                    <option value="center">{t('openCenter')}</option>
                   </select>
-                ) : (
-                  <span className="text-xs text-amber-500/80">{t('addSelectProperty')}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('defaultPageIcon')}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      ref={defaultIconBtnRef}
+                      onClick={() => setShowDefaultIconPicker(!showDefaultIconPicker)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white transition-colors rounded text-xs cursor-pointer shrink-0 font-medium"
+                    >
+                      <PageIcon icon={defaultPageIcon || null} iconColor={defaultPageIconColor || null} size={14} fallbackType="page" />
+                      <span>{defaultPageIcon ? tPage('changeIcon') : tPage('addIcon')}</span>
+                    </button>
+                    {defaultPageIcon && (
+                      <button onClick={() => onDefaultPageIconChange?.(null, null)} className="text-[10px] text-neutral-500 hover:text-red-400 transition-colors cursor-pointer">
+                        {t('remove')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {showDefaultIconPicker && (
+                  <IconPicker
+                    currentIcon={defaultPageIcon || null}
+                    currentIconColor={defaultPageIconColor || null}
+                    onSelect={(icon, color) => { onDefaultPageIconChange?.(icon, color); setShowDefaultIconPicker(false); }}
+                    onClose={() => setShowDefaultIconPicker(false)}
+                    anchorRef={defaultIconBtnRef}
+                  />
                 )}
               </div>
+            </CollapsibleSection>
+
+            {/* Table: appearance */}
+            {viewType === 'table' && (
+              <CollapsibleSection label={t('sectionAppearance')}>
+                <div className="px-4 pb-3 flex flex-col gap-3">
+                  <div>
+                    <span className="block text-[10px] text-neutral-500 uppercase tracking-wider mb-1.5">{t('rowColor')}</span>
+                    {colorColumns.length > 0 ? (
+                      <select value={rowColorCol ?? ''} onChange={(e) => onRowColorColChange?.(e.target.value)} className={`${selectCls} w-full`}>
+                        <option value="">None</option>
+                        {colorColumns.map((col: any) => <option key={col.id} value={col.id}>{col.name}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-amber-500/80">{t('addSelectProperty')}</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] text-neutral-500 uppercase tracking-wider">{t('columns')}</span>
+                      <div className="flex gap-3">
+                        <button onClick={() => onHiddenColumnsChange([])} className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">{t('showAll')}</button>
+                        <button onClick={() => onHiddenColumnsChange(schema.map((c) => c.id).filter((id) => id !== 'title'))} className="text-[10px] text-neutral-500 hover:text-neutral-300 cursor-pointer">{t('hideAll')}</button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      {schema.map((col) => {
+                        const isHidden = hiddenColumns.includes(col.id);
+                        const isTitle = col.id === 'title';
+                        return (
+                          <button
+                            key={col.id}
+                            onClick={() => !isTitle && onToggleHideColumn(col.id)}
+                            disabled={isTitle}
+                            className={`flex items-center gap-2 px-1 py-1.5 border-b border-neutral-800/30 text-left transition-colors ${isTitle ? 'opacity-40 cursor-not-allowed' : 'hover:bg-neutral-800/10 cursor-pointer'}`}
+                          >
+                            <span className="flex-1 text-xs text-neutral-300 truncate">{col.name}</span>
+                            <span className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 transition-colors rounded-sm ${!isHidden ? 'bg-blue-500 border-blue-500' : 'border-neutral-700'}`}>
+                              {!isHidden && <span className="text-[8px] font-bold text-white leading-none">✓</span>}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleSection>
             )}
 
             {/* Kanban-specific settings */}
@@ -250,6 +293,10 @@ export default function DatabasePropertiesSidebar({
                 onPropertyTextClampChange={onPropertyTextClampChange}
                 cardColorCol={cardColorCol}
                 onCardColorColChange={onCardColorColChange}
+                cardBorderSide={cardBorderSide}
+                onCardBorderSideChange={onCardBorderSideChange}
+                cardBgCol={cardBgCol}
+                onCardBgColChange={onCardBgColChange}
                 groupColBg={groupColBg}
                 onGroupColBgChange={onGroupColBgChange}
                 hiddenGroups={hiddenGroups}
@@ -269,6 +316,10 @@ export default function DatabasePropertiesSidebar({
                 onFirstDayOfWeekChange={onFirstDayOfWeekChange}
                 cardColorCol={cardColorCol}
                 onCardColorColChange={onCardColorColChange}
+                cardBorderSide={cardBorderSide}
+                onCardBorderSideChange={onCardBorderSideChange}
+                cardBgCol={cardBgCol}
+                onCardBgColChange={onCardBgColChange}
                 cardProperties={cardProperties}
                 onCardPropertiesChange={onCardPropertiesChange}
                 showPropertyLabels={showPropertyLabels}
@@ -276,38 +327,6 @@ export default function DatabasePropertiesSidebar({
                 propertyTextClamp={propertyTextClamp}
                 onPropertyTextClampChange={onPropertyTextClampChange}
               />
-            )}
-
-            {/* Table: column visibility */}
-            {viewType === 'table' && (
-              <div>
-                <div className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Columns</span>
-                  <div className="flex gap-3">
-                    <button onClick={() => onHiddenColumnsChange([])} className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">Show all</button>
-                    <button onClick={() => onHiddenColumnsChange(schema.map((c) => c.id).filter((id) => id !== 'title'))} className="text-[10px] text-neutral-500 hover:text-neutral-300 cursor-pointer">Hide all</button>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  {schema.map((col) => {
-                    const isHidden = hiddenColumns.includes(col.id);
-                    const isTitle = col.id === 'title';
-                    return (
-                      <button
-                        key={col.id}
-                        onClick={() => !isTitle && onToggleHideColumn(col.id)}
-                        disabled={isTitle}
-                        className={`flex items-center gap-2 px-4 py-2 border-b border-neutral-800/30 text-left transition-colors ${isTitle ? 'opacity-40 cursor-not-allowed' : 'hover:bg-neutral-800/10 cursor-pointer'}`}
-                      >
-                        <span className="flex-1 text-xs text-neutral-300 truncate">{col.name}</span>
-                        <span className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 transition-colors rounded-sm ${!isHidden ? 'bg-blue-500 border-blue-500' : 'border-neutral-700'}`}>
-                          {!isHidden && <span className="text-[8px] font-bold text-white leading-none">✓</span>}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             )}
 
             <FiltersSection filters={filters} schema={schema} onFiltersChange={onFiltersChange} />

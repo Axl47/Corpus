@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { GripVertical, Settings, Trash2, Plus, Copy, CheckSquare, Square, ExternalLink } from 'lucide-react';
-import { normalizeOption, getOptionColorByValue, getCardBorderDots, formatDateValue } from '@/lib/types/properties';
+import { normalizeOption, getOptionColorByValue, getCardBorderDots, getCardBgColor, formatDateValue } from '@/lib/types/properties';
 import { useTranslations } from 'next-intl';
 import type { SelectOption } from '@/lib/types/properties';
 import InlineCellEditor from './InlineCellEditor';
@@ -36,6 +36,8 @@ export default function KanbanBoard({
   showPropertyLabels = true,
   propertyTextClamp = 'truncate',
   cardColorCol,
+  cardBorderSide = 'left',
+  cardBgCol,
   groupColBg = false,
   onUpdatePageProperties,
   onCreatePage,
@@ -58,6 +60,8 @@ export default function KanbanBoard({
   showPropertyLabels?: boolean;
   propertyTextClamp?: 'truncate' | 'wrap';
   cardColorCol?: string;
+  cardBorderSide?: 'left' | 'top' | 'right' | 'bottom';
+  cardBgCol?: string;
   groupColBg?: boolean;
   onUpdatePageProperties: (pageId: string, properties: Record<string, any>) => void;
   onCreatePage?: (initialProperties?: Record<string, any>) => void;
@@ -293,7 +297,17 @@ export default function KanbanBoard({
                 groupedPages[columnName].map((page) => {
                   const colorColSchema = cardColorCol ? schema.find((c) => c.id === cardColorCol) : null;
                   const borderDots = getCardBorderDots(colorColSchema, page.properties[cardColorCol ?? '']);
+                  const bgColSchema = cardBgCol ? schema.find((c) => c.id === cardBgCol) : null;
+                  const bgColor = getCardBgColor(bgColSchema, page.properties[cardBgCol ?? '']);
                   const isCardEditing = editingCell?.pageId === page.id;
+                  const isHorizontalBorder = cardBorderSide === 'top' || cardBorderSide === 'bottom';
+                  const borderLineClass = cardBorderSide === 'top'
+                    ? 'absolute top-0 inset-x-0 h-0.75 flex flex-row'
+                    : cardBorderSide === 'right'
+                    ? 'absolute right-0 inset-y-0 w-0.75 flex flex-col'
+                    : cardBorderSide === 'bottom'
+                    ? 'absolute bottom-0 inset-x-0 h-0.75 flex flex-row'
+                    : 'absolute left-0 inset-y-0 w-0.75 flex flex-col';
                   return (
                   <div
                     key={page.id}
@@ -306,14 +320,15 @@ export default function KanbanBoard({
                     onDragOver={(e) => handleCardDragOver(e, page.id, columnName)}
                     onDrop={(e) => handleCardDrop(e, page.id, columnName)}
                     onDragEnd={handleCardDragEnd}
-                    className={`relative py-3 px-3 mb-1.5 bg-neutral-800/40 cursor-pointer hover:bg-neutral-800/70 transition-colors group rounded
+                    className={`relative py-3 px-3 mb-1.5 cursor-pointer transition-colors group rounded
                       ${isCardEditing ? 'overflow-visible z-30' : 'overflow-hidden'}
                       ${draggedCardId === page.id ? 'opacity-25' : ''}
                       ${dragOverCardId === page.id ? 'border-t-2 border-t-blue-500/60' : ''}
                     `}
+                    style={{ backgroundColor: bgColor ?? 'rgba(64,68,75,0.4)' }}
                   >
                     {borderDots.length > 0 && (
-                      <div className="absolute left-0 inset-y-0 w-0.75 flex flex-col pointer-events-none" aria-hidden>
+                      <div className={`${borderLineClass} pointer-events-none`} aria-hidden>
                         {borderDots.map((dot, i) => (
                           <div key={i} className="flex-1" style={{ backgroundColor: dot }} />
                         ))}
