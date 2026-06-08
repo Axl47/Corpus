@@ -5,7 +5,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { agentTokens } from '@/db/schema';
+import { agentTokens, oauthAccessTokens } from '@/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { registerResources } from './resources';
 import { registerPrompts } from './prompts';
@@ -52,9 +52,27 @@ async function verifyBearerToken(authHeader: string | null): Promise<TokenContex
 
   const parts = token.split('_');
   if (parts.length < 3) return null;
-  const [, prefix8, ...secretParts] = parts;
+  const [scheme, prefix8, ...secretParts] = parts;
   const secret = secretParts.join('_');
-  if (parts[0] !== TOKEN_PREFIX || !prefix8 || !secret) return null;
+  if (!prefix8 || !secret) return null;
+
+  // OAuth access token (oa_ prefix)
+  if (scheme === 'oa') {
+    const [row] = await db
+      .select()
+      .from(oauthAccessTokens)
+      .where(and(eq(oauthAccessTokens.tokenPrefix, prefix8), isNull(oauthAccessTokens.revokedAt)))
+      .limit(1);
+
+    if (!row) return null;
+    if (!await bcrypt.compare(secret, row.tokenHash)) return null;
+    if (row.expiresAt.getTime() < Date.now()) return null;
+
+    return { tokenId: row.id, workspaceId: row.workspaceId, scope: row.scope as 'read' | 'write', agentName: null };
+  }
+
+  // Personal access token (rmns_ prefix)
+  if (scheme !== TOKEN_PREFIX) return null;
 
   const [row] = await db
     .select()
@@ -112,9 +130,20 @@ export async function POST(req: Request) { return handleMcpRequest(req); }
 export async function GET(req: Request)  { return handleMcpRequest(req); }
 export async function DELETE(req: Request) { return handleMcpRequest(req); }
 
+const BASE = process.env.NEXTAUTH_URL ?? 'https://remnus.com';
+
 async function handleMcpRequest(req: Request): Promise<Response> {
   const ctx = await verifyBearerToken(req.headers.get('Authorization'));
-  if (!ctx) return json({ error: 'Unauthorized' }, 401);
+  if (!ctx) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: {
+        'Content-Type': 'application/json',
+        'WWW-Authenticate': `Bearer realm="${BASE}/api/mcp", resource_metadata="${BASE}/.well-known/oauth-protected-resource"`,
+        ...MCP_HEADERS,
+      },
+    });
+  }
 
   if (!checkRateLimit(ctx.tokenId)) return json({ error: 'Too many requests' }, 429);
 

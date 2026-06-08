@@ -33,6 +33,7 @@ export default async function LandingFooter() {
         { label: t('bridgeFooterCompanyPricing'),   href: '/pricing' },
         { label: t('bridgeFooterCompanyContact'),   href: '/contact' },
         { label: t('bridgeFooterCompanyPrivacy'),   href: '/privacy' },
+        { label: t('bridgeFooterCompanySecurity'),  href: '/security' },
       ],
     },
   ];

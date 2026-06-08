@@ -1,0 +1,167 @@
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth/session';
+import { db } from '@/db';
+import { oauthClients, oauthAuthCodes, workspaceMembers, workspaces } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { randomBytes } from 'crypto';
+import { getTranslations } from 'next-intl/server';
+import { OAuthAuthorizeForm } from './OAuthAuthorizeForm';
+
+interface SearchParams {
+  client_id?: string;
+  redirect_uri?: string;
+  response_type?: string;
+  scope?: string;
+  state?: string;
+  code_challenge?: string;
+  code_challenge_method?: string;
+}
+
+function oauthErrorRedirect(redirectUri: string, error: string, state: string | undefined) {
+  const u = new URL(redirectUri);
+  u.searchParams.set('error', error);
+  if (state) u.searchParams.set('state', state);
+  return redirect(u.toString());
+}
+
+export default async function OAuthAuthorizePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const {
+    client_id,
+    redirect_uri,
+    response_type,
+    scope = 'read',
+    state,
+    code_challenge,
+    code_challenge_method = 'S256',
+  } = params;
+
+  const t = await getTranslations('OAuthAuthorize');
+
+  // Basic parameter validation before touching DB
+  if (!client_id || !redirect_uri || !code_challenge) {
+    return (
+      <ErrorPage title={t('errorTitle')} message={t('missingParams')} />
+    );
+  }
+  if (response_type !== 'code') {
+    return <ErrorPage title={t('errorTitle')} message={t('unsupportedResponseType')} />;
+  }
+  if (code_challenge_method !== 'S256') {
+    return <ErrorPage title={t('errorTitle')} message={t('unsupportedChallengeMethod')} />;
+  }
+
+  // Validate scope
+  const validScope = scope === 'write' ? 'write' : 'read';
+
+  // Look up registered client
+  const [client] = await db
+    .select()
+    .from(oauthClients)
+    .where(eq(oauthClients.clientId, client_id))
+    .limit(1);
+
+  if (!client) {
+    return <ErrorPage title={t('errorTitle')} message={t('unknownClient')} />;
+  }
+
+  // Validate redirect_uri against registered list
+  if (!client.redirectUris.includes(redirect_uri)) {
+    return <ErrorPage title={t('errorTitle')} message={t('redirectUriMismatch')} />;
+  }
+
+  // Auth check — middleware redirects to /login with callbackUrl if not logged in
+  const user = await getCurrentUser().catch(() => null);
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/oauth/authorize?${new URLSearchParams(params as Record<string,string>).toString()}`)}`);
+
+  // Fetch user's workspaces (owner or member)
+  const userWorkspaces = await db
+    .select({ id: workspaces.id, name: workspaces.name, icon: workspaces.icon })
+    .from(workspaces)
+    .innerJoin(workspaceMembers, and(
+      eq(workspaceMembers.workspaceId, workspaces.id),
+      eq(workspaceMembers.userId, user!.id),
+    ))
+    .orderBy(workspaces.name);
+
+  if (userWorkspaces.length === 0) {
+    return <ErrorPage title={t('errorTitle')} message={t('noWorkspaces')} />;
+  }
+
+  async function handleApprove(formData: FormData) {
+    'use server';
+    const workspaceId = formData.get('workspace_id') as string;
+    if (!workspaceId) return;
+
+    // Verify user still has access to this workspace
+    const currentUser = await getCurrentUser().catch(() => null);
+    if (!currentUser) return;
+
+    const [member] = await db
+      .select({ id: workspaceMembers.userId })
+      .from(workspaceMembers)
+      .where(and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.userId, currentUser.id),
+      ))
+      .limit(1);
+
+    if (!member) return;
+
+    const code = randomBytes(32).toString('hex');
+    await db.insert(oauthAuthCodes).values({
+      code,
+      clientId:            client_id!,
+      userId:              currentUser.id,
+      workspaceId,
+      redirectUri:         redirect_uri!,
+      codeChallenge:       code_challenge!,
+      codeChallengeMethod: code_challenge_method,
+      scope:               validScope,
+      expiresAt:           new Date(Date.now() + 10 * 60 * 1000), // 10 min
+    });
+
+    const dest = new URL(redirect_uri!);
+    dest.searchParams.set('code', code);
+    if (state) dest.searchParams.set('state', state);
+    redirect(dest.toString());
+  }
+
+  async function handleDeny() {
+    'use server';
+    oauthErrorRedirect(redirect_uri!, 'access_denied', state);
+  }
+
+  return (
+    <OAuthAuthorizeForm
+      clientName={client.clientName}
+      scope={validScope}
+      workspaces={userWorkspaces}
+      userName={user!.name ?? user!.email ?? ''}
+      onApprove={handleApprove}
+      onDeny={handleDeny}
+    />
+  );
+}
+
+function ErrorPage({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full text-center">
+        <div className="w-12 h-12 bg-red-400/15 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cd4d55" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h1 className="text-white font-semibold mb-2">{title}</h1>
+        <p className="text-neutral-400 text-sm">{message}</p>
+      </div>
+    </div>
+  );
+}

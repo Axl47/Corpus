@@ -209,6 +209,49 @@ export const sharedPages = sqliteTable('shared_pages', {
   index('shared_pages_page_id_idx').on(table.pageId),
 ]);
 
+// ── OAuth 2.1 + PKCE tables ───────────────────────────────────────────────────
+
+export const oauthClients = sqliteTable('oauth_clients', {
+  clientId:                text('client_id').primaryKey(),
+  clientName:              text('client_name').notNull(),
+  redirectUris:            text('redirect_uris', { mode: 'json' }).notNull().$type<string[]>(),
+  grantTypes:              text('grant_types', { mode: 'json' }).notNull().$type<string[]>(),
+  responseTypes:           text('response_types', { mode: 'json' }).notNull().$type<string[]>(),
+  tokenEndpointAuthMethod: text('token_endpoint_auth_method').notNull().default('none'),
+  createdAt:               integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const oauthAuthCodes = sqliteTable('oauth_auth_codes', {
+  code:                text('code').primaryKey(),
+  clientId:            text('client_id').notNull(),
+  userId:              text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workspaceId:         text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  redirectUri:         text('redirect_uri').notNull(),
+  codeChallenge:       text('code_challenge').notNull(),
+  codeChallengeMethod: text('code_challenge_method').notNull().default('S256'),
+  scope:               text('scope').notNull().default('read'),
+  expiresAt:           integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt:              integer('used_at', { mode: 'timestamp' }),
+});
+
+export const oauthAccessTokens = sqliteTable('oauth_access_tokens', {
+  id:                 text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tokenPrefix:        text('token_prefix').notNull(),
+  tokenHash:          text('token_hash').notNull(),
+  refreshTokenPrefix: text('refresh_token_prefix'),
+  refreshTokenHash:   text('refresh_token_hash'),
+  clientId:           text('client_id').notNull(),
+  userId:             text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  workspaceId:        text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  scope:              text('scope').notNull().default('read'),
+  expiresAt:          integer('expires_at', { mode: 'timestamp' }).notNull(),
+  revokedAt:          integer('revoked_at', { mode: 'timestamp' }),
+  createdAt:          integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  index('oauth_access_tokens_prefix_idx').on(table.tokenPrefix),
+  index('oauth_access_tokens_refresh_prefix_idx').on(table.refreshTokenPrefix),
+]);
+
 export const agentActivity = sqliteTable('agent_activity', {
   id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   tokenId:     text('token_id').notNull().references(() => agentTokens.id, { onDelete: 'cascade' }),

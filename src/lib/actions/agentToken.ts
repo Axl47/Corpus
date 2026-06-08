@@ -1,6 +1,6 @@
 'use server';
 import { db } from '@/db';
-import { agentTokens, workspaceMembers, workspaces, agentActivity } from '@/db/schema';
+import { agentTokens, workspaceMembers, workspaces, agentActivity, oauthAccessTokens, oauthClients } from '@/db/schema';
 import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getTranslations } from 'next-intl/server';
@@ -239,6 +239,61 @@ export async function updateAgentToken(
   }
 
   await db.update(agentTokens).set(patch).where(eq(agentTokens.id, tokenId));
+}
+
+export async function getUserOAuthTokens() {
+  const user = await getCurrentUser();
+
+  const rows = await db
+    .select({
+      id:             oauthAccessTokens.id,
+      clientId:       oauthAccessTokens.clientId,
+      workspaceId:    oauthAccessTokens.workspaceId,
+      scope:          oauthAccessTokens.scope,
+      expiresAt:      oauthAccessTokens.expiresAt,
+      createdAt:      oauthAccessTokens.createdAt,
+      revokedAt:      oauthAccessTokens.revokedAt,
+      workspaceName:  workspaces.name,
+      workspaceIcon:  workspaces.icon,
+      memberRole:     workspaceMembers.role,
+      clientName:     oauthClients.clientName,
+    })
+    .from(oauthAccessTokens)
+    .innerJoin(workspaces, eq(oauthAccessTokens.workspaceId, workspaces.id))
+    .innerJoin(workspaceMembers, and(
+      eq(workspaceMembers.workspaceId, workspaces.id),
+      eq(workspaceMembers.userId, user.id),
+    ))
+    .leftJoin(oauthClients, eq(oauthAccessTokens.clientId, oauthClients.clientId))
+    .where(and(
+      eq(oauthAccessTokens.userId, user.id),
+      isNull(oauthAccessTokens.revokedAt),
+    ))
+    .orderBy(desc(oauthAccessTokens.createdAt));
+
+  return rows.map(row => ({
+    ...row,
+    canRevoke: row.memberRole === 'owner' || true, // owners can revoke; OAuth tokens are always user-owned
+  }));
+}
+
+export async function revokeOAuthToken(tokenId: string): Promise<void> {
+  const user = await getCurrentUser();
+  const t = await getTranslations('Errors');
+
+  const [token] = await db
+    .select({ userId: oauthAccessTokens.userId })
+    .from(oauthAccessTokens)
+    .where(and(eq(oauthAccessTokens.id, tokenId), isNull(oauthAccessTokens.revokedAt)))
+    .limit(1);
+
+  if (!token) throw new Error(t('notFound'));
+  if (token.userId !== user.id && user.role !== 'admin') throw new Error(t('unauthorized'));
+
+  await db
+    .update(oauthAccessTokens)
+    .set({ revokedAt: new Date() })
+    .where(eq(oauthAccessTokens.id, tokenId));
 }
 
 export async function revokeAgentToken(tokenId: string): Promise<void> {

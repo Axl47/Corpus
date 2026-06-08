@@ -6,7 +6,7 @@
 - Server components/layouts: `await getTranslations('Namespace')`
 - Server actions: `getTranslations('Errors')` for error messages
 - Add keys to ALL 6 files (en/tr/hi/es/fr/de) — missing keys cause runtime warnings
-- 19 namespaces: Layout, Home, Auth, Workspace, WorkspaceSettings, Templates, Database, Editor, Page, IconPicker, Admin, Errors, LanguageSwitcher, MobileNav, Landing, Pricing, Contact, Download, Sharing
+- 24 namespaces: Layout, Home, Auth, Workspace, WorkspaceSettings, Templates, Database, Editor, Page, IconPicker, Admin, Errors, LanguageSwitcher, MobileNav, Landing, Pricing, Contact, Download, Privacy, Updater, Sharing, UserSettings, OAuthAuthorize, Security
 - `Sharing` namespace keys include: tabSharing, shareButton, shareModalTitle/Hint, permissionLabel/Read/Write, slugLabel/Placeholder/Hint/Taken/Invalid, createShare, copyLink/linkCopied, revokeShare/Confirm, sharedAt, deleteWorkspaceSharedWarning, notFound, readOnlyBadge/writeBadge, saving/saveError, includeChildren/Hint, childrenShared, widthLabel/Narrow/Wide/Full, editShare, saveChanges, addToSitemap
 - `Workspace` namespace includes `deleteConfirm` (interpolated with `{title}`) and `deleteCancel` keys for item-deletion confirmation modal
 - `MobileNav` namespace keys: `menu`, `home`, `new`, `close`, `workspace`, `user`, `signOut` — used by `MobileNavWrapper`

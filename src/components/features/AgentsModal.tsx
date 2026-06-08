@@ -1,20 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Bot, ChevronDown, Plus, Zap } from 'lucide-react';
+import { X, Bot, ChevronDown, Plus, Zap, Globe } from 'lucide-react';
 import AIMark from '@/components/marketing/AIMark';
 import PageIcon from '@/components/features/PageIcon';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import {
   getUserWorkspacesWithTokens,
   getUserAgentActivity,
+  getUserOAuthTokens,
   revokeAgentToken,
+  revokeOAuthToken,
 } from '@/lib/actions/agentToken';
 import { AGENT_OPTIONS } from '@/components/features/workspace-settings/types';
 
 type WsWithTokens = Awaited<ReturnType<typeof getUserWorkspacesWithTokens>>[number];
 type WorkspaceToken = WsWithTokens['tokens'][number];
 type ActivityRow = Awaited<ReturnType<typeof getUserAgentActivity>>[number];
+type OAuthToken = Awaited<ReturnType<typeof getUserOAuthTokens>>[number];
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -196,18 +199,28 @@ interface Props {
 export default function AgentsModal({ onClose, onAddToken }: Props) {
   const t = useTranslations('WorkspaceSettings');
 
-  const [workspaces, setWorkspaces] = useState<WsWithTokens[]>([]);
-  const [activity,   setActivity]   = useState<ActivityRow[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [showActivity, setShowActivity] = useState(false);
+  const [workspaces,    setWorkspaces]    = useState<WsWithTokens[]>([]);
+  const [activity,      setActivity]      = useState<ActivityRow[]>([]);
+  const [oauthTokens,   setOAuthTokens]   = useState<OAuthToken[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [showActivity,  setShowActivity]  = useState(false);
+  const [showOAuth,     setShowOAuth]     = useState(false);
+  const [revokingOAuth, setRevokingOAuth] = useState<string | null>(null);
 
   const totalTokens = workspaces.reduce((s, ws) => s + ws.tokens.length, 0);
 
   const load = () => {
     setLoading(true);
-    Promise.all([getUserWorkspacesWithTokens(), getUserAgentActivity()])
-      .then(([ws, acts]) => { setWorkspaces(ws); setActivity(acts); })
+    Promise.all([getUserWorkspacesWithTokens(), getUserAgentActivity(), getUserOAuthTokens()])
+      .then(([ws, acts, oauth]) => { setWorkspaces(ws); setActivity(acts); setOAuthTokens(oauth); })
       .finally(() => setLoading(false));
+  };
+
+  const handleRevokeOAuth = async (id: string) => {
+    setRevokingOAuth(id);
+    try { await revokeOAuthToken(id); load(); }
+    catch { /* silent */ }
+    finally { setRevokingOAuth(null); }
   };
 
   useEffect(() => { load(); }, []);
@@ -272,6 +285,71 @@ export default function AgentsModal({ onClose, onAddToken }: Props) {
                 onAddToken={onAddToken}
               />
             ))
+          )}
+
+          {/* OAuth Sessions section */}
+          {!loading && oauthTokens.length > 0 && (
+            <div className="border-t border-neutral-800 pt-4">
+              <button
+                onClick={() => setShowOAuth(v => !v)}
+                className="w-full flex items-center justify-between group py-1"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-neutral-300 group-hover:text-white transition-colors uppercase tracking-widest">
+                    OAuth Sessions
+                  </span>
+                  <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full">
+                    {oauthTokens.length}
+                  </span>
+                </div>
+                <ChevronDown
+                  size={14}
+                  className={`text-neutral-400 group-hover:text-neutral-200 transition-all ${showOAuth ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showOAuth && (
+                <div className="mt-3 divide-y divide-neutral-800 border border-neutral-800 rounded-lg overflow-hidden bg-neutral-900/20">
+                  {oauthTokens.map(tok => {
+                    const isExpired = tok.expiresAt.getTime() < Date.now();
+                    return (
+                      <div key={tok.id} className="flex items-center gap-2.5 p-3 group">
+                        <div className="shrink-0 w-7 h-7 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                          <Globe size={12} className="text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-semibold text-neutral-200 truncate">
+                              {tok.clientName ?? tok.clientId.slice(0, 8)}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                              tok.scope === 'write'
+                                ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                                : 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                            }`}>
+                              {tok.scope}
+                            </span>
+                            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                              isExpired ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-green-400 bg-green-500/10 border-green-500/20'
+                            }`}>
+                              {isExpired ? t('tokenExpired') : expiryLabel(tok.expiresAt, t)}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-neutral-500 mt-0.5">{tok.workspaceName}</p>
+                        </div>
+                        <button
+                          onClick={() => handleRevokeOAuth(tok.id)}
+                          disabled={revokingOAuth === tok.id}
+                          className="shrink-0 text-[10px] font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded border border-red-500/20 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                        >
+                          {revokingOAuth === tok.id ? t('revoking') : t('revokeToken')}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Activity section */}

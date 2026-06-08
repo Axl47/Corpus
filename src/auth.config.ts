@@ -31,11 +31,13 @@ export const authConfig: NextAuthConfig = {
       const isApiAuth = cleanPath.startsWith('/api/auth');
       const isPublicAsset = /\.(png|ico|svg|jpg|jpeg|webp|woff2?)$/.test(path);
       const isRootRoute = cleanPath === '/' || cleanPath === '/share';
-      const isPublicMarketingRoute = cleanPath.startsWith('/pricing') || cleanPath.startsWith('/contact') || cleanPath.startsWith('/download') || cleanPath.startsWith('/share/');
+      const isPublicMarketingRoute = cleanPath.startsWith('/pricing') || cleanPath.startsWith('/contact') || cleanPath.startsWith('/download') || cleanPath.startsWith('/share/') || cleanPath.startsWith('/security');
       const isMcpRoute = cleanPath.startsWith('/api/mcp');
       const isTauriEntry = cleanPath.startsWith('/tauri-app');
       const isClientActivate = cleanPath.startsWith('/api/auth/client-activate');
-      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate) return true;
+      const isOAuthApi = cleanPath.startsWith('/api/oauth');
+      const isWellKnown = cleanPath.startsWith('/.well-known');
+      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown) return true;
 
       // Public marketing pages (pricing, contact) are always accessible
       if (isPublicMarketingRoute) return true;
