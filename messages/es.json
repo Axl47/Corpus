@@ -1,4 +1,4 @@
-{
+﻿{
   "Layout": {
     "demoMode": "Modo Demo",
     "demoChangesNote": "Los cambios son temporales y se restablecen para cada visitante.",
@@ -829,6 +829,7 @@
     "bridgeFooterProtocolSdk": "Empezar",
     "bridgeFooterColCompany": "Empresa",
     "bridgeFooterCompanyManifesto": "Manifiesto",
+    "bridgeFooterCompanyBlog": "Blog",
     "bridgeFooterCompanyPricing": "Precios",
     "bridgeFooterCompanyContact": "Contacto",
     "bridgeFooterCompanyPrivacy": "Privacidad",

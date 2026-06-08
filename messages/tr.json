@@ -1,4 +1,4 @@
-{
+﻿{
   "Layout": {
     "demoMode": "Demo Modu",
     "demoChangesNote": "Değişiklikler geçicidir ve her ziyaretçi için sıfırlanır.",
@@ -829,6 +829,7 @@
     "bridgeFooterProtocolSdk": "Başlarken",
     "bridgeFooterColCompany": "Şirket",
     "bridgeFooterCompanyManifesto": "Manifesto",
+    "bridgeFooterCompanyBlog": "Blog",
     "bridgeFooterCompanyPricing": "Fiyatlandırma",
     "bridgeFooterCompanyContact": "İletişim",
     "bridgeFooterCompanyPrivacy": "Gizlilik",

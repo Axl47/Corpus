@@ -1,4 +1,4 @@
-{
+﻿{
   "Layout": {
     "demoMode": "डेमो मोड",
     "demoChangesNote": "परिवर्तन अस्थायी हैं और प्रत्येक विज़िटर के लिए रीसेट होते हैं।",
@@ -829,6 +829,7 @@
     "bridgeFooterProtocolSdk": "शुरुआत करें",
     "bridgeFooterColCompany": "कंपनी",
     "bridgeFooterCompanyManifesto": "घोषणापत्र",
+    "bridgeFooterCompanyBlog": "ब्लॉग",
     "bridgeFooterCompanyPricing": "मूल्य निर्धारण",
     "bridgeFooterCompanyContact": "संपर्क",
     "bridgeFooterCompanyPrivacy": "गोपनीयता",
