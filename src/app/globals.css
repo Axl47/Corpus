@@ -19,8 +19,8 @@
   --color-neutral-600: #5d6069;
   --color-neutral-700: #4a4d54;
   --color-neutral-800: #383b41;   /* Gunmetal        — borders / dividers            */
-  --color-neutral-850: #282c34;   /* One Dark Pro editor bg — content canvas          */
-  --color-neutral-900: #21252b;   /* Shadow Grey      — sidebar / card backgrounds   */
+  --color-neutral-850: #21252b;   /* content canvas                                  */
+  --color-neutral-900: #282c34;   /* sidebar / card backgrounds                      */
   --color-neutral-950: #1d1f23;   /* Carbon Black     — main canvas background       */
 
   /* Blue → Dusk Blue (#445c95) */

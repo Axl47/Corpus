@@ -37,14 +37,14 @@ const PageMentionList = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent }
 
     if (!items.length) {
       return (
-        <div className="min-w-[220px] bg-neutral-900 border border-neutral-800 rounded-md shadow-xl px-3 py-2 text-xs text-neutral-500">
+        <div className="min-w-[220px] bg-neutral-850 border border-neutral-800 rounded-md shadow-xl px-3 py-2 text-xs text-neutral-500">
           {t('pageLinkEmpty')}
         </div>
       );
     }
 
     return (
-      <div className="min-w-[240px] max-w-[320px] bg-neutral-900 border border-neutral-800 rounded-md shadow-xl overflow-hidden py-1">
+      <div className="min-w-[240px] max-w-[320px] bg-neutral-850 border border-neutral-800 rounded-md shadow-xl overflow-hidden py-1">
         {items.map((item, index) => (
           <button
             key={item.id}

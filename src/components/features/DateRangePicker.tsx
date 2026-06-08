@@ -184,7 +184,7 @@ export default function DateRangePicker({
       {/* transparent backdrop handled by mousedown on document */}
       <div
         ref={containerRef}
-        className="absolute z-[9999] bg-neutral-900 border border-neutral-700 shadow-2xl p-3 select-none"
+        className="absolute z-[9999] bg-neutral-850 border border-neutral-700 shadow-2xl p-3 select-none"
         style={{
           width: 288,
           top:  pos?.top  ?? 0,

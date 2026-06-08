@@ -206,7 +206,7 @@ export default function SubItemsPanel({ parentId, workspaceId }: SubItemsPanelPr
         <div
           ref={menuRef}
           style={{ position: 'fixed', left: menuAnchor.x, top: menuAnchor.y, zIndex: 9999 }}
-          className="bg-neutral-900 border border-neutral-800 shadow-xl py-1 w-32 rounded overflow-hidden text-left animate-fade-in animate-duration-100"
+          className="bg-neutral-850 border border-neutral-800 shadow-xl py-1 w-32 rounded overflow-hidden text-left animate-fade-in animate-duration-100"
         >
           <button
             onClick={() => {
@@ -236,7 +236,7 @@ export default function SubItemsPanel({ parentId, workspaceId }: SubItemsPanelPr
           onClick={() => setConfirmTarget(null)}
         >
           <div
-            className="bg-neutral-900 border border-neutral-800 rounded-lg p-5 max-w-sm w-full shadow-2xl"
+            className="bg-neutral-850 border border-neutral-800 rounded-lg p-5 max-w-sm w-full shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-sm font-semibold text-neutral-100 mb-2 truncate">

@@ -82,7 +82,7 @@ export default function McpEditToken({ token, onSaved, onDismiss }: Props) {
             onChange={e => setName(e.target.value)}
             disabled={isSaving}
             autoFocus
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-100 placeholder-neutral-600 px-3 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50 font-medium tracking-wide"
+            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg text-neutral-100 placeholder-neutral-600 px-3 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50 font-medium tracking-wide"
           />
         </div>
 

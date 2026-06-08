@@ -1114,7 +1114,7 @@ export default function WorkspaceSidebar({
             className={`fixed inset-0 z-250 sm:hidden transition-opacity duration-200 ${openMenuItemId ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             onClick={() => setOpenMenuItemId(null)}
           />
-          <div ref={mobileMenuRef} className={`fixed inset-x-0 bottom-14 z-250 sm:hidden bg-neutral-900 border-t border-neutral-800 rounded-t-xl transition-transform duration-200 ease-in-out ${openMenuItemId ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div ref={mobileMenuRef} className={`fixed inset-x-0 bottom-14 z-250 sm:hidden bg-neutral-850 border-t border-neutral-800 rounded-t-xl transition-transform duration-200 ease-in-out ${openMenuItemId ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="flex justify-center pt-2.5 pb-1 shrink-0">
               <div className="w-8 h-1 rounded-full bg-neutral-700" />
             </div>
@@ -1167,7 +1167,7 @@ export default function WorkspaceSidebar({
                 top: Math.min(menuAnchor.y, window.innerHeight - 160),
                 right: Math.max(menuAnchor.x, 8),
               }}
-              className="fixed z-200 hidden sm:block bg-neutral-900 border border-neutral-800 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 min-w-44 animate-scale-in"
+              className="fixed z-200 hidden sm:block bg-neutral-850 border border-neutral-800 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 min-w-44 animate-scale-in"
             >
               <button
                 onClick={() => {
@@ -1325,7 +1325,7 @@ export default function WorkspaceSidebar({
               className="fixed inset-0 z-300 bg-black/60"
               onClick={() => setConfirmDeleteItemId(null)}
             />
-            <div className="fixed z-300 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-sm bg-neutral-900 border border-neutral-800 rounded-xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="fixed z-300 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-sm bg-neutral-850 border border-neutral-800 rounded-xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
               <div>
                 <p className="text-sm font-semibold text-neutral-100 mb-1.5">{t('delete')} — {item.title}</p>
                 <p className="text-xs text-neutral-400 leading-relaxed">

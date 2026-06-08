@@ -315,7 +315,7 @@ export default function BlockDragHandle({ editor }: Props) {
           onClick={() => setConfirmChild(null)}
         >
           <div
-            className="bg-neutral-900 border border-neutral-800 rounded-lg p-5 max-w-sm w-full shadow-2xl"
+            className="bg-neutral-850 border border-neutral-800 rounded-lg p-5 max-w-sm w-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-semibold text-neutral-100 mb-2 truncate">{t('deleteChildTitle')}</h3>
@@ -509,7 +509,7 @@ export default function BlockDragHandle({ editor }: Props) {
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuTop, left: Math.max(4, handle.left), zIndex: 9998 }}
-          className="min-w-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1 rounded-md overflow-hidden"
+          className="min-w-50 bg-neutral-850 border border-neutral-800 shadow-xl py-1 rounded-md overflow-hidden"
         >
           <button
             onClick={doDelete}
@@ -549,7 +549,7 @@ export default function BlockDragHandle({ editor }: Props) {
               onMouseEnter={cancelCloseSub}
               onMouseLeave={scheduleCloseSub}
               style={{ position: 'fixed', top: subPos.top, left: subPos.left, width: SUB_W, zIndex: 9999 }}
-              className="bg-neutral-900 border border-neutral-800 shadow-xl py-1 rounded-md"
+              className="bg-neutral-850 border border-neutral-800 shadow-xl py-1 rounded-md"
             >
               {turnOptions.map((opt) => (
                 <button

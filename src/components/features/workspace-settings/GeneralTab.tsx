@@ -158,7 +158,7 @@ export default function GeneralTab({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             disabled={isRenaming || !hasPrivilegedAccess}
-            className="flex-1 bg-neutral-900 border border-neutral-700 rounded-md text-neutral-100 placeholder-neutral-600 px-3 py-1.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50"
+            className="flex-1 bg-neutral-950 border border-neutral-700 rounded-md text-neutral-100 placeholder-neutral-600 px-3 py-1.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50"
           />
           {hasPrivilegedAccess && (
             <button
@@ -190,7 +190,7 @@ export default function GeneralTab({
         <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
           {t('storageTitle')}
         </label>
-        <div className="flex items-center gap-2.5 bg-neutral-900 border border-neutral-700 rounded-md px-3 py-2">
+        <div className="flex items-center gap-2.5 bg-neutral-950 border border-neutral-700 rounded-md px-3 py-2">
           <HardDrive size={15} className="text-neutral-500 shrink-0" />
           <span className="text-sm text-neutral-200">
             {storageBytes === null ? '…' : formatBytes(storageBytes)}

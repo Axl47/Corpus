@@ -203,7 +203,7 @@ export default function IconPicker({
       ref={pickerRef}
       style={pickerStyle}
       onClick={(e) => e.stopPropagation()}
-      className={`z-50 bg-neutral-900 border border-neutral-800 shadow-2xl p-4 w-72 rounded-lg text-left text-neutral-200 animate-fade-in animate-duration-150 ${coords ? '' : 'absolute'}`}
+      className={`z-50 bg-neutral-850 border border-neutral-800 shadow-2xl p-4 w-72 rounded-lg text-left text-neutral-200 animate-fade-in animate-duration-150 ${coords ? '' : 'absolute'}`}
     >
       <div className="flex items-center justify-between pb-3 border-b border-neutral-800 mb-3">
         <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('title')}</span>

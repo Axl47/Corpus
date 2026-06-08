@@ -814,7 +814,7 @@ export default function DatabaseView({
             {database.icon && (
               <button
                 onClick={() => handleIconSelect(null, null)}
-                className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover/icon-wrapper:opacity-100 px-1.5 py-0.5 text-[9px] bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white rounded transition-all cursor-pointer font-medium whitespace-nowrap shadow-xl z-20"
+                className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover/icon-wrapper:opacity-100 px-1.5 py-0.5 text-[9px] bg-neutral-850 border border-neutral-800 text-neutral-400 hover:text-white rounded transition-all cursor-pointer font-medium whitespace-nowrap shadow-xl z-20"
               >
                 Remove
               </button>
@@ -1107,7 +1107,7 @@ export default function DatabaseView({
                       {openMenuId === peekPageId && (
                         <>
                           <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenMenuId(null)} />
-                          <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1 w-36 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
+                          <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-850 border border-neutral-800 shadow-xl py-1 w-36 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
@@ -1165,7 +1165,7 @@ export default function DatabaseView({
 
           {/* Side Peek Drawer */}
           {(config.openBehavior ?? 'center') === 'side' && (
-            <div className="fixed z-50 flex flex-col overflow-hidden bg-neutral-900 inset-x-0 bottom-14 max-h-[92vh] rounded-t-2xl border-t border-neutral-800 sm:left-auto sm:top-0 sm:right-0 sm:bottom-0 sm:h-full sm:w-full sm:max-w-2xl sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
+            <div className="fixed z-50 flex flex-col overflow-hidden bg-neutral-850 inset-x-0 bottom-14 max-h-[92vh] rounded-t-2xl border-t border-neutral-800 sm:left-auto sm:top-0 sm:right-0 sm:bottom-0 sm:h-full sm:w-full sm:max-w-2xl sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
               {/* Peek Sticky Header */}
               <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-850 shrink-0 bg-neutral-900/30">
                 <div className="flex items-center gap-3">
@@ -1204,7 +1204,7 @@ export default function DatabaseView({
                     {openMenuId === peekPageId && (
                       <>
                         <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenMenuId(null)} />
-                        <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1 w-36 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
+                        <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-850 border border-neutral-800 shadow-xl py-1 w-36 rounded overflow-hidden text-left animate-fade-in animate-duration-100">
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();

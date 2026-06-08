@@ -308,7 +308,7 @@ const SlashCommandList = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent 
     const isChild = (id: string) => id.startsWith('child-');
 
     return (
-      <div className="min-w-[220px] bg-neutral-900 border border-neutral-800 rounded-md shadow-xl overflow-hidden py-1">
+      <div className="min-w-[220px] bg-neutral-850 border border-neutral-800 rounded-md shadow-xl overflow-hidden py-1">
         {items.map((item, index) => {
           const prevId = index > 0 ? items[index - 1].id : null;
           // Separator above the first media block and above the first child block,

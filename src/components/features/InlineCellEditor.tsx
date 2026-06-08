@@ -66,7 +66,7 @@ export default function InlineCellEditor({
           <div onClick={(e) => e.stopPropagation()}>
             <div className="fixed inset-0 z-9998 cursor-default" onClick={onClose} />
             <div
-              className="absolute z-9999 bg-neutral-900 border border-neutral-800 py-1 rounded shadow-xl overflow-hidden min-w-40 max-h-60 overflow-y-auto text-left"
+              className="absolute z-9999 bg-neutral-850 border border-neutral-800 py-1 rounded shadow-xl overflow-hidden min-w-40 max-h-60 overflow-y-auto text-left"
               style={{ top: coords?.top ?? 0, left: coords?.left ?? 0, width: coords ? Math.max(160, coords.width) : 160, visibility: coords ? 'visible' : 'hidden' }}
             >
               <button onClick={() => { onSave(''); onClose(); }} className="w-full text-left px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-800 transition-colors cursor-pointer">
@@ -117,7 +117,7 @@ export default function InlineCellEditor({
           <div onClick={(e) => e.stopPropagation()}>
             <div className="fixed inset-0 z-9998 cursor-default" onClick={onClose} />
             <div
-              className="absolute z-9999 bg-neutral-900 border border-neutral-800 py-1 rounded shadow-xl overflow-hidden min-w-45 max-h-60 overflow-y-auto text-left"
+              className="absolute z-9999 bg-neutral-850 border border-neutral-800 py-1 rounded shadow-xl overflow-hidden min-w-45 max-h-60 overflow-y-auto text-left"
               style={{ top: coords?.top ?? 0, left: coords?.left ?? 0, width: coords ? Math.max(180, coords.width) : 180, visibility: coords ? 'visible' : 'hidden' }}
             >
               <div className="px-3 py-1 text-[10px] text-neutral-500 font-semibold uppercase tracking-wider border-b border-neutral-850 mb-1">

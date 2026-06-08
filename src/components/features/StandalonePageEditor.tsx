@@ -165,7 +165,7 @@ export default function StandalonePageEditor({
             </button>
 
             {openMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-900 border border-neutral-800 shadow-xl py-1.5 w-44 rounded overflow-hidden animate-fade-in animate-duration-100">
+              <div className="absolute right-0 top-full mt-1.5 z-50 bg-neutral-850 border border-neutral-800 shadow-xl py-1.5 w-44 rounded overflow-hidden animate-fade-in animate-duration-100">
                 {/* Width */}
                 <p className="px-3 pt-0.5 pb-1 text-[9px] font-semibold text-neutral-600 uppercase tracking-widest">
                   {tWs('narrow')}

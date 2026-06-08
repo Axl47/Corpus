@@ -152,7 +152,7 @@ export default function ViewsBar({
             <ChevronDown size={13} className={`text-neutral-400 transition-transform duration-150 ${mobileDropOpen ? 'rotate-180' : ''}`} />
           </button>
           {mobileDropOpen && (
-            <div className="absolute top-full left-0 mt-1 min-w-40 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
+            <div className="absolute top-full left-0 mt-1 min-w-40 bg-neutral-850 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
               {views.map(view => {
                 const isActive = view.id === activeViewId;
                 const Icon = getIcon(view);
@@ -188,7 +188,7 @@ export default function ViewsBar({
             <Plus size={14} />
           </button>
           {mobileAddOpen && (
-            <div className="absolute top-full left-0 mt-1 w-44 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
+            <div className="absolute top-full left-0 mt-1 w-44 bg-neutral-850 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-1 animate-in fade-in duration-100">
               <button onClick={() => { onAdd('table'); setMobileAddOpen(false); }} className="w-full text-left px-3 py-2.5 text-xs text-neutral-300 hover:bg-neutral-800/20 hover:text-white flex items-center gap-2 transition-colors border-b border-neutral-850/60">
                 <LayoutList size={13} /> {t('tableView')}
               </button>
@@ -296,7 +296,7 @@ export default function ViewsBar({
 
             {isActive && !isRenaming && menuOpenId === view.id && (
               <div
-                className="fixed w-36 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100"
+                className="fixed w-36 bg-neutral-850 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100"
                 style={{ top: menuPos?.top, left: menuPos?.left }}
               >
 
@@ -358,7 +358,7 @@ export default function ViewsBar({
         </button>
 
         {addOpen && (
-          <div className="absolute top-full left-0 mt-1 w-44 bg-neutral-900 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100">
+          <div className="absolute top-full left-0 mt-1 w-44 bg-neutral-850 border border-neutral-800 rounded shadow-xl overflow-hidden z-50 py-0 animate-in fade-in duration-100">
             <button
               onClick={() => {
                 onAdd('table');

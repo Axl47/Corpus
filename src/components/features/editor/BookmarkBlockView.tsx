@@ -129,7 +129,7 @@ export default function BookmarkBlockView({
               onClick={openUrl}
               onKeyDown={e => e.key === 'Enter' && openUrl()}
               style={{ outline: 'none' }}
-              className="flex items-stretch overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-700 hover:bg-neutral-850 transition-colors cursor-pointer"
+              className="flex items-stretch overflow-hidden rounded-lg border border-neutral-800 bg-neutral-850 hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors cursor-pointer"
             >
               {/* Left: OG / YouTube thumbnail or placeholder */}
               <div className="w-25 sm:w-32.5 shrink-0 relative overflow-hidden rounded-l-lg bg-neutral-800">
@@ -174,14 +174,14 @@ export default function BookmarkBlockView({
 
             <button
               onClick={e => { e.stopPropagation(); deleteNode(); }}
-              className="absolute top-1.5 right-1.5 opacity-0 group-hover/bm:opacity-100 transition-opacity p-1 rounded bg-neutral-900/80 text-neutral-300 hover:text-red-400 cursor-pointer text-base leading-none"
+              className="absolute top-1.5 right-1.5 opacity-0 group-hover/bm:opacity-100 transition-opacity p-1 rounded bg-neutral-850/80 text-neutral-300 hover:text-red-400 cursor-pointer text-base leading-none"
               title={t('bookmarkRemove')}
             >
               ×
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2.5">
+          <div className="flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-850 px-3 py-2.5">
             <Link2 size={18} className="shrink-0 text-neutral-400" />
             <input
               ref={inputRef}

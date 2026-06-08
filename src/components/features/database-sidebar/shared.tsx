@@ -29,7 +29,7 @@ export function Checkbox({ checked }: { checked: boolean }) {
   );
 }
 
-export const selectCls = 'bg-neutral-900 border border-neutral-800 text-neutral-300 outline-none cursor-pointer focus:border-neutral-700 transition-colors rounded text-xs py-1.5 px-2';
+export const selectCls = 'bg-neutral-950 border border-neutral-800 text-neutral-300 outline-none cursor-pointer focus:border-neutral-700 transition-colors rounded text-xs py-1.5 px-2';
 
 export function CollapsibleSection({
   label,

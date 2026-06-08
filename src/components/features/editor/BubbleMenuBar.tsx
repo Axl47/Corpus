@@ -290,7 +290,7 @@ export default function BubbleMenuBar({ editor }: Props) {
           ref={menuRef}
           style={{ position: 'fixed', top: layout.top, left: layout.left, zIndex: 9999 }}
           onMouseDown={(e) => e.preventDefault()}
-          className="flex items-center bg-neutral-900 border border-neutral-800 rounded-md shadow-xl overflow-hidden"
+          className="flex items-center bg-neutral-850 border border-neutral-800 rounded-md shadow-xl overflow-hidden"
         >
           {modeState === 'format' ? (
             <>

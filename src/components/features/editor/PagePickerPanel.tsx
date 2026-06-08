@@ -79,7 +79,7 @@ export default function PagePickerPanel({ onSelect, onClose }: Props) {
   }, [items, selectedIndex, onSelect, onClose]);
 
   return (
-    <div className="w-[280px] bg-neutral-900 border border-neutral-800 rounded-md shadow-xl overflow-hidden">
+    <div className="w-[280px] bg-neutral-850 border border-neutral-800 rounded-md shadow-xl overflow-hidden">
       <div className="p-1.5 border-b border-neutral-800">
         <input
           ref={inputRef}

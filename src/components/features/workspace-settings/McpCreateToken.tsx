@@ -83,7 +83,7 @@ export default function McpCreateToken({ workspaceId, onCreated, onDismiss }: Pr
               onChange={e => setName(e.target.value)}
               disabled={isMinting}
               autoFocus
-              className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-100 placeholder-neutral-600 px-3 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50 font-medium tracking-wide"
+              className="flex-1 bg-neutral-950 border border-neutral-700 rounded-lg text-neutral-100 placeholder-neutral-600 px-3 py-2.5 text-sm outline-none focus:border-blue-500/60 transition-colors disabled:opacity-50 font-medium tracking-wide"
             />
             <button
               type="button"

@@ -63,14 +63,14 @@ export default function YoutubeEmbedView({
             </div>
             <button
               onClick={() => deleteNode()}
-              className="absolute top-1.5 right-1.5 opacity-0 group-hover/yt:opacity-100 transition-opacity p-1 rounded bg-neutral-900/80 text-neutral-300 hover:text-red-400 hover:bg-neutral-900 cursor-pointer text-base leading-none"
+              className="absolute top-1.5 right-1.5 opacity-0 group-hover/yt:opacity-100 transition-opacity p-1 rounded bg-neutral-850/80 text-neutral-300 hover:text-red-400 hover:bg-neutral-850 cursor-pointer text-base leading-none"
               title={t('removeVideo')}
             >
               ×
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5">
+          <div className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-850 px-3 py-2.5">
             <SquarePlay size={18} className="shrink-0 text-red-400" />
             <input
               ref={inputRef}
