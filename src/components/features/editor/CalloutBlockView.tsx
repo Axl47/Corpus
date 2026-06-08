@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
-import { GripVertical } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CALLOUT_COLORS } from './CalloutBlockExtension';
 
@@ -77,13 +76,6 @@ export default function CalloutBlockView({
         contentEditable={false}
         className={`group/callout relative my-2 flex gap-2.5 rounded-md border px-3 py-2.5 select-none ${COLOR_CLASSES[color] || COLOR_CLASSES.blue}`}
       >
-        <div
-          data-drag-handle
-          className="absolute -left-5 top-2.5 opacity-0 group-hover/callout:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400"
-        >
-          <GripVertical size={14} />
-        </div>
-
         <div className="relative shrink-0">
           <button
             onClick={() => setEmojiOpen(v => !v)}

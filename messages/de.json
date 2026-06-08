@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "Noch keine Tokens",
     "agentsAddToken": "Token hinzufügen",
     "storageTitle": "Belegter Speicher",
-    "storageHint": "Gesamtgröße der in diesem Workspace hochgeladenen Bilder und Dateien."
+    "storageHint": "Gesamtgröße der in diesem Workspace hochgeladenen Bilder und Dateien.",
+    "cancel": "Abbrechen",
+    "confirmDelete": "Löschen",
+    "deleteSharedPagesTitle": "Workspace hat geteilte Seiten",
+    "deleteSharedPagesConfirm": "Trotzdem löschen",
+    "transferOwnershipTitle": "Eigentümerschaft übertragen",
+    "removeMemberTitle": "Mitglied entfernen"
   },
   "Templates": {
     "modalTitle": "Neues Element",
@@ -476,6 +482,9 @@
     "bubbleStrike": "Durchgestrichen",
     "bubbleCode": "Inline-Code",
     "bubbleTurnInto": "Umwandeln in",
+    "blockHandleTooltip": "Ziehen zum Verschieben, klicken für Aktionen",
+    "blockDuplicate": "Duplizieren",
+    "blockDelete": "Löschen",
     "deleteChildTitle": "Dieses Element löschen?",
     "deleteChildDesc": "Dieses Element hat Inhalt, der dauerhaft gelöscht wird.",
     "deleteChildConfirm": "Löschen",
@@ -956,7 +965,9 @@
     "editShare": "Freigabeeinstellungen",
     "addToSitemap": "Zur Sitemap hinzufügen",
     "privateSharingHint": "Um Seiten privat mit bestimmten Benutzern zu teilen, fügen Sie diese als Workspace-Mitglieder hinzu.",
-    "goToMembers": "Zu Mitgliedern"
+    "goToMembers": "Zu Mitgliedern",
+    "cancel": "Abbrechen",
+    "revokeShareTitle": "Freigabe-Link entfernen"
   },
   "UserSettings": {
     "title": "Einstellungen",

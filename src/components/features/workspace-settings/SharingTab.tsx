@@ -7,6 +7,7 @@ import {
   revokeShare,
   type ShareRecord,
 } from '@/lib/actions/sharing';
+import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 
 interface Props {
   workspaceId: string;
@@ -25,6 +26,7 @@ export default function SharingTab({ workspaceId, isAdmin, onNavigateToMembers }
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [confirmShare, setConfirmShare] = useState<ShareRecord | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -46,7 +48,13 @@ export default function SharingTab({ workspaceId, isAdmin, onNavigateToMembers }
   };
 
   const handleRevoke = (share: ShareRecord) => {
-    if (!confirm(t('revokeConfirm'))) return;
+    setConfirmShare(share);
+  };
+
+  const doRevoke = () => {
+    if (!confirmShare) return;
+    const share = confirmShare;
+    setConfirmShare(null);
     startTransition(async () => {
       await revokeShare(share.id, workspaceId);
       setShares(prev => prev.filter(s => s.id !== share.id));
@@ -145,6 +153,17 @@ export default function SharingTab({ workspaceId, isAdmin, onNavigateToMembers }
           </button>
         )}
       </div>
+
+      {confirmShare && (
+        <ConfirmDialog
+          title={t('revokeShareTitle')}
+          description={t('revokeConfirm')}
+          confirmLabel={t('revokeShare')}
+          cancelLabel={t('cancel')}
+          onConfirm={doRevoke}
+          onCancel={() => setConfirmShare(null)}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { AGENT_OPTIONS, type AgentId, type AgentToken } from './types';
 import McpOnboarding from './McpOnboarding';
 import McpCreateToken from './McpCreateToken';
 import McpEditToken from './McpEditToken';
+import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 
 function buildCursorInstallUrl(token: string, mcpUrl: string): string {
   const config = JSON.stringify({ url: mcpUrl, headers: { Authorization: `Bearer ${token}` } });
@@ -72,6 +73,7 @@ export default function TokensTab({ workspaceId, hasPrivilegedAccess }: TokensTa
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [copied, setCopied] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [confirmRevokeToken, setConfirmRevokeToken] = useState<AgentToken | null>(null);
   const [editingToken, setEditingToken] = useState<AgentToken | null>(null);
   const [showInactiveTokens, setShowInactiveTokens] = useState(false);
   const [cmdCopied, setCmdCopied] = useState<string | null>(null);
@@ -124,7 +126,10 @@ export default function TokensTab({ workspaceId, hasPrivilegedAccess }: TokensTa
     });
   };
 
-  const handleRevokeToken = async (tokenId: string) => {
+  const doRevokeToken = async () => {
+    if (!confirmRevokeToken) return;
+    const tokenId = confirmRevokeToken.id;
+    setConfirmRevokeToken(null);
     setRevokingId(tokenId);
     try {
       await revokeAgentToken(tokenId);
@@ -368,7 +373,7 @@ export default function TokensTab({ workspaceId, hasPrivilegedAccess }: TokensTa
                                       {t('editToken')}
                                     </button>
                                     <button
-                                      onClick={() => handleRevokeToken(token.id)}
+                                      onClick={() => setConfirmRevokeToken(token)}
                                       disabled={isRevoking}
                                       className="text-[10px] font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded border border-red-500/20 transition-colors disabled:opacity-50"
                                     >
@@ -531,6 +536,17 @@ export default function TokensTab({ workspaceId, hasPrivilegedAccess }: TokensTa
           </div>
         )}
       </div>
+
+      {confirmRevokeToken && (
+        <ConfirmDialog
+          title={t('revokeToken')}
+          description={t('removeConfirm', { name: confirmRevokeToken.name })}
+          confirmLabel={t('revokeToken')}
+          cancelLabel={t('cancel')}
+          onConfirm={doRevokeToken}
+          onCancel={() => setConfirmRevokeToken(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
-import { GripVertical, SquarePlay } from 'lucide-react';
+import { SquarePlay } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { extractYouTubeId } from './YoutubeEmbedExtension';
 
@@ -48,12 +48,6 @@ export default function YoutubeEmbedView({
         contentEditable={false}
         className="group/yt relative my-2 select-none"
       >
-        <div
-          data-drag-handle
-          className="absolute -left-5 top-1.5 opacity-0 group-hover/yt:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400"
-        >
-          <GripVertical size={14} />
-        </div>
 
         {videoId ? (
           <div className="relative">

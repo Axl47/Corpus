@@ -11,6 +11,7 @@ import {
   type ShareRecord,
   type ShareWidth,
 } from '@/lib/actions/sharing';
+import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 
 interface Props {
   pageId: string;
@@ -39,6 +40,7 @@ export default function ShareModal({ pageId, workspaceId, isAdmin, onClose }: Pr
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
 
   useEffect(() => {
     getShareByPageId(workspaceId, pageId).then(s => {
@@ -82,7 +84,13 @@ export default function ShareModal({ pageId, workspaceId, isAdmin, onClose }: Pr
   };
 
   const handleRevoke = () => {
-    if (!existing || !confirm(t('revokeConfirm'))) return;
+    if (!existing) return;
+    setShowRevokeConfirm(true);
+  };
+
+  const doRevoke = () => {
+    if (!existing) return;
+    setShowRevokeConfirm(false);
     startTransition(async () => {
       await revokeShare(existing.id, workspaceId);
       setExisting(null);
@@ -335,6 +343,16 @@ export default function ShareModal({ pageId, workspaceId, isAdmin, onClose }: Pr
           )}
         </div>
       </div>
+      {showRevokeConfirm && (
+        <ConfirmDialog
+          title={t('revokeShareTitle')}
+          description={t('revokeConfirm')}
+          confirmLabel={t('revokeShare')}
+          cancelLabel={t('cancel')}
+          onConfirm={doRevoke}
+          onCancel={() => setShowRevokeConfirm(false)}
+        />
+      )}
     </div>
   );
 }

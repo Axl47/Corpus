@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
-import { GripVertical, ImageIcon, Loader2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { ImageIcon, Loader2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { deleteUploadedAsset } from './assetClient';
 
@@ -63,13 +63,6 @@ export default function ImageBlockView({
   return (
     <NodeViewWrapper>
       <div contentEditable={false} className="group/img relative my-2 select-none">
-        <div
-          data-drag-handle
-          className="absolute -left-5 top-1.5 opacity-0 group-hover/img:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400"
-        >
-          <GripVertical size={14} />
-        </div>
-
         {src ? (
           <div
             className={`flex ${align === 'left' ? 'justify-start' : align === 'right' ? 'justify-end' : 'justify-center'}`}

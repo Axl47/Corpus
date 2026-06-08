@@ -9,6 +9,7 @@ import {
   transferWorkspaceOwnership,
 } from '@/lib/actions/auth';
 import type { CurrentUser, WorkspaceMember } from './types';
+import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 
 interface MembersTabProps {
   workspaceId: string;
@@ -36,6 +37,9 @@ export default function MembersTab({
   const [isInviting, startInviteTransition] = useTransition();
   const [actionPendingId, setActionPendingId] = useState<string | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+  const [actionError, setActionError] = useState('');
+  const [showTransferConfirm, setShowTransferConfirm] = useState<{ userId: string; name: string } | null>(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState<{ userId: string; name: string } | null>(null);
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +61,10 @@ export default function MembersTab({
 
   const handleRoleChange = async (userId: string, newRole: 'member' | 'viewer') => {
     setActionPendingId(userId);
+    setActionError('');
     try {
       const res = await updateWorkspaceMemberRole(workspaceId, userId, newRole);
-      if (res && 'error' in res) alert(res.error);
+      if (res && 'error' in res) setActionError(res.error ?? '');
       else onMembersChanged();
     } catch (err) {
       console.error(err);
@@ -68,12 +73,19 @@ export default function MembersTab({
     }
   };
 
-  const handleTransferOwnership = async (userId: string, userName: string | null) => {
-    if (!confirm(t('transferConfirm', { name: userName || 'this user' }))) return;
+  const handleTransferOwnership = (userId: string, userName: string | null) => {
+    setShowTransferConfirm({ userId, name: userName || 'this user' });
+  };
+
+  const doTransferOwnership = async () => {
+    if (!showTransferConfirm) return;
+    const { userId } = showTransferConfirm;
+    setShowTransferConfirm(null);
     setActionPendingId(userId);
+    setActionError('');
     try {
       const res = await transferWorkspaceOwnership(workspaceId, userId);
-      if (res && 'error' in res) alert(res.error);
+      if (res && 'error' in res) setActionError(res.error ?? '');
       else onMembersChanged();
     } catch (err) {
       console.error(err);
@@ -82,12 +94,19 @@ export default function MembersTab({
     }
   };
 
-  const handleRemoveMember = async (userId: string, userName: string | null) => {
-    if (!confirm(t('removeConfirm', { name: userName || 'this user' }))) return;
+  const handleRemoveMember = (userId: string, userName: string | null) => {
+    setShowRemoveConfirm({ userId, name: userName || 'this user' });
+  };
+
+  const doRemoveMember = async () => {
+    if (!showRemoveConfirm) return;
+    const { userId } = showRemoveConfirm;
+    setShowRemoveConfirm(null);
     setActionPendingId(userId);
+    setActionError('');
     try {
       const res = await removeFromWorkspace(workspaceId, userId);
-      if (res && 'error' in res) alert(res.error);
+      if (res && 'error' in res) setActionError(res.error ?? '');
       else onMembersChanged();
     } catch (err) {
       console.error(err);
@@ -240,6 +259,34 @@ export default function MembersTab({
           </div>
         )}
       </div>
+
+      {actionError && (
+        <p className="text-xs text-red-400 flex items-center gap-1">
+          <AlertCircle size={12} /> {actionError}
+        </p>
+      )}
+
+      {showTransferConfirm && (
+        <ConfirmDialog
+          title={t('transferOwnershipTitle')}
+          description={t('transferConfirm', { name: showTransferConfirm.name })}
+          confirmLabel={t('makeOwner')}
+          cancelLabel={t('cancel')}
+          onConfirm={doTransferOwnership}
+          onCancel={() => setShowTransferConfirm(null)}
+        />
+      )}
+
+      {showRemoveConfirm && (
+        <ConfirmDialog
+          title={t('removeMemberTitle')}
+          description={t('removeConfirm', { name: showRemoveConfirm.name })}
+          confirmLabel={t('remove')}
+          cancelLabel={t('cancel')}
+          onConfirm={doRemoveMember}
+          onCancel={() => setShowRemoveConfirm(null)}
+        />
+      )}
     </div>
   );
 }

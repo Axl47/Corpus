@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "Sin tokens aún",
     "agentsAddToken": "Agregar token",
     "storageTitle": "Almacenamiento usado",
-    "storageHint": "Tamaño total de las imágenes y archivos subidos en este espacio de trabajo."
+    "storageHint": "Tamaño total de las imágenes y archivos subidos en este espacio de trabajo.",
+    "cancel": "Cancelar",
+    "confirmDelete": "Eliminar",
+    "deleteSharedPagesTitle": "El espacio de trabajo tiene páginas compartidas",
+    "deleteSharedPagesConfirm": "Eliminar de todas formas",
+    "transferOwnershipTitle": "Transferir propiedad",
+    "removeMemberTitle": "Eliminar miembro"
   },
   "Templates": {
     "modalTitle": "Nuevo Elemento",
@@ -476,6 +482,9 @@
     "bubbleStrike": "Tachado",
     "bubbleCode": "Código en línea",
     "bubbleTurnInto": "Convertir en",
+    "blockHandleTooltip": "Arrastra para mover, haz clic para acciones",
+    "blockDuplicate": "Duplicar",
+    "blockDelete": "Eliminar",
     "deleteChildTitle": "¿Eliminar este elemento?",
     "deleteChildDesc": "Este elemento tiene contenido que se eliminará permanentemente.",
     "deleteChildConfirm": "Eliminar",
@@ -956,7 +965,9 @@
     "editShare": "Configuración de compartir",
     "addToSitemap": "Añadir al sitemap",
     "privateSharingHint": "Para compartir páginas de forma privada con usuarios específicos, agréguelos como miembros del workspace.",
-    "goToMembers": "Ir a Miembros"
+    "goToMembers": "Ir a Miembros",
+    "cancel": "Cancelar",
+    "revokeShareTitle": "Eliminar enlace compartido"
   },
   "UserSettings": {
     "title": "Configuración",

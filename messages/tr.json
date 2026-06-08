@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "Henüz token yok",
     "agentsAddToken": "Token ekle",
     "storageTitle": "Kullanılan depolama",
-    "storageHint": "Bu çalışma alanına yüklenen görsel ve dosyaların toplam boyutu."
+    "storageHint": "Bu çalışma alanına yüklenen görsel ve dosyaların toplam boyutu.",
+    "cancel": "İptal",
+    "confirmDelete": "Sil",
+    "deleteSharedPagesTitle": "Çalışma alanında paylaşılan sayfalar var",
+    "deleteSharedPagesConfirm": "Yine de sil",
+    "transferOwnershipTitle": "Sahipliği Devret",
+    "removeMemberTitle": "Üyeyi Kaldır"
   },
   "Templates": {
     "modalTitle": "Yeni Öğe",
@@ -476,6 +482,9 @@
     "bubbleStrike": "Üstü çizili",
     "bubbleCode": "Satır içi kod",
     "bubbleTurnInto": "Dönüştür",
+    "blockHandleTooltip": "Taşımak için sürükle, işlemler için tıkla",
+    "blockDuplicate": "Çoğalt",
+    "blockDelete": "Sil",
     "deleteChildTitle": "Bu öğe silinsin mi?",
     "deleteChildDesc": "Bu öğenin kalıcı olarak silinecek içeriği var.",
     "deleteChildConfirm": "Sil",
@@ -956,7 +965,9 @@
     "editShare": "Paylaşım ayarları",
     "addToSitemap": "Sitemap'e ekle",
     "privateSharingHint": "Sayfaları belirli kişilerle özel paylaşmak için onları workspace üyesi olarak ekleyin.",
-    "goToMembers": "Üyelere Git"
+    "goToMembers": "Üyelere Git",
+    "cancel": "İptal",
+    "revokeShareTitle": "Paylaşım linkini kaldır"
   },
   "UserSettings": {
     "title": "Ayarlar",

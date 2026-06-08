@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "अभी कोई टोकन नहीं",
     "agentsAddToken": "टोकन जोड़ें",
     "storageTitle": "उपयोग किया गया भंडारण",
-    "storageHint": "इस वर्कस्पेस में अपलोड की गई छवियों और फ़ाइलों का कुल आकार।"
+    "storageHint": "इस वर्कस्पेस में अपलोड की गई छवियों और फ़ाइलों का कुल आकार।",
+    "cancel": "रद्द करें",
+    "confirmDelete": "हटाएं",
+    "deleteSharedPagesTitle": "वर्कस्पेस में साझा पृष्ठ हैं",
+    "deleteSharedPagesConfirm": "फिर भी हटाएं",
+    "transferOwnershipTitle": "स्वामित्व स्थानांतरित करें",
+    "removeMemberTitle": "सदस्य हटाएं"
   },
   "Templates": {
     "modalTitle": "नया आइटम",
@@ -476,6 +482,9 @@
     "bubbleStrike": "स्ट्राइकथ्रू",
     "bubbleCode": "इनलाइन कोड",
     "bubbleTurnInto": "में बदलें",
+    "blockHandleTooltip": "ले जाने के लिए खींचें, क्रियाओं के लिए क्लिक करें",
+    "blockDuplicate": "डुप्लिकेट करें",
+    "blockDelete": "हटाएं",
     "deleteChildTitle": "यह आइटम हटाएं?",
     "deleteChildDesc": "इस आइटम में सामग्री है जो स्थायी रूप से हटा दी जाएगी।",
     "deleteChildConfirm": "हटाएं",
@@ -956,7 +965,9 @@
     "editShare": "शेयर सेटिंग्स",
     "addToSitemap": "साइटमैप में जोड़ें",
     "privateSharingHint": "विशिष्ट उपयोगकर्ताओं के साथ पृष्ठों को निजी रूप से साझा करने के लिए उन्हें workspace सदस्य के रूप में जोड़ें।",
-    "goToMembers": "सदस्यों पर जाएं"
+    "goToMembers": "सदस्यों पर जाएं",
+    "cancel": "रद्द करें",
+    "revokeShareTitle": "शेयर लिंक हटाएं"
   },
   "UserSettings": {
     "title": "सेटिंग्स",

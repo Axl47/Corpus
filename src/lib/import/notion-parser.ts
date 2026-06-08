@@ -148,7 +148,14 @@ function inferColumnType(name: string, values: string[]): Pick<NotionColumn, 'ty
   const unique = [...new Set(nonEmpty)];
   if (unique.length <= 20 && nonEmpty.every(v => v.length <= 80)) {
     const hasComma = nonEmpty.some(v => v.includes(', ') && !v.match(/^[^,]{30,}/));
-    if (hasComma) return { type: 'multi_select' };
+    if (hasComma) {
+      // Each cell is a `, `-joined list of tags — collect the distinct tokens.
+      const tokens = new Set<string>();
+      for (const v of nonEmpty) {
+        for (const tok of v.split(',').map(t => t.trim()).filter(Boolean)) tokens.add(tok);
+      }
+      return { type: 'multi_select', options: [...tokens] };
+    }
     if (unique.length <= 15) return { type: 'select', options: unique };
   }
 
@@ -230,9 +237,60 @@ export function applyImageMap(content: string, imageMap: Map<string, string>): s
   });
 }
 
-// Convert [Title](relative/path.md) → **Title**  (dead relative links)
-function cleanMDLinks(content: string): string {
-  return content.replace(/\[([^\]]+)\]\([^)]+\.md[^)]*\)/g, '**$1**');
+// Convert [Title](relative/path.md) → **Title**  (dead relative links).
+// Links that point into this page's own child folder (`childDirName/...`) are
+// references to sub-pages that we already embed as child blocks, so they are
+// stripped entirely to avoid duplicating the sub-page titles as bold text.
+function cleanMDLinks(content: string, childDirName?: string): string {
+  const cleaned = content.replace(/\[([^\]]+)\]\(([^)]+\.(?:md|csv))[^)]*\)/g, (match, text, rawPath) => {
+    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) return match;
+    if (childDirName) {
+      let decoded = rawPath;
+      try { decoded = decodeURIComponent(rawPath); } catch { /* keep raw */ }
+      if (decoded.startsWith(childDirName + '/')) return '';
+    }
+    return `**${text}**`;
+  });
+  // Collapse the blank lines left behind by stripped child links.
+  return cleaned.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Notion exports every page/row with its title as the first H1 line. The app
+// renders the title separately in the header, so drop that leading heading to
+// avoid showing the title twice.
+function stripLeadingTitleHeading(content: string): string {
+  return content.replace(/^\s*#\s+.*(?:\r?\n+|$)/, '');
+}
+
+// Notion exports a database row's `.md` with a leading "Prop: value" block (one
+// line per column) right after the title. The app shows those in the properties
+// panel, so strip the leading lines whose key matches a known column name to
+// avoid duplicating them inside the page body. Stops at the first line that is
+// not a recognised property.
+function stripLeadingPropertyBlock(content: string, propNames: string[]): string {
+  if (propNames.length === 0) return content;
+  const nameSet = new Set(propNames.map(n => n.trim().toLowerCase()));
+  const lines = content.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === '') i++;
+  let removed = false;
+  while (i < lines.length) {
+    if (lines[i].trim() === '') { i++; continue; }
+    const m = /^([^:]{1,60}):\s?.*$/.exec(lines[i]);
+    if (m && nameSet.has(m[1].trim().toLowerCase())) { i++; removed = true; continue; }
+    break;
+  }
+  return removed ? lines.slice(i).join('\n').replace(/^\n+/, '') : content;
+}
+
+// A Notion "Untitled" page with no content and no children is an empty
+// artifact the user never intentionally created — skip it on import.
+function isEmptyUntitledPage(title: string, content: string, hasChildren: boolean): boolean {
+  if (hasChildren) return false;
+  if (!/^untitled\b/i.test(title.trim())) return false;
+  // Drop a single leading markdown heading (the page title), then check the rest.
+  const body = content.replace(/^\s*#{1,6}\s.*$/m, '').trim();
+  return body.length === 0;
 }
 
 // ── Tree builder ───────────────────────────────────────────────────────────────
@@ -313,7 +371,10 @@ async function buildItems(
           const rowTitle = extractTitle(rowBase.replace(/\.md$/i, ''));
           const rawContent = await zip.files[p]?.async('string') ?? '';
           const withImgPlaceholders = extractAndReplaceMDImages(rawContent, rowDirPrefix);
-          const cleaned = cleanMDLinks(withImgPlaceholders.content);
+          const cleaned = stripLeadingPropertyBlock(
+            stripLeadingTitleHeading(cleanMDLinks(withImgPlaceholders.content, rowTitle)),
+            headers,
+          );
           withImgPlaceholders.imageRefs.forEach(ref => {
             if (!spaceImages.has(ref)) spaceImages.set(ref, getZipFileSize(zip, ref));
           });
@@ -342,16 +403,19 @@ async function buildItems(
       if (dbTitles.has(title)) continue;
       seenTitles.add(title);
 
-      const rawContent = await zip.files[fullPath]?.async('string') ?? '';
-      const withImgPlaceholders = extractAndReplaceMDImages(rawContent, dirPrefix);
-      const content = cleanMDLinks(withImgPlaceholders.content);
-      withImgPlaceholders.imageRefs.forEach(ref => {
-        if (!spaceImages.has(ref)) spaceImages.set(ref, getZipFileSize(zip, ref));
-      });
-
       const childDirPrefix = dirPrefix + title + '/';
       const hasChildren = allPaths.some(p => p.startsWith(childDirPrefix));
       const children = hasChildren ? await buildItems(zip, allPaths, childDirPrefix, spaceImages) : [];
+
+      const rawContent = await zip.files[fullPath]?.async('string') ?? '';
+      const withImgPlaceholders = extractAndReplaceMDImages(rawContent, dirPrefix);
+      const content = stripLeadingTitleHeading(cleanMDLinks(withImgPlaceholders.content, title));
+
+      if (isEmptyUntitledPage(title, content, children.length > 0)) { seenTitles.delete(title); continue; }
+
+      withImgPlaceholders.imageRefs.forEach(ref => {
+        if (!spaceImages.has(ref)) spaceImages.set(ref, getZipFileSize(zip, ref));
+      });
 
       items.push({ type: 'page', title, content, children, columns: [], rows: [], imageRefs: withImgPlaceholders.imageRefs });
       continue;
@@ -442,7 +506,8 @@ export async function parseNotionExport(
       const title = extractTitle(seg.replace(/\.md$/i, ''));
       const rawContent = await workingZip.files[rootPrefix + seg]?.async('string') ?? '';
       const withImgPlaceholders = extractAndReplaceMDImages(rawContent, rootPrefix);
-      const content = cleanMDLinks(withImgPlaceholders.content);
+      const content = stripLeadingTitleHeading(cleanMDLinks(withImgPlaceholders.content, title));
+      if (isEmptyUntitledPage(title, content, false)) continue;
       withImgPlaceholders.imageRefs.forEach(ref => {
         if (!spaceImages.has(ref)) spaceImages.set(ref, getZipFileSize(workingZip, ref));
       });

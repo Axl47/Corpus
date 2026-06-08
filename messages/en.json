@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "No tokens yet",
     "agentsAddToken": "Add token",
     "storageTitle": "Storage used",
-    "storageHint": "Total size of images and files uploaded in this workspace."
+    "storageHint": "Total size of images and files uploaded in this workspace.",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete",
+    "deleteSharedPagesTitle": "Workspace has shared pages",
+    "deleteSharedPagesConfirm": "Delete anyway",
+    "transferOwnershipTitle": "Transfer Ownership",
+    "removeMemberTitle": "Remove Member"
   },
   "Templates": {
     "modalTitle": "New Item",
@@ -476,6 +482,9 @@
     "bubbleStrike": "Strikethrough",
     "bubbleCode": "Inline code",
     "bubbleTurnInto": "Turn into",
+    "blockHandleTooltip": "Drag to move, click for actions",
+    "blockDuplicate": "Duplicate",
+    "blockDelete": "Delete",
     "deleteChildTitle": "Delete this item?",
     "deleteChildDesc": "This item has content that will be permanently deleted.",
     "deleteChildConfirm": "Delete",
@@ -956,7 +965,9 @@
     "editShare": "Share settings",
     "addToSitemap": "Add to sitemap",
     "privateSharingHint": "To share pages privately with specific users, add them as workspace members.",
-    "goToMembers": "Go to Members"
+    "goToMembers": "Go to Members",
+    "cancel": "Cancel",
+    "revokeShareTitle": "Remove share link"
   },
   "UserSettings": {
     "title": "Settings",

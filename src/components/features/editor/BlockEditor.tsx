@@ -12,6 +12,9 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import BubbleMenuBar from './BubbleMenuBar';
+import BlockDragHandle, { getDragSource } from './BlockDragHandle';
+import { Slice, Fragment } from '@tiptap/pm/model';
+import { dropPoint } from '@tiptap/pm/transform';
 import { SlashCommand } from './SlashCommandMenu';
 import { ChildBlock } from './ChildBlockExtension';
 import { YoutubeEmbed } from './YoutubeEmbedExtension';
@@ -229,16 +232,123 @@ export default function BlockEditor({
         view.dispatch(state.tr.delete(hrFrom, pos));
         return true;
       },
-      handleDrop: (view, event) => {
+      handleDrop: (view, event, _slice, moved) => {
+        // Image file drops
         const files = Array.from((event as DragEvent).dataTransfer?.files ?? []);
         const images = files.filter(f => f.type.startsWith('image/'));
-        if (!images.length) return false;
-        event.preventDefault();
-        const coords = { left: (event as DragEvent).clientX, top: (event as DragEvent).clientY };
-        const pos = view.posAtCoords(coords)?.pos ?? view.state.selection.from;
-        const ed = editorRef.current;
-        if (ed) images.forEach(img => uploadAndInsertImage(ed, img, workspaceId ?? null, pos));
-        return true;
+        if (images.length) {
+          event.preventDefault();
+          const coords = { left: (event as DragEvent).clientX, top: (event as DragEvent).clientY };
+          const pos = view.posAtCoords(coords)?.pos ?? view.state.selection.from;
+          const ed = editorRef.current;
+          if (ed) images.forEach(img => uploadAndInsertImage(ed, img, workspaceId ?? null, pos));
+          return true;
+        }
+
+        // Custom drop handling for blocks dragged from our handle.
+        if (moved) {
+          const dragSrc = getDragSource();
+          if (dragSrc) {
+            const rawDropPos = view.posAtCoords({
+              left: (event as DragEvent).clientX,
+              top: (event as DragEvent).clientY,
+            })?.pos;
+            if (rawDropPos != null) {
+              const $drop = view.state.doc.resolve(rawDropPos);
+              let inList = false;
+              for (let d = 0; d <= $drop.depth; d++) {
+                const n = $drop.node(d);
+                if (n.type.name === 'bulletList' || n.type.name === 'orderedList' || n.type.name === 'taskList') {
+                  inList = true;
+                  break;
+                }
+              }
+
+              const { pos: srcPos, node: srcNode } = dragSrc;
+              const isListItemSrc = srcNode.type.name === 'listItem' || srcNode.type.name === 'taskItem';
+
+              if (!inList && isListItemSrc) {
+                // Un-nest: listItem dropped outside any list → extract paragraph content
+                // as plain blocks instead of letting ProseMirror re-wrap in a new list.
+                const content = srcNode.content;
+                const srcSize = srcNode.nodeSize;
+                const validInsertPos = dropPoint(view.state.doc, rawDropPos, new Slice(content, 0, 0));
+                if (validInsertPos != null) {
+                  let tr = view.state.tr;
+                  if (validInsertPos <= srcPos) {
+                    tr = tr.insert(validInsertPos, content);
+                    tr = tr.delete(srcPos + content.size, srcPos + content.size + srcSize);
+                  } else {
+                    tr = tr.delete(srcPos, srcPos + srcSize);
+                    tr = tr.insert(validInsertPos - srcSize, content);
+                  }
+                  view.dispatch(tr);
+                  return true;
+                }
+              }
+
+              if (inList && !isListItemSrc) {
+                // Non-listItem block (page block, image, etc.) dropped into a list.
+                // HTML atom blocks inside list items break the markdown round-trip
+                // (the serialized <div> isn't re-parsed correctly inside a list),
+                // which causes an infinite serialize→parse loop and freezes the editor.
+                // Redirect the drop to just after the OUTERMOST containing list (d=1,
+                // a direct doc child) so the block lands at root level.
+                // Iterating d=1→depth ensures we find the outermost list first — going
+                // innermost-first placed the block inside a listItem's block* slot, which
+                // is still inside the list and still breaks markdown round-trip.
+                let afterListPos = $drop.after(1); // depth-1 node is always a doc child
+                // Verify the result is truly outside any list (double-safety).
+                try {
+                  const $after = view.state.doc.resolve(afterListPos);
+                  for (let d = 0; d <= $after.depth; d++) {
+                    const n = $after.node(d);
+                    if (n.type.name === 'bulletList' || n.type.name === 'orderedList' || n.type.name === 'taskList') {
+                      // Still inside a list — jump to after the depth-1 ancestor of this list
+                      afterListPos = $after.after(1);
+                      break;
+                    }
+                  }
+                } catch { /* position already valid */ }
+
+                const nodeFrag = Fragment.from(srcNode);
+                const validInsertPos = dropPoint(view.state.doc, afterListPos, new Slice(nodeFrag, 0, 0));
+                const insertAt = validInsertPos ?? afterListPos;
+
+                // Verify insertAt is not inside any list before dispatching
+                let insertInList = false;
+                try {
+                  const $ins = view.state.doc.resolve(insertAt);
+                  for (let d = 0; d <= $ins.depth; d++) {
+                    const n = $ins.node(d);
+                    if (n.type.name === 'bulletList' || n.type.name === 'orderedList' || n.type.name === 'taskList') {
+                      insertInList = true; break;
+                    }
+                  }
+                } catch { insertInList = true; }
+
+                if (insertInList) {
+                  // Still no safe position found — silently cancel
+                  event.preventDefault();
+                  return true;
+                }
+
+                let tr = view.state.tr;
+                if (insertAt <= srcPos) {
+                  tr = tr.insert(insertAt, nodeFrag);
+                  tr = tr.delete(srcPos + nodeFrag.size, srcPos + nodeFrag.size + srcNode.nodeSize);
+                } else {
+                  tr = tr.delete(srcPos, srcPos + srcNode.nodeSize);
+                  tr = tr.insert(insertAt - srcNode.nodeSize, nodeFrag);
+                }
+                view.dispatch(tr);
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
       },
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []);
@@ -311,6 +421,7 @@ export default function BlockEditor({
   return (
     <div className="relative">
       <BubbleMenuBar editor={editor} />
+      {editable && <BlockDragHandle editor={editor} />}
       <EditorContent editor={editor} />
     </div>
   );

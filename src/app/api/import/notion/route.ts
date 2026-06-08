@@ -16,13 +16,83 @@ import { SELECT_COLOR_ORDER, type SelectOptionColor } from '@/lib/types/properti
 // Cloudinary's 10 MB single-file limit. The client sends one request per space.
 
 const PALETTE = SELECT_COLOR_ORDER.filter(c => c !== 'default') as SelectOptionColor[];
+
+// Fisher–Yates shuffle (returns a new array).
+function shuffled<T>(arr: readonly T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Assign colors from a per-column shuffled palette so options don't always come
+// out in the fixed red→orange→yellow→green order. Colors stay distinct until the
+// palette is exhausted, then it reshuffles and cycles.
 function assignColors(options: string[]): { value: string; color: SelectOptionColor }[] {
-  return options.map((value, i) => ({ value, color: PALETTE[i % PALETTE.length] }));
+  let bag = shuffled(PALETTE);
+  let idx = 0;
+  return options.map(value => {
+    if (idx >= bag.length) { bag = shuffled(PALETTE); idx = 0; }
+    return { value, color: bag[idx++] };
+  });
 }
 
 const ICON_PALETTE = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'] as const;
 function randomIconColor(): string {
   return ICON_PALETTE[Math.floor(Math.random() * ICON_PALETTE.length)];
+}
+
+// Notion's CSV export carries no view metadata, so infer useful views from the
+// column types: always a Table, plus a Kanban grouped by the first select column
+// and a Calendar on the first date column when present. Returns null (→ default
+// Table) when there's nothing extra to add.
+function inferViews(schema: { id: string; name: string; type: string }[]) {
+  const uid = () => crypto.randomUUID().slice(0, 8);
+  const selects = schema.filter(c => c.type === 'select');
+  const firstSelect = selects[0];
+  const firstDate = schema.find(c => c.type === 'date' || c.type === 'datetime');
+  if (!firstSelect && !firstDate) return null;
+
+  const views: any[] = [
+    { id: uid(), name: 'Table', config: { type: 'table', columnOrder: [], hiddenColumns: [], filters: [], sorts: [], openBehavior: 'center' } },
+  ];
+
+  if (firstSelect) {
+    // Color cards by a select other than the group-by column when possible, so
+    // the tint adds info rather than echoing the column it already sits in.
+    const cardColorCol = (selects.find(c => c.id !== firstSelect.id) ?? firstSelect).id;
+    views.push({
+      id: uid(),
+      name: 'Board',
+      config: {
+        type: 'kanban', groupByCol: firstSelect.id, groupOrder: [], filters: [], sorts: [],
+        openBehavior: 'center', cardColorCol, groupColBg: true,
+      },
+    });
+  }
+
+  if (firstDate) {
+    // Show a couple of meaningful properties on calendar cards (like Kanban does),
+    // skipping the title and the date the card is already placed by.
+    const cardProperties = schema
+      .filter(c => c.id !== 'title' && c.id !== firstDate.id && c.type !== 'date' && c.type !== 'datetime')
+      .slice(0, 2)
+      .map(c => c.id);
+    views.push({
+      id: uid(),
+      name: 'Calendar',
+      config: {
+        type: 'calendar', dateCol: firstDate.id, viewMode: 'month', filters: [], sorts: [],
+        openBehavior: 'center',
+        ...(firstSelect ? { cardColorCol: firstSelect.id } : {}),
+        ...(cardProperties.length ? { cardProperties } : {}),
+      },
+    });
+  }
+
+  return views;
 }
 
 async function createWorkspaceForUser(userId: string, name: string): Promise<string> {
@@ -71,11 +141,18 @@ async function importItems(
         .from(databases)
         .where(eq(databases.id, databaseId))
         .limit(1);
+      const resolvedSchema = (dbRecord?.schema ?? []) as { id: string; name: string; type: string }[];
       const nameToId = new Map<string, string>();
       const idToType = new Map<string, string>();
-      for (const col of (dbRecord?.schema ?? []) as { id: string; name: string; type: string }[]) {
+      for (const col of resolvedSchema) {
         nameToId.set(col.name, col.id);
         idToType.set(col.id, col.type);
+      }
+
+      // Auto-create Kanban/Calendar views inferred from the column types.
+      const views = inferViews(resolvedSchema);
+      if (views) {
+        await db.update(databases).set({ views }).where(eq(databases.id, databaseId));
       }
 
       const firstColName = item.columns[0]?.name ?? 'Title';

@@ -318,7 +318,13 @@
     "agentsWorkspaceEmpty": "Aucun token pour l'instant",
     "agentsAddToken": "Ajouter un token",
     "storageTitle": "Stockage utilisé",
-    "storageHint": "Taille totale des images et fichiers importés dans cet espace de travail."
+    "storageHint": "Taille totale des images et fichiers importés dans cet espace de travail.",
+    "cancel": "Annuler",
+    "confirmDelete": "Supprimer",
+    "deleteSharedPagesTitle": "L'espace de travail a des pages partagées",
+    "deleteSharedPagesConfirm": "Supprimer quand même",
+    "transferOwnershipTitle": "Transférer la propriété",
+    "removeMemberTitle": "Supprimer le membre"
   },
   "Templates": {
     "modalTitle": "Nouvel Élément",
@@ -476,6 +482,9 @@
     "bubbleStrike": "Barré",
     "bubbleCode": "Code en ligne",
     "bubbleTurnInto": "Convertir en",
+    "blockHandleTooltip": "Glisser pour déplacer, cliquer pour les actions",
+    "blockDuplicate": "Dupliquer",
+    "blockDelete": "Supprimer",
     "deleteChildTitle": "Supprimer cet élément ?",
     "deleteChildDesc": "Cet élément a du contenu qui sera définitivement supprimé.",
     "deleteChildConfirm": "Supprimer",
@@ -956,7 +965,9 @@
     "editShare": "Paramètres de partage",
     "addToSitemap": "Ajouter au sitemap",
     "privateSharingHint": "Pour partager des pages de façon privée avec des utilisateurs spécifiques, ajoutez-les comme membres du workspace.",
-    "goToMembers": "Aller aux membres"
+    "goToMembers": "Aller aux membres",
+    "cancel": "Annuler",
+    "revokeShareTitle": "Supprimer le lien de partage"
   },
   "UserSettings": {
     "title": "Paramètres",

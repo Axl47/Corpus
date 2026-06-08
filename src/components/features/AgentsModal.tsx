@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { X, Bot, ChevronDown, Plus, Zap } from 'lucide-react';
 import AIMark from '@/components/marketing/AIMark';
 import PageIcon from '@/components/features/PageIcon';
+import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import {
   getUserWorkspacesWithTokens,
   getUserAgentActivity,
@@ -62,11 +63,16 @@ function TokenRow({
   onRevoked: () => void;
 }) {
   const [revoking, setRevoking] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const state = expiryState(token.expiresAt);
   const agent = AGENT_OPTIONS.find(a => a.id === token.agentName);
 
-  const handleRevoke = async () => {
-    if (!confirm(t('removeConfirm', { name: token.name }))) return;
+  const handleRevoke = () => {
+    setShowConfirm(true);
+  };
+
+  const doRevoke = async () => {
+    setShowConfirm(false);
     setRevoking(true);
     try { await revokeAgentToken(token.id); onRevoked(); }
     catch { /* silent */ }
@@ -104,6 +110,16 @@ function TokenRow({
         >
           {revoking ? t('revoking') : t('revokeToken')}
         </button>
+      )}
+      {showConfirm && (
+        <ConfirmDialog
+          title={t('revokeToken')}
+          description={t('removeConfirm', { name: token.name })}
+          confirmLabel={t('revokeToken')}
+          cancelLabel={t('cancel')}
+          onConfirm={doRevoke}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
     </div>
   );

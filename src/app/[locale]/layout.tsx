@@ -127,40 +127,38 @@ export default async function LocaleLayout({
   ) : undefined;
 
   return (
-    <>
-      <PostHogProvider>
-        <PostHogPageView skip={currentUser?.role === 'admin'} />
-        <PostHogIdentify user={currentUser} />
-        <NextIntlClientProvider messages={messages}>
-          <ActivityTracker />
-          <UpdateBanner />
-          <QueryProvider>
-            <AppShell
-              sidebar={
-                <WorkspaceSidebar
-                  items={items}
-                  workspaces={workspacesList}
-                  activeWorkspace={activeWorkspace ?? { id: '', name: 'Workspace' }}
-                  currentUser={currentUser}
-                  density={sidebarDensity}
-                />
-              }
-              mobileNav={
-                <MobileNavWrapper
-                  items={items}
-                  workspaces={workspacesList}
-                  activeWorkspace={activeWorkspace ?? { id: '', name: 'Workspace' }}
-                  currentUser={currentUser}
-                />
-              }
-              demoBanner={demoBanner}
-            >
-              {children}
-            </AppShell>
-          </QueryProvider>
-        </NextIntlClientProvider>
-      </PostHogProvider>
-      <Analytics />
-    </>
+    <PostHogProvider>
+      <PostHogPageView skip={currentUser?.role === 'admin'} />
+      <PostHogIdentify user={currentUser} />
+      <NextIntlClientProvider messages={messages}>
+        <ActivityTracker />
+        <UpdateBanner />
+        <QueryProvider>
+          <AppShell
+            sidebar={
+              <WorkspaceSidebar
+                items={items}
+                workspaces={workspacesList}
+                activeWorkspace={activeWorkspace ?? { id: '', name: 'Workspace' }}
+                currentUser={currentUser}
+                density={sidebarDensity}
+              />
+            }
+            mobileNav={
+              <MobileNavWrapper
+                items={items}
+                workspaces={workspacesList}
+                activeWorkspace={activeWorkspace ?? { id: '', name: 'Workspace' }}
+                currentUser={currentUser}
+              />
+            }
+            demoBanner={demoBanner}
+          >
+            {children}
+          </AppShell>
+        </QueryProvider>
+        <Analytics />
+      </NextIntlClientProvider>
+    </PostHogProvider>
   );
 }

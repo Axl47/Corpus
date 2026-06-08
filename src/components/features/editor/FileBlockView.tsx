@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
-import { GripVertical, Download, File as FileIcon, Loader2, Upload } from 'lucide-react';
+import { Download, File as FileIcon, Loader2, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { deleteUploadedAsset } from './assetClient';
 
@@ -66,12 +66,6 @@ export default function FileBlockView({
   return (
     <NodeViewWrapper>
       <div contentEditable={false} className="group/file relative my-2 select-none">
-        <div
-          data-drag-handle
-          className="absolute -left-5 top-2.5 opacity-0 group-hover/file:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-neutral-600 hover:text-neutral-400"
-        >
-          <GripVertical size={14} />
-        </div>
 
         {url ? (
           <div className="relative flex items-center gap-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5">
