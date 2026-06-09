@@ -113,7 +113,7 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
 
   return tokenResponse({
     access_token:  tokens.accessToken,
-    token_type:    'bearer',
+    token_type:    'Bearer',
     expires_in:    ACCESS_TOKEN_TTL_MS / 1000,
     refresh_token: tokens.refreshToken,
     scope:         row.scope,

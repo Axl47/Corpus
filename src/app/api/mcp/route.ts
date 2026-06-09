@@ -47,8 +47,9 @@ class SseCustomTransport {
 const TOKEN_PREFIX = process.env.MCP_TOKEN_PREFIX ?? 'rmns';
 
 async function verifyBearerToken(authHeader: string | null): Promise<TokenContext | null> {
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const token = authHeader.slice(7);
+  const match = authHeader?.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const token = match[1];
 
   const parts = token.split('_');
   if (parts.length < 3) return null;
