@@ -1039,7 +1039,11 @@
     "selectWorkspace": "Arbeitsbereich auswählen",
     "authorize": "Autorisieren",
     "deny": "Ablehnen",
-    "disclaimer": "Sie können diesen Zugriff jederzeit unter Arbeitsbereich-Einstellungen → Token widerrufen."
+    "disclaimer": "Sie können diesen Zugriff jederzeit unter Arbeitsbereich-Einstellungen → Token widerrufen.",
+    "successTitle": "Autorisierung Erfolgreich",
+    "successMessage": "Sie werden zur Anwendung zurückgeleitet…",
+    "successClose": "Sie können diesen Tab schließen, falls er nicht automatisch geschlossen wird.",
+    "invalidRedirect": "Ungültige oder fehlende Weiterleitungs-URL."
   },
   "Security": {
     "title": "Sicherheit und Authentifizierung",

@@ -1039,7 +1039,11 @@
     "selectWorkspace": "Çalışma alanı seç",
     "authorize": "Yetkilendir",
     "deny": "Reddet",
-    "disclaimer": "Bu erişimi istediğiniz zaman Çalışma Alanı Ayarları → Tokenlar bölümünden iptal edebilirsiniz."
+    "disclaimer": "Bu erişimi istediğiniz zaman Çalışma Alanı Ayarları → Tokenlar bölümünden iptal edebilirsiniz.",
+    "successTitle": "Yetkilendirme Başarılı",
+    "successMessage": "Uygulamaya yönlendiriliyorsunuz…",
+    "successClose": "Sekme otomatik kapanmazsa kapatabilirsiniz.",
+    "invalidRedirect": "Geçersiz veya eksik yönlendirme URL'si."
   },
   "Security": {
     "title": "Güvenlik ve Kimlik Doğrulama",

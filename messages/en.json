@@ -1039,7 +1039,11 @@
     "selectWorkspace": "Select workspace",
     "authorize": "Authorize",
     "deny": "Deny",
-    "disclaimer": "You can revoke this access at any time from Workspace Settings → Tokens."
+    "disclaimer": "You can revoke this access at any time from Workspace Settings → Tokens.",
+    "successTitle": "Authorization Successful",
+    "successMessage": "Returning you to the application…",
+    "successClose": "You can close this tab if it does not close automatically.",
+    "invalidRedirect": "Invalid or missing redirect URL."
   },
   "Security": {
     "title": "Security & Authentication",

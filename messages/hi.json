@@ -1039,7 +1039,11 @@
     "selectWorkspace": "Workspace चुनें",
     "authorize": "प्राधिकृत करें",
     "deny": "अस्वीकार करें",
-    "disclaimer": "आप इस एक्सेस को कभी भी Workspace Settings → Tokens से रद्द कर सकते हैं।"
+    "disclaimer": "आप इस एक्सेस को कभी भी Workspace Settings → Tokens से रद्द कर सकते हैं।",
+    "successTitle": "प्राधिकरण सफल",
+    "successMessage": "एप्लिकेशन पर वापस ले जाया जा रहा है…",
+    "successClose": "यदि टैब स्वचालित रूप से बंद न हो तो आप इसे बंद कर सकते हैं।",
+    "invalidRedirect": "अमान्य या अनुपस्थित रीडायरेक्ट URL।"
   },
   "Security": {
     "title": "सुरक्षा और प्रमाणीकरण",

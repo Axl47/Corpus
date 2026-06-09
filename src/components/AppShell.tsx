@@ -17,7 +17,7 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const MARKETING_PATHS = new Set(['/', '/pricing', '/contact', '/download', '/privacy', '/security']);
-  const isMarketing = MARKETING_PATHS.has(pathname);
+  const isMarketing = MARKETING_PATHS.has(pathname) || pathname.startsWith('/oauth/');
 
   if (isMarketing) {
     return <>{children}</>;

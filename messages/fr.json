@@ -1039,7 +1039,11 @@
     "selectWorkspace": "Sélectionner l'espace de travail",
     "authorize": "Autoriser",
     "deny": "Refuser",
-    "disclaimer": "Vous pouvez révoquer cet accès à tout moment depuis Paramètres de l'espace de travail → Tokens."
+    "disclaimer": "Vous pouvez révoquer cet accès à tout moment depuis Paramètres de l'espace de travail → Tokens.",
+    "successTitle": "Autorisation Réussie",
+    "successMessage": "Retour à l'application en cours…",
+    "successClose": "Vous pouvez fermer cet onglet s'il ne se ferme pas automatiquement.",
+    "invalidRedirect": "URL de redirection invalide ou manquante."
   },
   "Security": {
     "title": "Sécurité et Authentification",

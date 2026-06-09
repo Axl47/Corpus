@@ -3,9 +3,14 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { db } from '@/db';
 import { oauthClients, oauthAuthCodes, workspaceMembers, workspaces } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHmac } from 'crypto';
 import { getTranslations } from 'next-intl/server';
 import { OAuthAuthorizeForm } from './OAuthAuthorizeForm';
+
+function signRedirectUrl(url: string): string {
+  const secret = process.env.AUTH_SECRET ?? 'fallback-secret-change-me';
+  return createHmac('sha256', secret).update(url).digest('hex');
+}
 
 interface SearchParams {
   client_id?: string;
@@ -128,7 +133,9 @@ export default async function OAuthAuthorizePage({
     const dest = new URL(redirect_uri!);
     dest.searchParams.set('code', code);
     if (state) dest.searchParams.set('state', state);
-    redirect(dest.toString());
+    const destStr = dest.toString();
+    const sig = signRedirectUrl(destStr);
+    redirect(`/oauth/authorized?to=${encodeURIComponent(destStr)}&sig=${sig}`);
   }
 
   async function handleDeny() {

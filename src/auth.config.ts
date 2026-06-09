@@ -37,7 +37,8 @@ export const authConfig: NextAuthConfig = {
       const isClientActivate = cleanPath.startsWith('/api/auth/client-activate');
       const isOAuthApi = cleanPath.startsWith('/api/oauth');
       const isWellKnown = cleanPath.startsWith('/.well-known');
-      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown) return true;
+      const isOAuthPage = cleanPath.startsWith('/oauth/');
+      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown || isOAuthPage) return true;
 
       // Public marketing pages (pricing, contact) are always accessible
       if (isPublicMarketingRoute) return true;
