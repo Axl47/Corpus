@@ -64,10 +64,20 @@ async function verifyBearerToken(authHeader: string | null): Promise<TokenContex
       .where(and(eq(oauthAccessTokens.tokenPrefix, prefix8), isNull(oauthAccessTokens.revokedAt)))
       .limit(1);
 
-    if (!row) return null;
-    if (!await bcrypt.compare(secret, row.tokenHash)) return null;
-    if (row.expiresAt.getTime() < Date.now()) return null;
+    if (!row) {
+      console.error('[mcp/auth] oauth_token_not_found', { prefix: prefix8 });
+      return null;
+    }
+    if (!await bcrypt.compare(secret, row.tokenHash)) {
+      console.error('[mcp/auth] oauth_token_hash_mismatch', { prefix: prefix8 });
+      return null;
+    }
+    if (row.expiresAt.getTime() < Date.now()) {
+      console.error('[mcp/auth] oauth_token_expired', { prefix: prefix8, expiresAt: row.expiresAt });
+      return null;
+    }
 
+    console.log('[mcp/auth] oauth_token_ok', { prefix: prefix8, scope: row.scope });
     return { tokenId: row.id, workspaceId: row.workspaceId, scope: row.scope as 'read' | 'write', agentName: null };
   }
 

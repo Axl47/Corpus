@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { oauthAuthCodes, oauthAccessTokens, oauthClients } from '@/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, randomUUID } from 'crypto';
 
 const ACCESS_TOKEN_TTL_MS  = 60 * 60 * 1000;          // 1 hour
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -51,7 +51,10 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
   const clientId    = params.get('client_id');
   const verifier    = params.get('code_verifier');
 
+  console.log('[oauth/token] code_exchange start', { hasCode: !!code, hasRedirectUri: !!redirectUri, hasClientId: !!clientId, hasVerifier: !!verifier });
+
   if (!code || !redirectUri || !clientId || !verifier) {
+    console.error('[oauth/token] missing_params', { code: !!code, redirectUri: !!redirectUri, clientId: !!clientId, verifier: !!verifier });
     return oauthError('invalid_request', 'Missing required parameters');
   }
 
@@ -61,12 +64,30 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
     .where(eq(oauthAuthCodes.code, code))
     .limit(1);
 
-  if (!row) return oauthError('invalid_grant', 'Authorization code not found or already used');
-  if (row.usedAt) return oauthError('invalid_grant', 'Authorization code already used');
-  if (row.expiresAt.getTime() < Date.now()) return oauthError('invalid_grant', 'Authorization code expired');
-  if (row.clientId !== clientId) return oauthError('invalid_grant', 'client_id mismatch');
-  if (row.redirectUri !== redirectUri) return oauthError('invalid_grant', 'redirect_uri mismatch');
-  if (!verifyS256(verifier, row.codeChallenge)) return oauthError('invalid_grant', 'code_verifier invalid');
+  if (!row) {
+    console.error('[oauth/token] code_not_found', { codePrefix: code.slice(0, 8) });
+    return oauthError('invalid_grant', 'Authorization code not found or already used');
+  }
+  if (row.usedAt) {
+    console.error('[oauth/token] code_already_used', { codePrefix: code.slice(0, 8) });
+    return oauthError('invalid_grant', 'Authorization code already used');
+  }
+  if (row.expiresAt.getTime() < Date.now()) {
+    console.error('[oauth/token] code_expired', { expiresAt: row.expiresAt });
+    return oauthError('invalid_grant', 'Authorization code expired');
+  }
+  if (row.clientId !== clientId) {
+    console.error('[oauth/token] client_id_mismatch', { stored: row.clientId, received: clientId });
+    return oauthError('invalid_grant', 'client_id mismatch');
+  }
+  if (row.redirectUri !== redirectUri) {
+    console.error('[oauth/token] redirect_uri_mismatch', { stored: row.redirectUri, received: redirectUri });
+    return oauthError('invalid_grant', 'redirect_uri mismatch');
+  }
+  if (!verifyS256(verifier, row.codeChallenge)) {
+    console.error('[oauth/token] pkce_invalid', { challengePrefix: row.codeChallenge.slice(0, 8) });
+    return oauthError('invalid_grant', 'code_verifier invalid');
+  }
 
   // Mark code as used
   await db.update(oauthAuthCodes).set({ usedAt: new Date() }).where(eq(oauthAuthCodes.code, code));
@@ -75,6 +96,7 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
   const now = new Date();
 
   await db.insert(oauthAccessTokens).values({
+    id:                 randomUUID(),
     tokenPrefix:        tokens.accessPrefix,
     tokenHash:          tokens.accessHash,
     refreshTokenPrefix: tokens.refreshPrefix,
@@ -87,9 +109,11 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
     createdAt:          now,
   });
 
+  console.log('[oauth/token] success', { tokenPrefix: tokens.accessPrefix, scope: row.scope });
+
   return tokenResponse({
     access_token:  tokens.accessToken,
-    token_type:    'Bearer',
+    token_type:    'bearer',
     expires_in:    ACCESS_TOKEN_TTL_MS / 1000,
     refresh_token: tokens.refreshToken,
     scope:         row.scope,
@@ -154,26 +178,43 @@ async function handleRefreshToken(params: URLSearchParams): Promise<Response> {
 }
 
 export async function POST(req: Request) {
-  let params: URLSearchParams;
-  const contentType = req.headers.get('content-type') ?? '';
+  try {
+    const rawBody = await req.text();
+    const contentType = req.headers.get('content-type') ?? '';
 
-  if (contentType.includes('application/x-www-form-urlencoded')) {
-    params = new URLSearchParams(await req.text());
-  } else {
-    // Some clients send JSON
-    try {
-      const body = await req.json() as Record<string, string>;
-      params = new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)]));
-    } catch {
-      return oauthError('invalid_request', 'Unsupported content-type');
+    let params: URLSearchParams;
+    if (contentType.includes('application/json')) {
+      try {
+        const body = JSON.parse(rawBody) as Record<string, string>;
+        params = new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)]));
+      } catch {
+        return oauthError('invalid_request', 'Invalid JSON body');
+      }
+    } else {
+      // Default: treat as form-encoded (standard OAuth, also handles missing content-type)
+      params = new URLSearchParams(rawBody);
+      // If grant_type missing, try JSON fallback
+      if (!params.get('grant_type')) {
+        try {
+          const body = JSON.parse(rawBody) as Record<string, string>;
+          params = new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)]));
+        } catch {
+          // Not JSON either — stick with empty URLSearchParams
+        }
+      }
     }
+
+    console.log('[oauth/token] request', { contentType, grantType: params.get('grant_type') });
+
+    const grantType = params.get('grant_type');
+    if (grantType === 'authorization_code') return handleAuthorizationCode(params);
+    if (grantType === 'refresh_token') return handleRefreshToken(params);
+    console.error('[oauth/token] unsupported_grant_type', { grantType });
+    return oauthError('unsupported_grant_type', `grant_type '${grantType}' is not supported`);
+  } catch (err) {
+    console.error('[oauth/token] unhandled_error', err);
+    return oauthError('server_error', 'Internal server error', 500);
   }
-
-  const grantType = params.get('grant_type');
-
-  if (grantType === 'authorization_code') return handleAuthorizationCode(params);
-  if (grantType === 'refresh_token') return handleRefreshToken(params);
-  return oauthError('unsupported_grant_type', `grant_type '${grantType}' is not supported`);
 }
 
 export function OPTIONS() {
