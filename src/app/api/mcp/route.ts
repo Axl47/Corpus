@@ -160,16 +160,17 @@ export async function POST(req: Request) { return handleMcpRequest(req); }
 export async function GET(req: Request)  { return handleMcpRequest(req); }
 export async function DELETE(req: Request) { return handleMcpRequest(req); }
 
-const BASE = process.env.NEXTAUTH_URL ?? 'https://remnus.com';
-
 async function handleMcpRequest(req: Request): Promise<Response> {
+  const reqUrl = new URL(req.url);
+  const base = `${reqUrl.protocol}//${reqUrl.host}`;
+
   const ctx = await verifyBearerToken(req.headers.get('Authorization'));
   if (!ctx) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        'WWW-Authenticate': `Bearer realm="${BASE}/api/mcp", resource_metadata="${BASE}/.well-known/oauth-protected-resource"`,
+        'WWW-Authenticate': `Bearer realm="${base}/api/mcp", resource_metadata="${base}/.well-known/oauth-protected-resource"`,
         ...MCP_HEADERS,
       },
     });
@@ -178,7 +179,6 @@ async function handleMcpRequest(req: Request): Promise<Response> {
   if (!checkRateLimit(ctx.tokenId)) return json({ error: 'Too many requests' }, 429);
 
   // Standard SSE GET (Cursor, Windsurf, Continue, Antigravity)
-  const url = new URL(req.url);
   if (req.method === 'GET' && req.headers.get('accept')?.includes('text/event-stream')) {
     const sessionId = crypto.randomUUID();
     const encoder = new TextEncoder();
@@ -202,7 +202,7 @@ async function handleMcpRequest(req: Request): Promise<Response> {
   registerWriteTools(server, ctx);
 
   // SSE POST (sessionId-based stateful)
-  const sessionId = url.searchParams.get('sessionId');
+  const sessionId = reqUrl.searchParams.get('sessionId');
   if (sessionId) {
     const conn = activeSseConnections.get(sessionId);
     if (!conn) return json({ error: 'Session expired' }, 404);

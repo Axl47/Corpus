@@ -1,17 +1,17 @@
 export const runtime = 'edge';
 
-const BASE = process.env.NEXTAUTH_URL ?? 'https://remnus.com';
-
-export function GET() {
+export function GET(req: Request) {
+  const url = new URL(req.url);
+  const base = `${url.protocol}//${url.host}`;
   return Response.json(
     {
-      resource: `${BASE}/api/mcp`,
-      authorization_servers: [BASE],
+      resource: `${base}/api/mcp`,
+      authorization_servers: [base],
     },
     {
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-store',
       },
     },
   );
