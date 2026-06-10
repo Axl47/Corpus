@@ -123,7 +123,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 | Table | Purpose |
 | ----- | ------- |
-| `workspaces` | Workspace list — `icon` (emoji/lucide/https URL), `icon_color`, `hidden` (boolean, default false — hides the workspace from the sidebar behind a "Show hidden" toggle; migration `0025`) |
+| `workspaces` | Workspace list — `icon` (emoji/lucide/https URL), `icon_color` |
 | `workspace_items` | Sidebar items (pages + databases), recursive `parent_id` nesting |
 | `standalone_pages` | Markdown content for page-type items (1:1 with `workspace_items`) |
 | `databases` | `schema` JSON (columns) + `views` JSON (named view configs) |
@@ -132,7 +132,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 | `account` | OAuth provider links (Google) |
 | `session` | Auth.js sessions |
 | `verificationToken` | Email verification |
-| `workspace_members` | User↔Workspace join — `role` ('owner'\|'member'\|'viewer') |
+| `workspace_members` | User↔Workspace join — `role` ('owner'\|'member'\|'viewer'), `hidden` (boolean, default false — **per-user** flag that hides the workspace from that member's sidebar behind a "Show hidden" toggle; toggled via `setWorkspaceHidden`; migration `0026`) |
 | `agent_tokens` | MCP bearer tokens — `token_prefix`, `token_hash`, `scope` ('read'\|'write'), `expires_at` (nullable, null = no expiry), `revoked_at` |
 | `uploaded_assets` | One row per Cloudinary upload — `public_id`, `resource_type`, `kind` ('icon'\|'image'\|'file'), `bytes`, `url`, `user_id`, `workspace_id` (nullable). Powers reliable Cloudinary cleanup on delete + storage-usage accounting per user/workspace (future plan limits). |
 | `agent_activity` | Audit log for every MCP tool call |
@@ -170,7 +170,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `0020_shared_pages`, `0021_shared_pages_width`, `0022_shared_pages_sitemap` — also manually applied. Scripts: `src/db/apply-002{0,1,2}-*.ts`. Apply to both local and Turso.
 - `0023_oauth` — OAuth 2.1 tables (`oauth_clients`, `oauth_auth_codes`, `oauth_access_tokens`). Script: `src/db/apply-0023-oauth.ts`. Applied manually (same idempotent pattern).
 - `0024_oauth_agent_name` — adds nullable `agent_name` to `oauth_access_tokens` (user-set canonical agent id for brand-icon display). Idempotent (PRAGMA column check). Script: `src/db/apply-0024-oauth-agent-name.ts`. Applied to both local + Turso.
-- `0025_workspace_hidden` — adds `hidden` (boolean, NOT NULL default 0) to `workspaces` (hide a workspace from the sidebar behind a "Show hidden" toggle; toggled via `setWorkspaceHidden`). Idempotent (PRAGMA column check). Script: `src/db/apply-0025-workspace-hidden.ts`. Applied to both local + Turso.
+- `0025_workspace_hidden` — **superseded by 0026.** Added `hidden` to `workspaces` (workspace-global). Wrong scope: one member hiding affected all members. Column dropped by 0026.
+- `0026_member_hidden` — moves `hidden` to `workspace_members` (**per-user**: a member hides a workspace from their own sidebar only) and drops the orphaned `workspaces.hidden`. `getWorkspaces` joins the caller's membership row to surface `hidden`. Idempotent (PRAGMA column checks). Script: `src/db/apply-0026-member-hidden.ts`. Applied to both local + Turso.
 - **Two databases / env precedence gotcha:** `.env` has the **Turso** `DATABASE_URL`; `.env.local` overrides it with `file:local.db`. Next.js (dev) uses `.env.local` → **local.db**, but the apply scripts call `dotenv.config()` which reads only `.env` → **Turso**. So a plain `npx tsx src/db/apply-00xx-*.ts` migrates Turso only; for local dev also run it with an explicit override: `DATABASE_URL="file:local.db" npx tsx src/db/apply-00xx-*.ts`. Apply every manual migration to **both**.
 - **libsql DDL caveat:** Drizzle's `migrate()` runs SQL in a `batch()` call. libsql's `batch()` silently fails DDL statements (ALTER TABLE, CREATE TABLE, etc.) — the call returns "complete" but changes are not applied. Use `client.execute()` directly for DDL, or manually apply + insert into `__drizzle_migrations` via a helper script. Migration 0016 was applied this way.
 - Apply with: `npx tsx src/db/migrate.ts`

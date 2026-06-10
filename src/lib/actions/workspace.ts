@@ -95,9 +95,23 @@ export async function getWorkspaces() {
   if (memberships.length === 0) return [];
 
   const ids = memberships.map((m) => m.workspaceId);
+  // Join the caller's membership row so `hidden` is per-user (not workspace-global).
   return db
-    .select()
+    .select({
+      id:        workspaces.id,
+      name:      workspaces.name,
+      icon:      workspaces.icon,
+      iconColor: workspaces.iconColor,
+      sortOrder: workspaces.sortOrder,
+      createdAt: workspaces.createdAt,
+      updatedAt: workspaces.updatedAt,
+      hidden:    workspaceMembers.hidden,
+    })
     .from(workspaces)
+    .innerJoin(
+      workspaceMembers,
+      and(eq(workspaceMembers.workspaceId, workspaces.id), eq(workspaceMembers.userId, user.id)),
+    )
     .where(inArray(workspaces.id, ids))
     .orderBy(asc(workspaces.sortOrder), asc(workspaces.createdAt));
 }
@@ -195,9 +209,10 @@ export async function updateWorkspaceIcon(id: string, icon: string | null, iconC
 export async function setWorkspaceHidden(id: string, hidden: boolean) {
   const userId = await assertWorkspaceAccess(id);
 
-  await db.update(workspaces)
-    .set({ hidden, updatedAt: new Date() })
-    .where(eq(workspaces.id, id));
+  // Per-user preference — only flips the caller's own membership row, never other members'.
+  await db.update(workspaceMembers)
+    .set({ hidden })
+    .where(and(eq(workspaceMembers.workspaceId, id), eq(workspaceMembers.userId, userId)));
 
   revalidatePath('/', 'layout');
   publish({ scope: 'sidebar', workspaceId: id, actorId: userId });

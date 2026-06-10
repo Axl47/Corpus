@@ -7,7 +7,6 @@ export const workspaces = sqliteTable('workspaces', {
   icon:      text('icon'),
   iconColor: text('icon_color'),
   sortOrder: integer('sort_order').notNull().default(0),
-  hidden:    integer('hidden', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -120,6 +119,7 @@ export const workspaceMembers = sqliteTable('workspace_members', {
   workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   userId:      text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   role:        text('role').notNull().default('member'), // 'owner' | 'member' | 'viewer'
+  hidden:      integer('hidden', { mode: 'boolean' }).notNull().default(false), // per-user: hide this workspace from the caller's sidebar
   createdAt:   integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex('workspace_members_workspace_user_unique').on(table.workspaceId, table.userId),

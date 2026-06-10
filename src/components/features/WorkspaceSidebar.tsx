@@ -880,7 +880,7 @@ export default function WorkspaceSidebar({
                 </div>
 
                 {/* Workspace actions on hover */}
-                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/root:opacity-100 transition-opacity shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-0.5 shrink-0 ml-1 sm:hidden sm:group-hover/root:flex" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => {
                       setTemplatePickerWorkspaceId(w.id);
