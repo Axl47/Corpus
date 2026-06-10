@@ -7,6 +7,9 @@ export const workspaces = sqliteTable('workspaces', {
   icon:      text('icon'),
   iconColor: text('icon_color'),
   sortOrder: integer('sort_order').notNull().default(0),
+  // The paying user whose plan governs this workspace's limits (seats/agents/storage).
+  // Nullable for orphaned/admin-claimed workspaces. Migration 0027.
+  billingOwnerId: text('billing_owner_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -124,6 +127,25 @@ export const workspaceMembers = sqliteTable('workspace_members', {
 }, (table) => [
   uniqueIndex('workspace_members_workspace_user_unique').on(table.workspaceId, table.userId),
   index('workspace_members_user_id_idx').on(table.userId),
+]);
+
+// Email invitations for people who don't have a Remnus account yet (or aren't
+// members yet). Accepted via /invite/[token]. Pending invites reserve a seat.
+// Migration 0028.
+export const workspaceInvites = sqliteTable('workspace_invites', {
+  id:          text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  email:       text('email').notNull(),                 // lowercased
+  role:        text('role').notNull().default('member'),// 'member' | 'viewer'
+  token:       text('token').notNull(),                 // bearer secret in the invite link
+  invitedBy:   text('invited_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt:   integer('created_at', { mode: 'timestamp' }).notNull(),
+  expiresAt:   integer('expires_at', { mode: 'timestamp' }),   // nullable = no expiry
+  acceptedAt:  integer('accepted_at', { mode: 'timestamp' }),  // nullable until accepted
+}, (table) => [
+  uniqueIndex('workspace_invites_token_unique').on(table.token),
+  index('workspace_invites_workspace_id_idx').on(table.workspaceId),
+  index('workspace_invites_email_idx').on(table.email),
 ]);
 
 // ── MCP Agent Tokens ──────────────────────────────────────────────────────────
@@ -267,4 +289,24 @@ export const agentActivity = sqliteTable('agent_activity', {
 }, (table) => [
   index('agent_activity_workspace_id_idx').on(table.workspaceId),
   index('agent_activity_token_id_idx').on(table.tokenId),
+]);
+
+// Subscription — bound to the paying user (billing owner), NOT a workspace.
+// Covers all workspaces where `workspaces.billing_owner_id = owner_user_id`.
+// No row = implicit Free plan. Migration 0027.
+export const subscriptions = sqliteTable('subscriptions', {
+  ownerUserId:          text('owner_user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  tier:                 text('tier').notNull().default('free'),     // free | startup | professional | enterprise
+  status:               text('status').notNull().default('active'), // active | past_due | canceled
+  stripeCustomerId:     text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  currentPeriodEnd:     integer('current_period_end', { mode: 'timestamp' }),
+  // Enterprise/custom overrides — null = use PLAN_LIMITS[tier].
+  seatLimitOverride:    integer('seat_limit_override'),
+  agentLimitOverride:   integer('agent_limit_override'),
+  storageBytesOverride: integer('storage_bytes_override'),
+  createdAt:            integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt:            integer('updated_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  index('subscriptions_stripe_customer_idx').on(table.stripeCustomerId),
 ]);

@@ -1,13 +1,15 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { UserPlus, AlertCircle, Check, Trash } from 'lucide-react';
+import { UserPlus, AlertCircle, Check, Trash, Copy, Mail } from 'lucide-react';
 import {
   inviteToWorkspace,
   removeFromWorkspace,
   updateWorkspaceMemberRole,
   transferWorkspaceOwnership,
 } from '@/lib/actions/auth';
+import { getWorkspaceSeatUsage } from '@/lib/actions/billing';
+import { getWorkspaceInvites, revokeWorkspaceInvite } from '@/lib/actions/invites';
 import type { CurrentUser, WorkspaceMember } from './types';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 
@@ -29,6 +31,33 @@ export default function MembersTab({
   onMembersChanged,
 }: MembersTabProps) {
   const t = useTranslations('WorkspaceSettings');
+  const tBilling = useTranslations('Billing');
+
+  const [seatUsage, setSeatUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [invites, setInvites] = useState<{ id: string; email: string; role: string; inviteLink: string }[]>([]);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const loadInvites = () => {
+    if (!hasPrivilegedAccess) return;
+    getWorkspaceInvites(workspaceId).then(setInvites).catch(() => {});
+  };
+  useEffect(() => {
+    getWorkspaceSeatUsage(workspaceId).then((u) => setSeatUsage(u)).catch(() => {});
+    loadInvites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, members.length]);
+  const atSeatLimit = !!seatUsage && isFinite(seatUsage.limit) && seatUsage.used >= seatUsage.limit;
+
+  const copyLink = (link: string) => {
+    navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {});
+  };
+
+  const handleRevokeInvite = async (id: string) => {
+    await revokeWorkspaceInvite(id).catch(() => {});
+    loadInvites();
+    getWorkspaceSeatUsage(workspaceId).then((u) => setSeatUsage(u)).catch(() => {});
+  };
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'member' | 'viewer'>('member');
@@ -47,10 +76,17 @@ export default function MembersTab({
     if (!email) { setInviteError(t('emailRequired')); return; }
     setInviteError('');
     setInviteSuccess('');
+    setInviteLink(null);
     startInviteTransition(async () => {
       const res = await inviteToWorkspace(workspaceId, email, inviteRole);
-      if (res && 'error' in res) {
-        setInviteError(res.error || 'Failed to invite user');
+      if (res && 'error' in res && res.error) {
+        setInviteError(res.error);
+      } else if (res && 'inviteLink' in res && res.inviteLink) {
+        // No account yet → show a shareable invite link.
+        setInviteLink(res.inviteLink);
+        setInviteEmail('');
+        loadInvites();
+        getWorkspaceSeatUsage(workspaceId).then((u) => setSeatUsage(u)).catch(() => {});
       } else {
         setInviteSuccess(t('inviteSuccess', { email }));
         setInviteEmail('');
@@ -119,9 +155,16 @@ export default function MembersTab({
     <div className="space-y-6">
       {hasPrivilegedAccess && (
         <form onSubmit={handleInvite} className="space-y-2">
-          <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
-            {t('inviteNewMember')}
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+              {t('inviteNewMember')}
+            </label>
+            {seatUsage && (
+              <span className={`text-[10px] font-medium ${atSeatLimit ? 'text-amber-400' : 'text-neutral-500'}`}>
+                {tBilling('seatsUsage', { used: seatUsage.used, limit: isFinite(seatUsage.limit) ? String(seatUsage.limit) : '∞' })}
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
             <input
               type="email"
@@ -142,13 +185,18 @@ export default function MembersTab({
             </select>
             <button
               type="submit"
-              disabled={isInviting || !inviteEmail.trim()}
+              disabled={isInviting || !inviteEmail.trim() || atSeatLimit}
               className="text-xs bg-blue-500 hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1"
             >
               <UserPlus size={13} />
               {isInviting ? t('inviting') : t('invite')}
             </button>
           </div>
+          {atSeatLimit && (
+            <p className="text-[11px] text-amber-400/90 flex items-center gap-1">
+              <AlertCircle size={12} /> {tBilling('seatLimitHint')}
+            </p>
+          )}
           {inviteError && (
             <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
               <AlertCircle size={12} /> {inviteError}
@@ -160,6 +208,53 @@ export default function MembersTab({
             </p>
           )}
         </form>
+      )}
+
+      {/* Invite link for a not-yet-registered person */}
+      {inviteLink && (
+        <div className="rounded-lg border border-blue-500/25 bg-blue-500/5 p-3 space-y-2">
+          <p className="m-0 text-[11px] text-neutral-300 flex items-center gap-1.5">
+            <Mail size={12} className="text-blue-400" /> {tBilling('inviteLinkReady')}
+          </p>
+          <div className="flex gap-1.5">
+            <input
+              readOnly
+              value={inviteLink}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 bg-neutral-900 border border-neutral-700 rounded-md text-neutral-200 px-2 py-1.5 text-[11px] outline-none"
+            />
+            <button
+              onClick={() => copyLink(inviteLink)}
+              className="shrink-0 inline-flex items-center gap-1 text-xs bg-blue-500 hover:bg-blue-400 text-white px-2.5 py-1.5 rounded-md font-medium transition-colors"
+            >
+              <Copy size={12} /> {copied ? tBilling('copied') : tBilling('copy')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pending invites */}
+      {hasPrivilegedAccess && invites.length > 0 && (
+        <div className="space-y-2">
+          <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+            {tBilling('pendingInvites')}
+          </label>
+          <div className="divide-y divide-neutral-800 border border-neutral-800 rounded-lg overflow-hidden bg-neutral-900/20">
+            {invites.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-2 px-3 py-2">
+                <Mail size={13} className="text-neutral-500 shrink-0" />
+                <span className="text-xs text-neutral-200 truncate flex-1">{inv.email}</span>
+                <span className="text-[10px] text-neutral-500 shrink-0">{inv.role === 'viewer' ? t('roleViewer') : t('roleMember')}</span>
+                <button onClick={() => copyLink(inv.inviteLink)} className="shrink-0 text-neutral-500 hover:text-neutral-200 transition-colors" title={tBilling('copy')}>
+                  <Copy size={13} />
+                </button>
+                <button onClick={() => handleRevokeInvite(inv.id)} className="shrink-0 text-neutral-500 hover:text-red-400 transition-colors" title={tBilling('revokeInvite')}>
+                  <Trash size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="space-y-3">

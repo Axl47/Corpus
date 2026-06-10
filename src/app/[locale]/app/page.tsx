@@ -1,15 +1,30 @@
 import { auth } from '@/auth';
 import { getActiveWorkspaceId, getWorkspaceItems } from '@/lib/actions/workspace';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 
-export default async function AppRedirectPage() {
+export default async function AppRedirectPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string }>;
+}) {
   const session = await auth();
 
   if (!session?.user) {
     redirect('/login');
   }
+
+  // A pending invite (set while logged out) takes priority — finish accepting it.
+  const pendingInvite = (await cookies()).get('pending_invite')?.value;
+  if (pendingInvite) {
+    redirect(`/invite/${pendingInvite}`);
+  }
+
+  // Preserve the post-checkout flag through the redirect so the success modal can show.
+  const sp = await searchParams;
+  const suffix = sp?.billing === 'success' ? '?billing=success' : '';
 
   const activeWorkspaceId = await getActiveWorkspaceId();
 
@@ -22,9 +37,9 @@ export default async function AppRedirectPage() {
     if (items.length > 0) {
       const first = items[0];
       if (first.type === 'database' && first.databaseId) {
-        redirect(`/db/${first.databaseId}`);
+        redirect(`/db/${first.databaseId}${suffix}`);
       } else {
-        redirect(`/page/${first.id}`);
+        redirect(`/page/${first.id}${suffix}`);
       }
     }
   }

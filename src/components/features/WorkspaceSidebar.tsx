@@ -25,6 +25,7 @@ import {
   Globe,
   Eye,
   EyeOff,
+  CreditCard,
 } from 'lucide-react';
 import PageIcon from './PageIcon';
 import {
@@ -48,8 +49,18 @@ import WorkspaceSettingsModal from './WorkspaceSettingsModal';
 import DesktopSettingsModal, { initDesktopZoom } from './DesktopSettingsModal';
 import LanguageSwitcher from '@/components/features/LanguageSwitcher';
 import AgentsModal from './AgentsModal';
+import BillingModal from './BillingModal';
 import UserSettingsModal from './UserSettingsModal';
 import { getUserAgentTokenCount } from '@/lib/actions/agentToken';
+import { getMyTier } from '@/lib/actions/billing';
+import type { PlanTier } from '@/lib/billing/plans';
+
+const TIER_BADGE: Record<PlanTier, { color: string; background: string; borderColor: string }> = {
+  free:         { color: 'var(--color-neutral-50)',    background: 'rgba(127,195,109,0.10)', borderColor: 'rgba(127,195,109,0.30)' },
+  startup:      { color: '#fff',                        background: 'var(--color-blue-500)',  borderColor: 'transparent' },
+  professional: { color: 'var(--color-accent-strong)', background: 'rgba(68,92,149,0.12)',   borderColor: 'rgba(68,92,149,0.40)' },
+  enterprise:   { color: 'var(--color-amber-500)',     background: 'rgba(204,125,69,0.12)',  borderColor: 'rgba(204,125,69,0.40)' },
+};
 import { useWorkspaceEvents } from '@/hooks/useWorkspaceEvents';
 
 function isDescendant(items: WorkspaceItemRow[], targetId: string, ancestorId: string): boolean {
@@ -92,6 +103,7 @@ export default function WorkspaceSidebar({
 }) {
   const t = useTranslations('Workspace');
   const tSharing = useTranslations('Sharing');
+  const tBilling = useTranslations('Billing');
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -172,12 +184,15 @@ export default function WorkspaceSidebar({
 
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [workspaceCreateError, setWorkspaceCreateError] = useState<string | null>(null);
   const [settingsModalWorkspace, setSettingsModalWorkspace] = useState<{ id: string; name: string; icon?: string | null; iconColor?: string | null } | null>(null);
   const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false);
   const [agentsModalOpen, setAgentsModalOpen] = useState(false);
+  const [billingModalOpen, setBillingModalOpen] = useState(false);
   const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   // null = not yet loaded (avoids a false "no agents" warning flash on first render)
   const [agentTokenCount, setAgentTokenCount] = useState<number | null>(null);
+  const [planTier, setPlanTier] = useState<PlanTier | null>(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'members' | 'tokens' | 'sharing'>('general');
   const [shareModalItemId, setShareModalItemId] = useState<string | null>(null);
 
@@ -274,9 +289,10 @@ export default function WorkspaceSidebar({
   // Subscribe to real-time events from other users / MCP agents
   useWorkspaceEvents(currentUser.id, isAnyModalOrPickerOpen);
 
-  // Load agent token count for the sidebar badge
+  // Load agent token count + current plan tier for the sidebar badges
   useEffect(() => {
     getUserAgentTokenCount().then(setAgentTokenCount).catch(() => {});
+    getMyTier().then(setPlanTier).catch(() => {});
   }, []);
 
   // Remnus logo → first root-level item of the active workspace
@@ -665,11 +681,16 @@ export default function WorkspaceSidebar({
     const name = newWorkspaceName.trim();
     if (!name) return;
 
+    setWorkspaceCreateError(null);
     startTransition(async () => {
-      const { id } = await createWorkspace(name);
+      const res = await createWorkspace(name);
+      if ('error' in res && res.error) {
+        setWorkspaceCreateError(res.error);
+        return;
+      }
       setIsCreatingWorkspace(false);
       setNewWorkspaceName('');
-      setExpandedWorkspaces(prev => ({ ...prev, [id]: true }));
+      if (res.id) setExpandedWorkspaces(prev => ({ ...prev, [res.id!]: true }));
       router.push('/app');
     });
   };
@@ -1125,10 +1146,13 @@ export default function WorkspaceSidebar({
                 className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-500"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreateWorkspace();
-                  if (e.key === 'Escape') setIsCreatingWorkspace(false);
+                  if (e.key === 'Escape') { setIsCreatingWorkspace(false); setWorkspaceCreateError(null); }
                 }}
                 autoFocus
               />
+              {workspaceCreateError && (
+                <p className="m-0 text-[11px] text-red-400 leading-snug">{workspaceCreateError}</p>
+              )}
               <div className="flex gap-1.5">
                 <button
                   onClick={handleCreateWorkspace}
@@ -1339,6 +1363,11 @@ export default function WorkspaceSidebar({
             setSettingsInitialTab('general');
             setAgentsModalOpen(true);
           }}
+          onOpenBilling={() => {
+            setSettingsModalWorkspace(null);
+            setSettingsInitialTab('general');
+            setBillingModalOpen(true);
+          }}
         />
       )}
 
@@ -1360,6 +1389,13 @@ export default function WorkspaceSidebar({
             getUserAgentTokenCount().then(setAgentTokenCount).catch(() => {});
           }}
         />
+      )}
+
+      {billingModalOpen && (
+        <BillingModal onClose={() => {
+          setBillingModalOpen(false);
+          getMyTier().then(setPlanTier).catch(() => {});
+        }} />
       )}
 
       {/* Delete confirmation modal */}
@@ -1420,6 +1456,25 @@ export default function WorkspaceSidebar({
               {t('agentsConnectNudge')}
             </span>
           ) : null}
+        </button>
+      </div>
+
+      {/* Plan / Billing button */}
+      <div className="shrink-0 px-2">
+        <button
+          onClick={() => setBillingModalOpen(true)}
+          className="w-full flex items-center gap-1.5 min-w-0 px-2 py-1.5 rounded-md text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all duration-200"
+        >
+          <CreditCard size={14} className="shrink-0 text-neutral-400" />
+          <span className="truncate">{t('planBilling')}</span>
+          {planTier && (
+            <span
+              className="ml-auto shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none border"
+              style={TIER_BADGE[planTier]}
+            >
+              {tBilling(`tier_${planTier}` as 'tier_free')}
+            </span>
+          )}
         </button>
       </div>
 

@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 export default async function PricingPage() {
   return (
     <MarketingShell>
-      <LandingPricing />
+      <LandingPricing showComparison />
     </MarketingShell>
   );
 }

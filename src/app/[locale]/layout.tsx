@@ -17,6 +17,7 @@ import PostHogPageView from '@/components/providers/PostHogPageView';
 import PostHogIdentify from '@/components/providers/PostHogIdentify';
 import UpdateBanner from '@/components/features/UpdateBanner';
 import ActivityTracker from '@/components/providers/ActivityTracker';
+import BillingSuccessModal from '@/components/features/BillingSuccessModal';
 import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
 
 export const metadata: Metadata = {
@@ -132,6 +133,7 @@ export default async function LocaleLayout({
       <PostHogIdentify user={currentUser} />
       <NextIntlClientProvider messages={messages}>
         <ActivityTracker />
+        <BillingSuccessModal />
         <UpdateBanner />
         <QueryProvider>
           <AppShell

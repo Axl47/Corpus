@@ -4,6 +4,7 @@ import { agentTokens, workspaceMembers, workspaces, agentActivity, oauthAccessTo
 import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getTranslations } from 'next-intl/server';
+import { checkCanAddAgent } from '@/lib/services/billing';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
@@ -38,6 +39,16 @@ export async function mintAgentToken(
   expiresInDays?: number | null,
 ): Promise<{ token: string }> {
   const userId = await assertOwnerAccess(workspaceId);
+
+  // Agent limit — the billing owner's plan caps connected agents (PAT + OAuth).
+  const user = await getCurrentUser();
+  if (user.role !== 'admin') {
+    const code = await checkCanAddAgent(workspaceId);
+    if (code) {
+      const t = await getTranslations('Errors');
+      throw new Error(t(code));
+    }
+  }
 
   const prefix8 = randomBytes(4).toString('hex'); // 8 hex chars
   const secret = randomBytes(32).toString('hex');  // 64 hex chars

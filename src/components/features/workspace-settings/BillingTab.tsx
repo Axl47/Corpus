@@ -1,0 +1,41 @@
+'use client';
+import { useTranslations } from 'next-intl';
+import { CreditCard, ArrowRight } from 'lucide-react';
+
+interface BillingTabProps {
+  /** Closes Workspace Settings and opens the global Billing center. */
+  onOpenBilling: () => void;
+}
+
+/**
+ * Thin redirect tab. Billing is per-user (the billing owner's seat pool), so it
+ * lives in the global {@link BillingModal} rather than a per-workspace surface.
+ */
+export default function BillingTab({ onOpenBilling }: BillingTabProps) {
+  const t = useTranslations('Billing');
+
+  return (
+    <div className="space-y-6">
+      <div className="border border-blue-500/20 rounded-xl p-5 space-y-4 bg-blue-500/5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <CreditCard size={16} className="text-blue-400" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-neutral-100">{t('tabHeroTitle')}</h3>
+            <p className="text-xs text-neutral-400 leading-relaxed">{t('tabHeroSubtitle')}</p>
+          </div>
+        </div>
+
+        <button
+          onClick={onOpenBilling}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-400 px-5 py-3 rounded-lg shadow-[0_0_20px_-6px_rgba(68,92,149,0.6)] transition-colors"
+        >
+          <CreditCard size={16} />
+          {t('openBilling')}
+          <ArrowRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}

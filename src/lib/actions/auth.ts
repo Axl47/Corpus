@@ -2,12 +2,14 @@
 import { signOut } from '@/auth';
 import { auth } from '@/auth';
 import { db } from '@/db';
-import { users, workspaceMembers, accounts, sessions, userSessions, agentTokens } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { users, workspaces, workspaceMembers, workspaceInvites, accounts, sessions, userSessions, agentTokens } from '@/db/schema';
+import { eq, and, sql, isNull } from 'drizzle-orm';
+import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
+import { checkCanAddSeatForEmail } from '@/lib/services/billing';
 
 export async function logout() {
   // Clear the persisted workspace selection so the next account doesn't inherit it
@@ -44,40 +46,66 @@ export async function inviteToWorkspace(
     }
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   const [targetUser] = await db
     .select({ id: users.id })
     .from(users)
-    .where(eq(users.email, email))
+    .where(eq(users.email, normalizedEmail))
     .limit(1);
 
-  if (!targetUser) {
-    return { error: t('userNotFound') };
+  // Seat limit (the billing owner's plan caps distinct people; admins bypass).
+  if (!isAdmin) {
+    const code = await checkCanAddSeatForEmail(workspaceId, normalizedEmail, targetUser?.id ?? null);
+    if (code) return { error: t(code) };
   }
 
-  const existing = await db
-    .select()
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.userId, targetUser.id),
-      ),
-    )
+  if (targetUser) {
+    const existing = await db
+      .select()
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, targetUser.id)))
+      .limit(1);
+    if (existing[0]) return { error: t('alreadyMember') };
+
+    await db.insert(workspaceMembers).values({
+      workspaceId,
+      userId: targetUser.id,
+      role,
+      createdAt: new Date(),
+    });
+
+    revalidatePath('/');
+    return { success: true };
+  }
+
+  // No account yet → create (or reuse) a pending invite and return a shareable link.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const [pending] = await db
+    .select({ token: workspaceInvites.token })
+    .from(workspaceInvites)
+    .where(and(
+      eq(workspaceInvites.workspaceId, workspaceId),
+      eq(workspaceInvites.email, normalizedEmail),
+      isNull(workspaceInvites.acceptedAt),
+    ))
     .limit(1);
 
-  if (existing[0]) {
-    return { error: t('alreadyMember') };
+  let token = pending?.token;
+  if (!token) {
+    token = randomBytes(24).toString('hex');
+    await db.insert(workspaceInvites).values({
+      workspaceId,
+      email: normalizedEmail,
+      role,
+      token,
+      invitedBy: session.user.id,
+      createdAt: new Date(),
+    });
   }
-
-  await db.insert(workspaceMembers).values({
-    workspaceId,
-    userId: targetUser.id,
-    role,
-    createdAt: new Date(),
-  });
 
   revalidatePath('/');
-  return { success: true };
+  return { success: true, inviteLink: `${appUrl}/invite/${token}` };
 }
 
 export async function removeFromWorkspace(workspaceId: string, userId: string) {
@@ -339,6 +367,13 @@ export async function transferWorkspaceOwnership(
     .update(workspaceMembers)
     .set({ role: 'owner' })
     .where(eq(workspaceMembers.id, targetMember.id));
+
+  // Billing follows ownership: the workspace moves into the new owner's seat pool
+  // and is governed by their plan.
+  await db
+    .update(workspaces)
+    .set({ billingOwnerId: newOwnerUserId })
+    .where(eq(workspaces.id, workspaceId));
 
   revalidatePath('/');
   return { success: true };

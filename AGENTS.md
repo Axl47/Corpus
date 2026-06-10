@@ -58,7 +58,7 @@ Remnus is fully internationalized using **next-intl v4** (App Router native). Al
 
 **Clean URLs:** `localePrefix: 'never'` — URLs stay as `/db/123`, never `/en/db/123`. All pages live under `src/app/[locale]/`.
 
-**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **24 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Pricing`, `Contact`, `Download`, `Privacy`, `Updater`, `Sharing`, `UserSettings`, `OAuthAuthorize`, `Security`.
+**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **25 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Billing`, `Pricing`, `Contact`, `Download`, `Privacy`, `Updater`, `Sharing`, `UserSettings`, `OAuthAuthorize`, `Security`.
 
 ### Rules for All Future Development
 
@@ -123,7 +123,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 | Table | Purpose |
 | ----- | ------- |
-| `workspaces` | Workspace list — `icon` (emoji/lucide/https URL), `icon_color` |
+| `workspaces` | Workspace list — `icon` (emoji/lucide/https URL), `icon_color`, `billing_owner_id` (nullable FK→user; the paying user whose plan governs this workspace's limits — set on create, follows `transferWorkspaceOwnership`; migration `0027`) |
 | `workspace_items` | Sidebar items (pages + databases), recursive `parent_id` nesting |
 | `standalone_pages` | Markdown content for page-type items (1:1 with `workspace_items`) |
 | `databases` | `schema` JSON (columns) + `views` JSON (named view configs) |
@@ -133,9 +133,11 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 | `session` | Auth.js sessions |
 | `verificationToken` | Email verification |
 | `workspace_members` | User↔Workspace join — `role` ('owner'\|'member'\|'viewer'), `hidden` (boolean, default false — **per-user** flag that hides the workspace from that member's sidebar behind a "Show hidden" toggle; toggled via `setWorkspaceHidden`; migration `0026`) |
+| `workspace_invites` | Email invitations for people without an account yet — `email`, `role`, `token` (bearer secret in the `/invite/[token]` link), `invited_by`, `expires_at` (nullable), `accepted_at` (nullable). Pending invites **reserve a seat**. Migration `0028`. |
 | `agent_tokens` | MCP bearer tokens — `token_prefix`, `token_hash`, `scope` ('read'\|'write'), `expires_at` (nullable, null = no expiry), `revoked_at` |
 | `uploaded_assets` | One row per Cloudinary upload — `public_id`, `resource_type`, `kind` ('icon'\|'image'\|'file'), `bytes`, `url`, `user_id`, `workspace_id` (nullable). Powers reliable Cloudinary cleanup on delete + storage-usage accounting per user/workspace (future plan limits). |
 | `agent_activity` | Audit log for every MCP tool call |
+| `subscriptions` | Billing — keyed by `owner_user_id` (the **billing owner**, a user; NOT a workspace). `tier` ('free'\|'startup'\|'professional'\|'enterprise'), `status` ('active'\|'past_due'\|'canceled'), `stripe_customer_id`, `stripe_subscription_id`, `current_period_end`, nullable `seat_limit_override`/`agent_limit_override`/`storage_bytes_override` (enterprise/custom). **No row = implicit Free.** Limits derived from `PLAN_LIMITS` ([src/lib/billing/plans.ts](src/lib/billing/plans.ts)). Migration `0027`. |
 | `shared_pages` | Public page sharing — `slug` (unique; UUID for regular users, custom path for admins e.g. `docs/mcp`), `page_id`, `workspace_id`, `permission` ('read'\|'write'), `width` ('narrow'\|'wide'\|'full', default 'narrow'), `in_sitemap` (boolean, default false — admin-only, cascades to children), `created_by`. Powers `/share/[...slug]` public route. Migrations: `0020` (initial), `0021` (width), `0022` (in_sitemap). |
 | `client_auth_tokens` | Short-lived desktop OAuth tokens — `device_id` (PK), `token` (JWT), `expires_at` (5 min TTL). DB-backed; safe for multi-instance deployments. |
 | `user_sessions` | Engagement / time-in-app tracking — `user_id`, `started_at`, `last_seen_at`, `duration_seconds`. Extended by the `/api/activity/ping` heartbeat (`ActivityTracker`); a new row opens after a 2-min inactivity gap. Powers admin engagement stats. |
@@ -154,6 +156,22 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - **Access control:** All actions call `assertWorkspaceAccess(workspaceId)` or `assertDatabaseAccess(databaseId)` before executing. Unauthorized → throws; unauthenticated → `redirect('/login')`.
 - **Env vars:** `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`.
 
+### Billing & Plan Limits
+
+**Model:** The subscription belongs to the **billing owner** (a user), not a workspace. A workspace's limits come from its `workspaces.billing_owner_id`'s plan (`subscriptions` row, default Free). The owner holds a **seat pool** and distributes seats by inviting members; limits cover **all** workspaces the owner owns.
+
+- **Limits source of truth:** `src/lib/billing/plans.ts` — `PLAN_LIMITS` (free/startup/professional/enterprise → `seats`, `agents`, `storageBytes`, `auditDays`, `workspaces`). Mirrors the pricing page. `Infinity` = unlimited. **Seats count the owner too** (Free=2 → owner + 1 invitee).
+- **Service:** `src/lib/services/billing.ts` (cookie-free, owner-id params) — `getOwnerPlan`, `getPlanForWorkspace`, `resolveBillingOwner`, `countSeats` (distinct users across owner's workspaces), `isUserInOwnerPool`, `countAgents` (PAT+OAuth), `getOwnerStorageBytes` (pooled), `getOwnerUsage`, and `check*` helpers returning a `BillingLimitCode | null` (`seatLimitReached`/`agentLimitReached`/`storageLimitReached`/`workspaceLimitReached`).
+- **Enforcement (all "block new, keep existing"; platform admins bypass):** seat → `inviteToWorkspace` ([auth.ts](src/lib/actions/auth.ts)); workspace cap → `createWorkspace` ([workspace.ts](src/lib/actions/workspace.ts)); agent → `mintAgentToken` ([agentToken.ts](src/lib/actions/agentToken.ts)) **and** OAuth issuance ([api/oauth/token](src/app/api/oauth/token/route.ts), `authorization_code` grant only); storage → [api/upload](src/app/api/upload/route.ts) (413). Re-adding a user already in the pool is free.
+- **Billing-owner consistency:** set on `createWorkspace`, seed (`createSeedWorkspace`), first-user bootstrap (`auth.ts` `createUser`), and moved by `transferWorkspaceOwnership`.
+- **Stripe:** `src/lib/stripe.ts` (null when `STRIPE_SECRET_KEY` unset), actions in `src/lib/actions/billing.ts` (`createCheckoutSession`, `createPortalSession`, `getMySubscription`, `getMyTier`, `getWorkspaceSeatUsage`), webhook `src/app/api/webhooks/stripe/route.ts` (raw body + signature; whitelisted in `auth.config.ts` + bypasses intl in `proxy.ts`).
+  - **Self-healing sync:** every `customer.subscription.*` event calls `syncSubscriptionForCustomer(customerId)` ([src/lib/billing/sync.ts](src/lib/billing/sync.ts)) which **recomputes the effective tier from Stripe's live state** (lists the customer's subscriptions, picks the highest active tier, or Free if none) — robust to event ordering AND duplicate subscriptions. Never trust a single event's tier.
+  - **No duplicate subscriptions:** Checkout (subscription mode) always creates a NEW sub, so `createCheckoutSession` **switches the existing active subscription's price in place** (`stripe.subscriptions.update` + proration) when one exists, instead of opening a second Checkout — otherwise the user would be double-billed. Only the first purchase goes through Checkout.
+- **Seat distribution & invites:** `inviteToWorkspace` ([auth.ts](src/lib/actions/auth.ts)) adds an existing user directly; for an **unregistered email** it creates a `workspace_invites` row and returns a shareable `/invite/[token]` link. `countSeats` counts members **+ pending invites** (de-duped by email) so invites reserve a seat. Accept flow: `/invite/[token]` page ([src/app/[locale]/invite/[token]/page.tsx](src/app/[locale]/invite/[token]/page.tsx), whitelisted) → logged-in users auto-accept (`InviteAcceptClient` → `acceptInvite`); logged-out users get a `pending_invite` cookie + sign-in, then `/app` redirects them back to finish. Invite actions live in `src/lib/actions/invites.ts` (`acceptInvite`/`getWorkspaceInvites`/`revokeWorkspaceInvite`/`getInviteByToken`). Invited people get access **only to the invited workspace(s)** (access scope stays per-workspace via `workspace_members`).
+- **Central people management:** `getPoolMembers()` / `removeUserFromPool(userId)` ([billing.ts](src/lib/actions/billing.ts)) power `PoolPeopleSection` inside `BillingModal` — lists everyone across the owner's workspaces + pending invites; **removing someone deletes them from ALL the owner's workspaces** (frees the seat). `MembersTab` also lists/​revokes a workspace's pending invites and surfaces the copyable invite link.
+- **UI:** global `BillingModal` (sidebar "Plan & Billing" button, with a current-tier badge fed by `getMyTier()`) shows plan + usage meters + upgrade (Checkout) / manage (Portal); `WorkspaceSettings` → Billing tab is a thin redirect to it; `MembersTab` shows a seat meter and disables invite at the cap; pricing CTAs (`PricingCtaButton`) start Checkout for logged-in users on paid tiers. `BillingSuccessModal` (mounted in `[locale]/layout.tsx`) fires on `?billing=success` (forwarded through the `/app` redirect) — celebratory modal listing the unlocked plan limits; polls `getMySubscription` a few times to outrun the webhook.
+- **Env vars:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTUP`, `STRIPE_PRICE_PRO`, `NEXT_PUBLIC_APP_URL`.
+
 ### Performance Rules
 
 - **No query waterfalls:** Fetch independent sources with `Promise.all`.
@@ -165,13 +183,15 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 ### Migration Notes
 
-- New migration `when` values must be **greater than** all existing values. Last journaled: `0016` → `1780700000000`. Reserve `0018_user_sessions` → `1780800000000`, `0019_uploaded_assets` → `1780900000000`, `0020_shared_pages` → `1781000000000`. **Next migration: `when` > `1781200000000`.**
+- New migration `when` values must be **greater than** all existing values. Last journaled: `0016` → `1780700000000`. Reserve `0018_user_sessions` → `1780800000000`, `0019_uploaded_assets` → `1780900000000`, `0020_shared_pages` → `1781000000000`. **Next migration: `when` > `1781300000000`.**
 - `0018_user_sessions`, `0019_uploaded_assets` (and `0017`) are NOT in `_journal.json` — applied manually via direct DDL due to the libsql `batch()` caveat below. Apply `user_sessions` with `npx tsx src/db/apply-0018-user-sessions.ts`, `uploaded_assets` with `npx tsx src/db/apply-0019-uploaded-assets.ts` (both idempotent).
 - `0020_shared_pages`, `0021_shared_pages_width`, `0022_shared_pages_sitemap` — also manually applied. Scripts: `src/db/apply-002{0,1,2}-*.ts`. Apply to both local and Turso.
 - `0023_oauth` — OAuth 2.1 tables (`oauth_clients`, `oauth_auth_codes`, `oauth_access_tokens`). Script: `src/db/apply-0023-oauth.ts`. Applied manually (same idempotent pattern).
 - `0024_oauth_agent_name` — adds nullable `agent_name` to `oauth_access_tokens` (user-set canonical agent id for brand-icon display). Idempotent (PRAGMA column check). Script: `src/db/apply-0024-oauth-agent-name.ts`. Applied to both local + Turso.
 - `0025_workspace_hidden` — **superseded by 0026.** Added `hidden` to `workspaces` (workspace-global). Wrong scope: one member hiding affected all members. Column dropped by 0026.
 - `0026_member_hidden` — moves `hidden` to `workspace_members` (**per-user**: a member hides a workspace from their own sidebar only) and drops the orphaned `workspaces.hidden`. `getWorkspaces` joins the caller's membership row to surface `hidden`. Idempotent (PRAGMA column checks). Script: `src/db/apply-0026-member-hidden.ts`. Applied to both local + Turso.
+- `0027_billing` — adds the `subscriptions` table + `workspaces.billing_owner_id` (backfilled to each workspace's earliest `role='owner'` member). Idempotent (CREATE TABLE IF NOT EXISTS + PRAGMA column check). Script: `src/db/apply-0027-billing.ts`. Apply to both local + Turso.
+- `0028_invites` — adds `workspace_invites` (email invitations + bearer token for `/invite/[token]`; pending invites reserve a seat). Idempotent. Script: `src/db/apply-0028-invites.ts`. Apply to both local + Turso. **Next migration: `when` > `1781400000000`.**
 - **Two databases / env precedence gotcha:** `.env` has the **Turso** `DATABASE_URL`; `.env.local` overrides it with `file:local.db`. Next.js (dev) uses `.env.local` → **local.db**, but the apply scripts call `dotenv.config()` which reads only `.env` → **Turso**. So a plain `npx tsx src/db/apply-00xx-*.ts` migrates Turso only; for local dev also run it with an explicit override: `DATABASE_URL="file:local.db" npx tsx src/db/apply-00xx-*.ts`. Apply every manual migration to **both**.
 - **libsql DDL caveat:** Drizzle's `migrate()` runs SQL in a `batch()` call. libsql's `batch()` silently fails DDL statements (ALTER TABLE, CREATE TABLE, etc.) — the call returns "complete" but changes are not applied. Use `client.execute()` directly for DDL, or manually apply + insert into `__drizzle_migrations` via a helper script. Migration 0016 was applied this way.
 - Apply with: `npx tsx src/db/migrate.ts`
@@ -231,7 +251,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `workspace.ts` — Workspace + sidebar item CRUD (all auth-gated via `assertWorkspaceAccess`). Includes `updateWorkspaceIcon(id, icon, iconColor)` and `setWorkspaceHidden(id, hidden)` (sidebar hide/show).
 - `database.ts` — Database schema + view mutations (`assertDatabaseAccess`). `updateDatabaseSchema` automatically propagates renamed select/multi-select options to all workspace pages to prevent data loss.
 - `page.ts` — Database row CRUD (`assertDatabaseAccess`).
-- `auth.ts` — User auth, registration, role management, workspace membership, admin user ops.
+- `auth.ts` — User auth, registration, role management, workspace membership, admin user ops. `inviteToWorkspace` enforces the seat limit; `transferWorkspaceOwnership` moves `billing_owner_id`.
+- `billing.ts` — Stripe billing actions: `createCheckoutSession(tier)`, `createPortalSession()`, `getMySubscription()` (plan + usage meters), `getWorkspaceSeatUsage(workspaceId)`. See **Billing & Plan Limits**.
 - `demo.ts` — `loginAsDemo()` — reset + reseed demo workspace and sign in.
 - `locale.ts` — `setLocale(locale)` — writes `NEXT_LOCALE` cookie.
 - `agentToken.ts` — MCP token mint / list / revoke.

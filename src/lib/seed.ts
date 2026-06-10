@@ -428,7 +428,7 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   // ── Single workspace ────────────────────────────────────────────────────────
 
   const ws1 = crypto.randomUUID();
-  await db.insert(workspaces).values({ id: ws1, name: workspaceName, sortOrder: 0, createdAt: new Date() });
+  await db.insert(workspaces).values({ id: ws1, name: workspaceName, sortOrder: 0, billingOwnerId: userId, createdAt: new Date() });
   await db.insert(workspaceMembers).values({ id: crypto.randomUUID(), workspaceId: ws1, userId, role: 'owner', createdAt: new Date() });
 
   // ── Demo agent token — used to stamp selected rows with an "agent edited" badge ──

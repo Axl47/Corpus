@@ -38,7 +38,9 @@ export const authConfig: NextAuthConfig = {
       const isOAuthApi = cleanPath.startsWith('/api/oauth');
       const isWellKnown = cleanPath.startsWith('/.well-known');
       const isOAuthPage = cleanPath.startsWith('/oauth/');
-      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown || isOAuthPage) return true;
+      const isStripeWebhook = cleanPath.startsWith('/api/webhooks/stripe');
+      const isInvite = cleanPath.startsWith('/invite/');
+      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown || isOAuthPage || isStripeWebhook || isInvite) return true;
 
       // Public marketing pages (pricing, contact) are always accessible
       if (isPublicMarketingRoute) return true;
