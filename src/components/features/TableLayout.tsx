@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { getOptionColorByValue, formatDateValue, normalizeOption, type SelectOption } from '@/lib/types/properties';
 import { useTranslations } from 'next-intl';
+import { useZoom } from '@/components/providers/ZoomProvider';
 import InlineCellEditor from './InlineCellEditor';
 import { GripHorizontal, GripVertical, Settings, Trash2, Type, List, Hash, AlignLeft, Calendar, Clock, Tags, Plus, Copy, EyeOff, ArrowUp, ArrowDown, Filter, X, RotateCcw, CheckSquare, Square, ExternalLink } from 'lucide-react';
 import type { ViewFilter, ViewSort, FilterOperator } from '@/lib/types/views';
@@ -91,6 +92,7 @@ export default function TableLayout({
 }) {
   const t = useTranslations('Database');
   const tPage = useTranslations('Page');
+  const zoom = useZoom();
   const schema: any[] = database.schema ?? [];
   const visibleCols = getVisibleColumns(schema, columnOrder, hiddenColumns);
 
@@ -372,8 +374,13 @@ export default function TableLayout({
   const handleRowMouseEnter = (e: React.MouseEvent, pageId: string) => {
     cancelHide();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // Divide by zoom: visual-viewport coords → fixed-ancestor local coords.
     setHoveredPageId(pageId);
-    setActionPos({ top: rect.top, left: rect.left - ACTION_BAR_WIDTH + 4, height: rect.height });
+    setActionPos({
+      top: rect.top / zoom,
+      left: (rect.left - ACTION_BAR_WIDTH + 4) / zoom,
+      height: rect.height / zoom,
+    });
   };
 
   const handleRowMouseLeave = (_e: React.MouseEvent, pageId: string) => {
@@ -397,7 +404,7 @@ export default function TableLayout({
       setMenuPos(null);
     } else {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setMenuPos({ x: rect.left, y: rect.bottom + 4 });
+      setMenuPos({ x: rect.left / zoom, y: rect.bottom / zoom + 4 });
       setActiveMenuRowId(pageId);
     }
   };

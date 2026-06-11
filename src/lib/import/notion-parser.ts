@@ -408,7 +408,11 @@ async function buildItems(
 
       const dbRows: NotionDbRow[] = rows.map(r => {
         const rowTitle = r[titleColName] || 'Untitled';
-        const rowData = rowMdByTitle.get(rowTitle) ?? { content: '', imageRefs: [] };
+        // Notion replaces '.' with ' ' in exported file names (e.g. "12.2025" → "12 2025"),
+        // so fall back to a dot→space normalized lookup when the exact title doesn't match.
+        const rowData = rowMdByTitle.get(rowTitle)
+          ?? rowMdByTitle.get(rowTitle.replace(/\./g, ' '))
+          ?? { content: '', imageRefs: [] };
         return {
           title: rowTitle,
           properties: r,

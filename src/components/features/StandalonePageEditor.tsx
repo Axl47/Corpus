@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, RefreshCw, MoreHorizontal, Globe, ArrowLeftRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { updateStandalonePageContent, updateWorkspaceItemTitle, updateWorkspaceItemIcon } from '@/lib/actions/workspace';
-import BlockEditor from '@/components/features/editor/BlockEditor';
+import BlockEditor, { type BlockEditorHandle } from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import SaveStatus, { type SaveState } from './SaveStatus';
@@ -53,6 +53,7 @@ export default function StandalonePageEditor({
   const [openMenu, setOpenMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<BlockEditorHandle>(null);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -247,6 +248,15 @@ export default function StandalonePageEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                editorRef.current?.insertLineAtStart();
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                editorRef.current?.focusStart();
+              }
+            }}
             placeholder={t('untitled')}
             className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
@@ -254,6 +264,7 @@ export default function StandalonePageEditor({
       </div>
 
       <BlockEditor
+        ref={editorRef}
         key={page.id}
         initialContent={page.content}
         onChange={handleContentChange}

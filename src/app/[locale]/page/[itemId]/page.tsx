@@ -1,7 +1,7 @@
 import { getStandalonePageByItemId, getSubItems } from '@/lib/actions/workspace';
-import { notFound } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import StandalonePageEditor from '@/components/features/StandalonePageEditor';
+import NotFoundRedirect from '@/components/features/NotFoundRedirect';
 
 export default async function StandalonePageRoute(
   props: { params: Promise<{ itemId: string }> }
@@ -12,7 +12,7 @@ export default async function StandalonePageRoute(
     getSubItems(itemId),
     getCurrentUser(),
   ]);
-  if (!data || !data.page) return notFound();
+  if (!data || !data.page) return <NotFoundRedirect />;
 
   return (
     <div className="flex-1 overflow-auto bg-neutral-850">

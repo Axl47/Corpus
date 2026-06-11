@@ -137,6 +137,7 @@
     "importNotion": "Notion से आयात करें",
     "changeIcon": "आइकन बदलें",
     "addSubPage": "उप-पेज जोड़ें",
+    "dropInside": "अंदर रखें",
     "moreOptions": "अधिक विकल्प",
     "workspaceNamePlaceholder": "कार्यक्षेत्र का नाम...",
     "addWorkspace": "कार्यक्षेत्र जोड़ें",
@@ -590,7 +591,11 @@
     "imageAlign_right": "दाएँ संरेखित करें",
     "bubbleLinkEdit": "लिंक",
     "bubbleLinkText": "पाठ",
-    "bubbleLinkUrl": "URL"
+    "bubbleLinkUrl": "URL",
+    "bubbleTextColor": "टेक्स्ट रंग",
+    "bubbleHighlight": "हाइलाइट",
+    "bubbleColorDefault": "डिफ़ॉल्ट",
+    "bubbleColorNone": "कोई नहीं"
   },
   "Page": {
     "untitled": "शीर्षकहीन",
@@ -652,7 +657,10 @@
     "alreadyOwner": "उपयोगकर्ता पहले से इस कार्यक्षेत्र का स्वामी है",
     "unauthorized": "अनधिकृत: इस कार्यक्षेत्र तक पहुंच नहीं",
     "cannotDeleteOnlyWorkspace": "आप अपना एकमात्र कार्यक्षेत्र नहीं हटा सकते",
-    "itemNotFound": "आइटम नहीं मिला"
+    "itemNotFound": "आइटम नहीं मिला",
+    "resourceNotFound": "यह पृष्ठ अब मौजूद नहीं है।",
+    "resourceNotFoundDesc": "इसे हटाया या स्थानांतरित किया गया हो सकता है।",
+    "goHome": "कार्यक्षेत्र पर जाएं"
   },
   "LanguageSwitcher": {
     "label": "भाषा"

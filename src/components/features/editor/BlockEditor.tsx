@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -14,9 +14,13 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import BubbleMenuBar from './BubbleMenuBar';
 import BlockDragHandle, { getDragSource } from './BlockDragHandle';
 import { Slice, Fragment } from '@tiptap/pm/model';
+import { TextSelection } from '@tiptap/pm/state';
 import { dropPoint } from '@tiptap/pm/transform';
 import { SlashCommand } from './SlashCommandMenu';
 import { ChildBlock } from './ChildBlockExtension';
+import Color from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Highlight from '@tiptap/extension-highlight';
 import { YoutubeEmbed } from './YoutubeEmbedExtension';
 import { ImageBlock } from './ImageBlockExtension';
 import { CalloutBlock } from './CalloutBlockExtension';
@@ -35,6 +39,11 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     timer = setTimeout(() => fn(...args), delay);
   };
 }
+
+export type BlockEditorHandle = {
+  focusStart: () => void;
+  insertLineAtStart: () => void;
+};
 
 type Props = {
   initialContent: string;
@@ -96,7 +105,7 @@ function buildInitialContent(markdown: string, subItems: WorkspaceItemRow[]): st
   return blocks + (markdown ? '\n\n' + markdown : '');
 }
 
-export default function BlockEditor({
+const BlockEditor = forwardRef<BlockEditorHandle, Props>(function BlockEditor({
   initialContent,
   onChange,
   onImmediateSave,
@@ -106,9 +115,24 @@ export default function BlockEditor({
   initialSubItems,
   shareMap,
   editable = true,
-}: Props) {
+}, ref) {
   const editorRef = useRef<any>(null);
   const router = useRouter();
+
+  useImperativeHandle(ref, () => ({
+    focusStart: () => {
+      editorRef.current?.chain().focus('start').run();
+    },
+    insertLineAtStart: () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const { state, view } = editor;
+      const para = state.schema.nodes.paragraph.create();
+      const tr = state.tr.insert(0, para);
+      view.dispatch(tr.setSelection(TextSelection.near(tr.doc.resolve(1))));
+      view.focus();
+    },
+  }), []);
 
   // Kept in a ref so the (closure-captured) editorProps click handler always
   // reaches the latest onImmediateSave without recreating the editor.
@@ -183,6 +207,9 @@ export default function BlockEditor({
       PageLink,
       PageMention,
       FencedCodeBlock,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
     ],
     content: computedInitial,
     contentType: 'markdown',
@@ -219,6 +246,24 @@ export default function BlockEditor({
           window.open(href, '_blank', 'noopener,noreferrer');
         }
         return true;
+      },
+      // Clicking on a list item's marker (the "2." number/bullet) lands on the
+      // <li> element since ::marker pseudo-elements don't receive pointer events.
+      // ProseMirror's posAtCoords may then return a position outside the paragraph
+      // inside the list item, so the cursor ends up outside. This is especially
+      // visible on empty list items (no text to click on). Intercept direct clicks
+      // on listItem nodes and force the cursor into the first paragraph.
+      handleClickOn: (view, _pos, node, nodePos, _event, direct) => {
+        if (!direct || node.type.name !== 'listItem') return false;
+        try {
+          // nodePos+1 = inside listItem; nodePos+2 = inside its first paragraph.
+          const $inside = view.state.doc.resolve(nodePos + 2);
+          view.dispatch(view.state.tr.setSelection(TextSelection.near($inside)));
+          view.focus();
+          return true;
+        } catch {
+          return false;
+        }
       },
       handleKeyDown: (view, event) => {
         if (event.key !== 'Backspace') return false;
@@ -431,4 +476,6 @@ export default function BlockEditor({
       <EditorContent editor={editor} />
     </div>
   );
-}
+});
+
+export default BlockEditor;

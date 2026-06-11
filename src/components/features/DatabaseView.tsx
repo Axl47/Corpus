@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { createPage, getPage, deletePage, duplicatePage, reorderPages, updatePageProperties } from '@/lib/actions/page';
 import { updateDatabaseViews } from '@/lib/actions/database';
-import { updateWorkspaceItemIcon } from '@/lib/actions/workspace';
+import { updateWorkspaceItemIcon, updateWorkspaceItemTitle } from '@/lib/actions/workspace';
 import { Plus, Settings, Columns3, Filter, ArrowUpDown, X, Maximize2, Database, ArrowLeftRight, MoreHorizontal, Trash2, Copy, ChevronLeft, RefreshCw } from 'lucide-react';
 import TableLayout from './TableLayout';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -261,6 +261,17 @@ export default function DatabaseView({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const dbButtonRef = useRef<HTMLButtonElement>(null);
+  const [dbName, setDbName] = useState<string>(database.name ?? '');
+  const savedDbName = useRef<string>(database.name ?? '');
+
+  useEffect(() => {
+    if (dbName === savedDbName.current) return;
+    const timer = setTimeout(() => {
+      if (database.itemId) updateWorkspaceItemTitle(database.itemId, dbName);
+      savedDbName.current = dbName;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [dbName, database.itemId]);
 
   const handleIconSelect = (newIcon: string | null, newColor: string | null) => {
     if (database.itemId) {
@@ -348,9 +359,9 @@ export default function DatabaseView({
   // Synchronize document title
   useEffect(() => {
     if (database && activeView) {
-      document.title = `${database.name} - ${activeView.name} | Remnus`;
+      document.title = `${dbName || database.name} - ${activeView.name} | Remnus`;
     }
-  }, [database?.name, activeView?.name]);
+  }, [dbName, database?.name, activeView?.name]);
 
   const mutateConfig = useCallback(
     (fn: (cfg: typeof config) => typeof config) => {
@@ -833,7 +844,19 @@ export default function DatabaseView({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-none">{database.name}</h1>
+          <input
+            type="text"
+            value={dbName}
+            onChange={(e) => setDbName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
+            placeholder={tPage('untitled')}
+            className="w-full bg-transparent text-white font-bold text-2xl sm:text-3xl focus:outline-none placeholder:text-neutral-700 tracking-tight leading-none py-1"
+          />
         </div>
       </div>
 

@@ -137,6 +137,7 @@
     "importNotion": "Von Notion importieren",
     "changeIcon": "Symbol ändern",
     "addSubPage": "Unterseite hinzufügen",
+    "dropInside": "Verschachteln",
     "moreOptions": "Weitere Optionen",
     "workspaceNamePlaceholder": "Arbeitsbereichsname...",
     "addWorkspace": "Arbeitsbereich hinzufügen",
@@ -590,7 +591,11 @@
     "imageAlign_right": "Rechts ausrichten",
     "bubbleLinkEdit": "Link",
     "bubbleLinkText": "Text",
-    "bubbleLinkUrl": "URL"
+    "bubbleLinkUrl": "URL",
+    "bubbleTextColor": "Textfarbe",
+    "bubbleHighlight": "Hervorhebung",
+    "bubbleColorDefault": "Standard",
+    "bubbleColorNone": "Keine"
   },
   "Page": {
     "untitled": "Ohne Titel",
@@ -652,7 +657,10 @@
     "alreadyOwner": "Benutzer ist bereits Eigentümer dieses Arbeitsbereichs",
     "unauthorized": "Nicht autorisiert: kein Zugriff auf diesen Arbeitsbereich",
     "cannotDeleteOnlyWorkspace": "Sie können Ihren einzigen Arbeitsbereich nicht löschen",
-    "itemNotFound": "Element nicht gefunden"
+    "itemNotFound": "Element nicht gefunden",
+    "resourceNotFound": "Diese Seite existiert nicht mehr.",
+    "resourceNotFoundDesc": "Sie wurde möglicherweise gelöscht oder verschoben.",
+    "goHome": "Zum Arbeitsbereich"
   },
   "LanguageSwitcher": {
     "label": "Sprache"

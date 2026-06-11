@@ -137,6 +137,7 @@
     "importNotion": "Notion'dan içe aktar",
     "changeIcon": "Simgeyi değiştir",
     "addSubPage": "Alt sayfa ekle",
+    "dropInside": "İçine yerleştir",
     "moreOptions": "Daha fazla seçenek",
     "workspaceNamePlaceholder": "Çalışma alanı adı...",
     "addWorkspace": "Çalışma Alanı Ekle",
@@ -590,7 +591,11 @@
     "imageAlign_right": "Sağa yasla",
     "bubbleLinkEdit": "Bağlantı",
     "bubbleLinkText": "Metin",
-    "bubbleLinkUrl": "URL"
+    "bubbleLinkUrl": "URL",
+    "bubbleTextColor": "Yazı rengi",
+    "bubbleHighlight": "Vurgu",
+    "bubbleColorDefault": "Varsayılan",
+    "bubbleColorNone": "Yok"
   },
   "Page": {
     "untitled": "Başlıksız",
@@ -652,7 +657,10 @@
     "alreadyOwner": "Kullanıcı zaten bu çalışma alanının sahibidir",
     "unauthorized": "Yetkisiz: bu çalışma alanına erişim yok",
     "cannotDeleteOnlyWorkspace": "Tek çalışma alanınızı silemezsiniz",
-    "itemNotFound": "Öğe bulunamadı"
+    "itemNotFound": "Öğe bulunamadı",
+    "resourceNotFound": "Bu sayfa artık mevcut değil.",
+    "resourceNotFoundDesc": "Silinmiş veya taşınmış olabilir.",
+    "goHome": "Çalışma alanına dön"
   },
   "LanguageSwitcher": {
     "label": "Dil"

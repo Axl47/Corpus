@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
+import { useZoom } from '@/components/providers/ZoomProvider';
 import { extractYouTubeId } from './YoutubeEmbedExtension';
 import { deleteWorkspaceItem, checkItemHasContent } from '@/lib/actions/workspace';
 
@@ -164,6 +165,11 @@ type Props = { editor: Editor };
 
 export default function BlockDragHandle({ editor }: Props) {
   const t = useTranslations('Editor');
+  const zoom = useZoom();
+  // Keep zoom in a ref so the long-lived mousemove closure always reads the
+  // latest value without needing to be in the useEffect dependency array.
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
   const [handle, setHandle] = useState<Handle | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
@@ -241,10 +247,13 @@ export default function BlockDragHandle({ editor }: Props) {
           }
         } catch { /* out-of-range pos — treat as root */ }
 
-        const newTop = rect.top + 2;
-        // Place handle 8px inside the left edge of the current level's indent gutter.
-        // Root paragraph/heading: land in the outer page gutter (left of er.left).
-        // Level-N list item: gutter spans [er.left+(N-1)*24, er.left+N*24]; handle at +8.
+        // getBoundingClientRect() returns visual-viewport coordinates.
+        // When ZoomProvider applies transform:scale(z), position:fixed is
+        // relative to that scaled ancestor — divide by z to convert from
+        // visual coords to the fixed containing block's local coords.
+        // Read from ref (not closure) so we always use the current zoom value.
+        const z = zoomRef.current;
+        const newTop = (rect.top + 2) / z;
         let newLeft: number;
         if (isHeading) {
           newLeft = Math.max(2, er.left - 48);
@@ -253,6 +262,7 @@ export default function BlockDragHandle({ editor }: Props) {
         } else {
           newLeft = Math.max(2, er.left + (listLevel - 1) * LIST_INDENT - 20);
         }
+        newLeft = newLeft / z;
         // Skip setState if nothing changed — avoids re-renders when mouse drifts
         // within the same block.
         const prev = handleRef.current;
@@ -451,9 +461,14 @@ export default function BlockDragHandle({ editor }: Props) {
   const openSub = (e: React.MouseEvent<HTMLElement>) => {
     if (subTimer.current) { clearTimeout(subTimer.current); subTimer.current = null; }
     const r = e.currentTarget.getBoundingClientRect();
-    // Open to the right; flip left if it would overflow the viewport.
-    const left = r.right + SUB_W + 8 <= window.innerWidth ? r.right + 4 : r.left - SUB_W - 4;
-    const top = Math.min(r.top - 4, window.innerHeight - (BLOCK_TYPES.length * 36 + 16));
+    const z = zoomRef.current;
+    const vw = window.innerWidth / z;
+    const vh = window.innerHeight / z;
+    const rRight = r.right / z;
+    const rLeft = r.left / z;
+    const rTop = r.top / z;
+    const left = rRight + SUB_W + 8 <= vw ? rRight + 4 : rLeft - SUB_W - 4;
+    const top = Math.min(rTop - 4, vh - (BLOCK_TYPES.length * 36 + 16));
     setSubPos({ top: Math.max(4, top), left: Math.max(4, left) });
     setSubOpen(true);
   };
@@ -488,7 +503,7 @@ export default function BlockDragHandle({ editor }: Props) {
       }));
   const showTurnInto = isMedia || !hovNode?.isAtom;
   const currentTurnInto = turnOptions.find((o) => o.active)?.icon ?? <Pilcrow size={14} />;
-  const menuTop = Math.min(handle.top + 26, window.innerHeight - 200);
+  const menuTop = Math.min(handle.top + 26, window.innerHeight / zoomRef.current - 200);
 
   return (
     <>

@@ -1,9 +1,12 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
+#[cfg(not(debug_assertions))]
+use tauri::Emitter;
 use tauri_plugin_deep_link::DeepLinkExt;
+#[cfg(not(debug_assertions))]
 use tauri_plugin_updater::UpdaterExt;
 
 const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('remnus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";

@@ -5,7 +5,7 @@ import { ArrowLeft, X, ChevronDown, MoreHorizontal, Trash2, Copy, Smile, ArrowLe
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import BlockEditor from '@/components/features/editor/BlockEditor';
+import BlockEditor, { type BlockEditorHandle } from '@/components/features/editor/BlockEditor';
 import PageIcon from './PageIcon';
 import IconPicker from './IconPicker';
 import AgentEditBadge from './AgentEditBadge';
@@ -84,6 +84,7 @@ export default function PageEditor({
   const [openMenu, setOpenMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const menuDropdownRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<BlockEditorHandle>(null);
 
   useEffect(() => {
     if (!openMenu) return;
@@ -308,6 +309,15 @@ export default function PageEditor({
             type="text"
             value={properties['title'] || ''}
             onChange={(e) => handleTextPropertyChange('title', e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                editorRef.current?.insertLineAtStart();
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                editorRef.current?.focusStart();
+              }
+            }}
             placeholder={t('untitled')}
             className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
@@ -502,6 +512,7 @@ export default function PageEditor({
 
       {/* Content Editor */}
       <BlockEditor
+        ref={editorRef}
         key={initialPage.id}
         initialContent={initialPage.content || ''}
         onChange={handleContentChange}

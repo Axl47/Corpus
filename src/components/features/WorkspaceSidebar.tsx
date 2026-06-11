@@ -40,6 +40,7 @@ import {
   updateWorkspacesOrder,
   updateWorkspaceItemsOrder,
   moveWorkspaceItemToWorkspace,
+  reparentWorkspaceItem,
 } from '@/lib/actions/workspace';
 import { logout } from '@/lib/actions/auth';
 import type { WorkspaceItemRow } from '@/lib/actions/workspace';
@@ -467,7 +468,7 @@ export default function WorkspaceSidebar({
   // Drag and drop states for workspace items
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
-  const [itemDropPosition, setItemDropPosition] = useState<'before' | 'after'>('before');
+  const [itemDropPosition, setItemDropPosition] = useState<'before' | 'inside' | 'after'>('before');
   const [dragOverWorkspaceForItemId, setDragOverWorkspaceForItemId] = useState<string | null>(null);
 
   const handleItemDragStart = (e: React.DragEvent, id: string) => {
@@ -484,13 +485,22 @@ export default function WorkspaceSidebar({
     e.stopPropagation();
     
     setDragOverItemId(id);
-    
+
+    // Only pages can hold children — databases get plain before/after reordering.
+    const targetItem = localItems.find(i => i.id === id);
+    const canNest = targetItem?.type === 'page';
+
     const rect = e.currentTarget.getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
-    if (relativeY > rect.height / 2) {
-      setItemDropPosition('after');
+    const ratio = relativeY / rect.height;
+
+    if (canNest) {
+      // Three zones: top ~30% before · middle nest inside · bottom ~30% after.
+      if (ratio < 0.3) setItemDropPosition('before');
+      else if (ratio > 0.7) setItemDropPosition('after');
+      else setItemDropPosition('inside');
     } else {
-      setItemDropPosition('before');
+      setItemDropPosition(ratio > 0.5 ? 'after' : 'before');
     }
   };
 
@@ -508,25 +518,50 @@ export default function WorkspaceSidebar({
     const sourceWorkspaceId = draggedItem.workspaceId;
     const targetWorkspaceId = workspaceId;
 
+    // ── Nest inside (drag-into) ──────────────────────────────────────────────
+    if (itemDropPosition === 'inside' && targetItem.type === 'page') {
+      // Move the dragged item to be the last child of the target.
+      const updatedDragged = { ...draggedItem, parentId: targetId, workspaceId: targetWorkspaceId };
+      const newItems = localItems.map(i => i.id === draggedItemId ? updatedDragged : i);
+
+      // New sibling order = existing children of target + the dragged item at the end.
+      const siblings = newItems.filter(i => i.parentId === targetId && i.workspaceId === targetWorkspaceId);
+
+      setLocalItems(newItems);
+      setExpandedItems(prev => ({ ...prev, [targetId]: true }));
+      setDraggedItemId(null);
+
+      startSaveTransition(async () => {
+        await reparentWorkspaceItem(draggedItemId, targetId, targetWorkspaceId, siblings.map(i => i.id));
+      });
+      return;
+    }
+
     if (sourceWorkspaceId === targetWorkspaceId) {
-      // Same workspace reordering
+      // Same workspace reordering. A before/after drop adopts the target's parent
+      // level, so dropping next to a nested item joins that branch and dropping
+      // next to a root item un-nests.
+      const newParentId = targetItem.parentId;
+      const parentChanged = draggedItem.parentId !== newParentId;
+
       const wsItems = localItems.filter(i => i.workspaceId === targetWorkspaceId);
       const sourceIndex = wsItems.findIndex(i => i.id === draggedItemId);
       if (sourceIndex === -1) return;
 
       const reorderedWsItems = [...wsItems];
       const [dragged] = reorderedWsItems.splice(sourceIndex, 1);
-      
+      const movedDragged = parentChanged ? { ...dragged, parentId: newParentId } : dragged;
+
       let newTargetIndex = reorderedWsItems.findIndex(i => i.id === targetId);
       if (itemDropPosition === 'after') {
         newTargetIndex += 1;
       }
-      
-      reorderedWsItems.splice(newTargetIndex, 0, dragged);
 
-      // Check if order actually changed
+      reorderedWsItems.splice(newTargetIndex, 0, movedDragged);
+
+      // Check if anything actually changed
       const orderChanged = reorderedWsItems.some((item, idx) => item.id !== wsItems[idx].id);
-      if (!orderChanged) {
+      if (!orderChanged && !parentChanged) {
         setDraggedItemId(null);
         return;
       }
@@ -540,7 +575,15 @@ export default function WorkspaceSidebar({
       setDraggedItemId(null);
 
       startSaveTransition(async () => {
-        await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
+        if (parentChanged) {
+          // Persist the new parent + the sibling order within that parent.
+          const siblingOrder = reorderedWsItems
+            .filter(i => i.parentId === newParentId)
+            .map(i => i.id);
+          await reparentWorkspaceItem(draggedItemId, newParentId, targetWorkspaceId, siblingOrder);
+        } else {
+          await updateWorkspaceItemsOrder(reorderedWsItems.map(i => i.id));
+        }
       });
     } else {
       // Cross-workspace moving and reordering!
@@ -943,6 +986,12 @@ export default function WorkspaceSidebar({
                       const isDeleting = isLoading && loadingItem?.action === 'delete';
                       const isItemDragged = draggedItemId === item.id;
                       const isItemDragOver = dragOverItemId === item.id;
+                      // Gray out items that can't receive a drop while dragging:
+                      // databases (can't hold children) and descendants of the dragged item.
+                      const isInvalidDropTarget = !!draggedItemId && !isItemDragged && (
+                        item.type === 'database' ||
+                        isDescendant(localItems, item.id, draggedItemId)
+                      );
 
                       const itemChildren = workspaceChildren.filter(child => child.parentId === item.id);
                       const hasChildren = itemChildren.length > 0;
@@ -967,14 +1016,19 @@ export default function WorkspaceSidebar({
                                 : 'text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
                             } ${isLoading ? 'opacity-40 pointer-events-none' : ''} ${
                               isItemDragged ? 'opacity-30 animate-pulse' : ''
-                            }`}
+                            } ${isInvalidDropTarget ? 'opacity-35' : ''}`}
                             draggable
                             onDragStart={(e) => handleItemDragStart(e, item.id)}
                             onDragOver={(e) => handleItemDragOver(e, item.id, w.id)}
                             onDragEnd={handleItemDragEnd}
                             onDrop={(e) => handleItemDrop(e, item.id, w.id)}
                           >
-                            {isItemDragOver && (
+                            {/* Drop INSIDE: highlight the whole row */}
+                            {isItemDragOver && itemDropPosition === 'inside' && (
+                              <div className="absolute inset-0 rounded-md ring-2 ring-blue-500 bg-blue-500/15 z-10 pointer-events-none" />
+                            )}
+                            {/* Drop BEFORE / AFTER: a reorder line at the matching edge */}
+                            {isItemDragOver && itemDropPosition !== 'inside' && (
                               <div className={`absolute left-6 right-0 h-0.5 bg-blue-500 rounded-full z-10 shadow-[0_1px_3px_rgba(0,0,0,0.4)] ${
                                 itemDropPosition === 'after' ? '-bottom-0.5' : '-top-0.5'
                               }`}>

@@ -137,6 +137,7 @@
     "importNotion": "Importar desde Notion",
     "changeIcon": "Cambiar ícono",
     "addSubPage": "Agregar subpágina",
+    "dropInside": "Anidar dentro",
     "moreOptions": "Más opciones",
     "workspaceNamePlaceholder": "Nombre del espacio...",
     "addWorkspace": "Agregar Espacio",
@@ -590,7 +591,11 @@
     "imageAlign_right": "Alinear a la derecha",
     "bubbleLinkEdit": "Enlace",
     "bubbleLinkText": "Texto",
-    "bubbleLinkUrl": "URL"
+    "bubbleLinkUrl": "URL",
+    "bubbleTextColor": "Color de texto",
+    "bubbleHighlight": "Resaltado",
+    "bubbleColorDefault": "Predeterminado",
+    "bubbleColorNone": "Ninguno"
   },
   "Page": {
     "untitled": "Sin título",
@@ -652,7 +657,10 @@
     "alreadyOwner": "El usuario ya es propietario de este espacio",
     "unauthorized": "No autorizado: sin acceso a este espacio",
     "cannotDeleteOnlyWorkspace": "No puedes eliminar tu único espacio de trabajo",
-    "itemNotFound": "Elemento no encontrado"
+    "itemNotFound": "Elemento no encontrado",
+    "resourceNotFound": "Esta página ya no existe.",
+    "resourceNotFoundDesc": "Puede haber sido eliminada o movida.",
+    "goHome": "Ir al espacio de trabajo"
   },
   "LanguageSwitcher": {
     "label": "Idioma"

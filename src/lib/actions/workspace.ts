@@ -713,6 +713,73 @@ export async function updateWorkspaceItemsOrder(itemIds: string[]) {
   }
 }
 
+/**
+ * Nest an item inside another item (drag-into). Sets the dragged item's `parentId`
+ * to `newParentId` (or null for root), optionally moving it to `targetWorkspaceId`,
+ * then re-sequences the new sibling group via `siblingIdsOrder`.
+ */
+export async function reparentWorkspaceItem(
+  itemId: string,
+  newParentId: string | null,
+  targetWorkspaceId: string,
+  siblingIdsOrder: string[],
+) {
+  const [item] = await db
+    .select({ workspaceId: workspaceItems.workspaceId })
+    .from(workspaceItems)
+    .where(eq(workspaceItems.id, itemId))
+    .limit(1);
+  if (!item) {
+    const t = await getTranslations('Errors');
+    throw new Error(t('itemNotFound'));
+  }
+
+  const userId = await assertWorkspaceAccess(item.workspaceId);
+  if (targetWorkspaceId !== item.workspaceId) await assertWorkspaceAccess(targetWorkspaceId);
+
+  // Cycle guard: a new parent must not be the item itself or one of its descendants.
+  if (newParentId) {
+    if (newParentId === itemId) return;
+    const all = await db
+      .select({ id: workspaceItems.id, parentId: workspaceItems.parentId })
+      .from(workspaceItems)
+      .where(eq(workspaceItems.workspaceId, targetWorkspaceId));
+    const isDescendantOf = (candidate: string): boolean => {
+      let cursor: string | null = candidate;
+      const seen = new Set<string>();
+      while (cursor && !seen.has(cursor)) {
+        seen.add(cursor);
+        if (cursor === itemId) return true;
+        cursor = all.find((r) => r.id === cursor)?.parentId ?? null;
+      }
+      return false;
+    };
+    if (isDescendantOf(newParentId)) return;
+  }
+
+  await db
+    .update(workspaceItems)
+    .set({ parentId: newParentId, workspaceId: targetWorkspaceId })
+    .where(eq(workspaceItems.id, itemId));
+
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < siblingIdsOrder.length; i++) {
+      // Scope each update to the authorized target workspace so a forged
+      // siblingIdsOrder can't rewrite sortOrder on rows in other workspaces.
+      await tx
+        .update(workspaceItems)
+        .set({ sortOrder: i })
+        .where(and(eq(workspaceItems.id, siblingIdsOrder[i]), eq(workspaceItems.workspaceId, targetWorkspaceId)));
+    }
+  });
+
+  revalidatePath('/', 'layout');
+  publish({ scope: 'sidebar', workspaceId: item.workspaceId, actorId: userId });
+  if (targetWorkspaceId !== item.workspaceId) {
+    publish({ scope: 'sidebar', workspaceId: targetWorkspaceId, actorId: userId });
+  }
+}
+
 export async function moveWorkspaceItemToWorkspace(itemId: string, targetWorkspaceId: string, itemIdsOrder: string[]) {
   const item = await db.select({ workspaceId: workspaceItems.workspaceId }).from(workspaceItems).where(eq(workspaceItems.id, itemId)).limit(1);
   if (!item[0]) {
