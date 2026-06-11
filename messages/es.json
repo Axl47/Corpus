@@ -1220,5 +1220,14 @@
     "auditBody": "Cada llamada a herramienta MCP se registra en un registro de auditoría inmutable. Las últimas 60 entradas son visibles en Configuración del espacio de trabajo → Tokens.",
     "disclosureTitle": "Divulgación Responsable",
     "disclosureBody": "Si descubre una vulnerabilidad de seguridad, envíe un correo a security@remnus.com. Nuestro objetivo es responder en 48 horas."
+  },
+  "Consent": {
+    "title": "Usamos cookies",
+    "descriptionRequired": "Nos gustaría usar cookies analíticas para entender cómo se usa Remnus y mejorarlo. Solo se activan si las aceptas.",
+    "descriptionInformational": "Usamos cookies analíticas para entender cómo se usa Remnus y mejorarlo.",
+    "learnMore": "Política de privacidad",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "gotIt": "Entendido"
   }
 }

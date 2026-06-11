@@ -1220,5 +1220,14 @@
     "auditBody": "Every MCP tool call is recorded in an immutable audit log (agent_activity table) with the tool name, status, timestamp, and token identifier. The last 60 entries are visible in the Workspace Settings → Tokens panel. Audit logs are retained for 7 days on the free plan and 90 days on Pro.",
     "disclosureTitle": "Responsible Disclosure",
     "disclosureBody": "If you discover a security vulnerability, please email security@remnus.com with a description and reproduction steps. We aim to respond within 48 hours and will credit researchers with their consent. Please do not publicly disclose issues until a fix has been released."
+  },
+  "Consent": {
+    "title": "We use cookies",
+    "descriptionRequired": "We'd like to use analytics cookies to understand how Remnus is used and improve it. They're only set if you accept.",
+    "descriptionInformational": "We use analytics cookies to understand how Remnus is used and improve it.",
+    "learnMore": "Privacy Policy",
+    "accept": "Accept",
+    "reject": "Reject",
+    "gotIt": "Got it"
   }
 }

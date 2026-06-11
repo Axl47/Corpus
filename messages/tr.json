@@ -1220,5 +1220,14 @@
     "auditBody": "Her MCP araç çağrısı araç adı, durum, zaman damgası ve token tanımlayıcısıyla değiştirilemez bir denetim günlüğüne kaydedilir. Son 60 giriş, Çalışma Alanı Ayarları → Tokenlar panelinde görülebilir. Denetim günlükleri ücretsiz planda 7 gün, Pro'da 90 gün saklanır.",
     "disclosureTitle": "Sorumlu Açıklama",
     "disclosureBody": "Bir güvenlik açığı keşfederseniz, lütfen açıklama ve yeniden üretme adımlarıyla security@remnus.com adresine e-posta gönderin. 48 saat içinde yanıt vermeyi hedefliyoruz ve araştırmacıları izinleriyle kredi alacaktır. Lütfen bir düzeltme yayınlanana kadar sorunları kamuoyuyla paylaşmayın."
+  },
+  "Consent": {
+    "title": "Çerez kullanıyoruz",
+    "descriptionRequired": "Remnus'un nasıl kullanıldığını anlamak ve geliştirmek için analitik çerezler kullanmak istiyoruz. Bu çerezler yalnızca kabul ederseniz ayarlanır.",
+    "descriptionInformational": "Remnus'un nasıl kullanıldığını anlamak ve geliştirmek için analitik çerezler kullanıyoruz.",
+    "learnMore": "Gizlilik Politikası",
+    "accept": "Kabul Et",
+    "reject": "Reddet",
+    "gotIt": "Tamam"
   }
 }

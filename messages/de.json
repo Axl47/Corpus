@@ -1220,5 +1220,14 @@
     "auditBody": "Jeder MCP-Tool-Aufruf wird in einem unveränderlichen Prüfprotokoll erfasst. Die letzten 60 Einträge sind in Arbeitsbereich-Einstellungen → Token sichtbar.",
     "disclosureTitle": "Verantwortungsvolle Offenlegung",
     "disclosureBody": "Wenn Sie eine Sicherheitslücke entdecken, senden Sie bitte eine E-Mail an security@remnus.com. Wir sind bestrebt, innerhalb von 48 Stunden zu antworten."
+  },
+  "Consent": {
+    "title": "Wir verwenden Cookies",
+    "descriptionRequired": "Wir möchten Analyse-Cookies verwenden, um zu verstehen, wie Remnus genutzt wird, und es zu verbessern. Sie werden nur gesetzt, wenn Sie zustimmen.",
+    "descriptionInformational": "Wir verwenden Analyse-Cookies, um zu verstehen, wie Remnus genutzt wird, und es zu verbessern.",
+    "learnMore": "Datenschutzerklärung",
+    "accept": "Akzeptieren",
+    "reject": "Ablehnen",
+    "gotIt": "Verstanden"
   }
 }

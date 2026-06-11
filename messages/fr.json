@@ -1220,5 +1220,14 @@
     "auditBody": "Chaque appel d'outil MCP est enregistré dans un journal d'audit immuable. Les 60 dernières entrées sont visibles dans Paramètres de l'espace de travail → Tokens.",
     "disclosureTitle": "Divulgation Responsable",
     "disclosureBody": "Si vous découvrez une vulnérabilité de sécurité, envoyez un e-mail à security@remnus.com. Nous visons à répondre dans les 48 heures."
+  },
+  "Consent": {
+    "title": "Nous utilisons des cookies",
+    "descriptionRequired": "Nous aimerions utiliser des cookies analytiques pour comprendre comment Remnus est utilisé et l'améliorer. Ils ne sont activés que si vous acceptez.",
+    "descriptionInformational": "Nous utilisons des cookies analytiques pour comprendre comment Remnus est utilisé et l'améliorer.",
+    "learnMore": "Politique de confidentialité",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "gotIt": "J'ai compris"
   }
 }

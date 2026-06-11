@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { auth, signOut } from '@/auth';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getAllWorkspaceItems, getWorkspaces } from '@/lib/actions/workspace';
 import WorkspaceSidebar from '@/components/features/WorkspaceSidebar';
 import MobileNavWrapper from '@/components/features/MobileNavWrapper';
@@ -15,6 +15,9 @@ import { getTranslations } from 'next-intl/server';
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import PostHogPageView from '@/components/providers/PostHogPageView';
 import PostHogIdentify from '@/components/providers/PostHogIdentify';
+import { ConsentProvider } from '@/components/providers/ConsentContext';
+import CookieConsentBanner from '@/components/features/CookieConsentBanner';
+import { CONSENT_COOKIE, isConsentRequired, parseConsent } from '@/lib/consent';
 import UpdateBanner from '@/components/features/UpdateBanner';
 import ActivityTracker from '@/components/providers/ActivityTracker';
 import BillingSuccessModal from '@/components/features/BillingSuccessModal';
@@ -70,13 +73,21 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   const session = await auth();
 
+  // Geo-aware cookie consent (server-resolved so the banner renders flash-free).
+  const [headerStore, consentCookieStore] = await Promise.all([headers(), cookies()]);
+  const consentRequired = isConsentRequired(headerStore.get('x-vercel-ip-country'));
+  const initialConsent = parseConsent(consentCookieStore.get(CONSENT_COOKIE)?.value);
+
   if (!session?.user) {
     return (
       <>
-        <PostHogProvider>
+        <PostHogProvider consentRequired={consentRequired} initialConsent={initialConsent}>
           <PostHogPageView />
           <NextIntlClientProvider messages={messages}>
-            {children}
+            <ConsentProvider consentRequired={consentRequired} initialConsent={initialConsent}>
+              {children}
+              <CookieConsentBanner />
+            </ConsentProvider>
           </NextIntlClientProvider>
         </PostHogProvider>
         <Analytics />
@@ -128,10 +139,15 @@ export default async function LocaleLayout({
   ) : undefined;
 
   return (
-    <PostHogProvider>
+    <PostHogProvider consentRequired={consentRequired} initialConsent={initialConsent}>
       <PostHogPageView skip={currentUser?.role === 'admin'} />
       <PostHogIdentify user={currentUser} />
       <NextIntlClientProvider messages={messages}>
+        <ConsentProvider
+          consentRequired={consentRequired}
+          initialConsent={initialConsent}
+          userRole={currentUser.role}
+        >
         <ActivityTracker />
         <BillingSuccessModal />
         <UpdateBanner />
@@ -160,6 +176,8 @@ export default async function LocaleLayout({
           </AppShell>
         </QueryProvider>
         <Analytics />
+        <CookieConsentBanner />
+        </ConsentProvider>
       </NextIntlClientProvider>
     </PostHogProvider>
   );

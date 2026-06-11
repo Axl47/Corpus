@@ -18,15 +18,10 @@ export default function PostHogIdentify({ user }: Props) {
   useEffect(() => {
     if (!posthog) return;
 
+    // Capture on/off is owned entirely by ConsentProvider (geo + consent + admin).
+    // This effect only manages identity, so it never fights the consent state.
     if (user) {
-      if (user.role === 'admin') {
-        posthog.opt_out_capturing();
-        return;
-      } else {
-        if (posthog.has_opted_out_capturing()) {
-          posthog.opt_in_capturing();
-        }
-      }
+      if (user.role === 'admin') return; // admins are not captured
 
       // Identify user in PostHog and attach role & name properties
       posthog.identify(user.id, {
@@ -37,9 +32,6 @@ export default function PostHogIdentify({ user }: Props) {
     } else {
       // Clear identity on sign out
       posthog.reset();
-      if (posthog.has_opted_out_capturing()) {
-        posthog.opt_in_capturing();
-      }
     }
   }, [user, posthog]);
 

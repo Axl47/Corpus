@@ -6,7 +6,8 @@
 - Server components/layouts: `await getTranslations('Namespace')`
 - Server actions: `getTranslations('Errors')` for error messages
 - Add keys to ALL 6 files (en/tr/hi/es/fr/de) — missing keys cause runtime warnings
-- 25 namespaces: Layout, Home, Auth, Workspace, WorkspaceSettings, Templates, Database, Editor, Page, IconPicker, Admin, Errors, LanguageSwitcher, MobileNav, Landing, Billing, Pricing, Contact, Download, Privacy, Updater, Sharing, UserSettings, OAuthAuthorize, Security
+- 26 namespaces: Layout, Home, Auth, Workspace, WorkspaceSettings, Templates, Database, Editor, Page, IconPicker, Admin, Errors, LanguageSwitcher, MobileNav, Landing, Billing, Pricing, Contact, Download, Privacy, Updater, Sharing, UserSettings, OAuthAuthorize, Security, Consent
+- `Consent` namespace: drives `CookieConsentBanner` (geo-aware cookie consent) — title/descriptionRequired/descriptionInformational/learnMore/accept/reject/gotIt keys
 - `Billing` namespace: drives BillingModal + WorkspaceSettings Billing tab + MembersTab seat meter (tier_*/status_*/seats/agents/storage/unlimited/upgradeTo/manageBilling/seatsUsage/seatLimitHint etc). Billing limit error keys live in `Errors` (seatLimitReached/agentLimitReached/storageLimitReached/workspaceLimitReached/billingUnavailable/billingInvalidTier/billingNoCustomer)
 - `Sharing` namespace keys include: tabSharing, shareButton, shareModalTitle/Hint, permissionLabel/Read/Write, slugLabel/Placeholder/Hint/Taken/Invalid, createShare, copyLink/linkCopied, revokeShare/Confirm, sharedAt, deleteWorkspaceSharedWarning, notFound, readOnlyBadge/writeBadge, saving/saveError, includeChildren/Hint, childrenShared, widthLabel/Narrow/Wide/Full, editShare, saveChanges, addToSitemap
 - `Workspace` namespace includes `deleteConfirm` (interpolated with `{title}`) and `deleteCancel` keys for item-deletion confirmation modal
