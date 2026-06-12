@@ -77,10 +77,11 @@ export const ChildBlock = Node.create({
   // Outputs a <div data-cb-id> block; "div" is in marked's known block-HTML tag list
   // so marked tokenizes it as an HTML block, and parseHTMLToken re-parses it via
   // generateJSON + our parseHTML rule above.
-  // @ts-ignore — renderMarkdown is a @tiptap/markdown extension field, not in Tiptap core types
+  // @ts-expect-error — renderMarkdown is a @tiptap/markdown extension field, not in Tiptap core types
   renderMarkdown(node: any) {
-    const { itemId, databaseId, itemType, title, icon, iconColor, linkOnly } = node.attrs;
+    const { itemId, databaseId, itemType, title, icon, iconColor, linkOnly, indent } = node.attrs;
     const safeTitle = (title || '').replace(/"/g, '&quot;');
-    return `<div data-cb-id="${itemId}" data-cb-dbid="${databaseId || ''}" data-cb-type="${itemType}" data-cb-title="${safeTitle}" data-cb-icon="${icon || ''}" data-cb-iconcolor="${iconColor || ''}" data-cb-link="${linkOnly ? '1' : ''}"></div>`;
+    const indentAttr = indent ? ` data-indent="${indent}"` : '';
+    return `<div data-cb-id="${itemId}" data-cb-dbid="${databaseId || ''}" data-cb-type="${itemType}" data-cb-title="${safeTitle}" data-cb-icon="${icon || ''}" data-cb-iconcolor="${iconColor || ''}" data-cb-link="${linkOnly ? '1' : ''}"${indentAttr}></div>`;
   },
 });
