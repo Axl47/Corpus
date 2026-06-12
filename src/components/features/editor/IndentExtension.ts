@@ -61,7 +61,7 @@ export const IndentedParagraph = Paragraph.extend({
     };
   },
 
-  // @ts-expect-error – renderMarkdown is a @tiptap/markdown extension field, not in Tiptap core types
+  // @ts-ignore — renderMarkdown is a @tiptap/markdown extension field, not in Tiptap core types
   renderMarkdown(node: any, h: any) {
     const indent = (node.attrs?.indent as number) ?? 0;
     const content = node.content ? h.renderChildren(node.content) : '';
