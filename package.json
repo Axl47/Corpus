@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "npx tsx src/db/migrate.ts",
+    "db:setup": "npx tsx src/db/setup.ts",
     "db:seed": "npx tsx scripts/seed-mcp-docs.ts && npx tsx scripts/seed-blog.ts",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
