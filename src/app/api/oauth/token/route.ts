@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { db } from '@/db';
-import { oauthAuthCodes, oauthAccessTokens, oauthClients } from '@/db/schema';
+import { oauthAuthCodes, oauthAccessTokens, oauthClients, users } from '@/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { randomBytes, createHash, randomUUID } from 'crypto';
@@ -93,10 +93,14 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
 
   // Agent limit — a new OAuth connection counts against the workspace billing owner's plan.
   // (Don't consume the auth code on a policy rejection — check before marking it used.)
-  const limitCode = await checkCanAddAgent(row.workspaceId);
-  if (limitCode) {
-    console.error('[oauth/token] agent_limit_reached', { workspaceId: row.workspaceId });
-    return oauthError('access_denied', 'Connected-agent limit reached for this workspace plan', 403);
+  // Platform admins bypass the cap, mirroring PAT minting (mintAgentToken).
+  const [grantee] = await db.select({ role: users.role }).from(users).where(eq(users.id, row.userId)).limit(1);
+  if (grantee?.role !== 'admin') {
+    const limitCode = await checkCanAddAgent(row.workspaceId);
+    if (limitCode) {
+      console.error('[oauth/token] agent_limit_reached', { workspaceId: row.workspaceId });
+      return oauthError('access_denied', 'Connected-agent limit reached for this workspace plan', 403);
+    }
   }
 
   // Mark code as used

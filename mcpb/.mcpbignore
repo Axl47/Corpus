@@ -1,0 +1,6 @@
+# Dev artifacts that should never ship inside the .mcpb
+*.log
+.env
+.env.*
+server/package-lock.json
+**/.DS_Store

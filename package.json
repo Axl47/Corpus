@@ -20,6 +20,9 @@
     "cap:android": "cap run android",
     "cap:open:ios": "cap open ios",
     "cap:open:android": "cap open android",
+    "mcpb:install": "npm --prefix mcpb/server install --omit=dev",
+    "mcpb:pack": "npx --yes @anthropic-ai/mcpb pack mcpb mcpb-build/remnus.mcpb",
+    "mcpb:build": "npm run mcpb:install && npm run mcpb:pack",
     "version:bump": "npm version patch && sed -i 's/^version = .*/version = \"'$(node -p \"require('./package.json').version\")'\"/' src-tauri/Cargo.toml"
   },
   "dependencies": {

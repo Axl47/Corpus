@@ -380,6 +380,7 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - **Android run:** `npm run cap:android`
 - **iOS open (macOS only):** `npm run cap:open:ios`
 - **Sync Capacitor:** `npm run cap:sync` — call after changing `capacitor.config.ts`
+- **Build Claude Desktop bundle:** `npm run mcpb:build` — installs the bundled proxy + packs `mcpb-build/remnus.mcpb` (see **Claude Desktop (.mcpb bundle)**)
 
 ### Cross-Platform Architecture
 
@@ -396,6 +397,13 @@ Web  Tauri  Capacitor
 ```
 
 **PWA** — `public/manifest.json` + Workbox service worker. Enables "Install App" in browsers and is the foundation for offline support. Disabled in `development` mode (`NODE_ENV`).
+
+**Claude Desktop (`.mcpb` bundle)** (`mcpb/`) — one-click MCP install for Claude Desktop. `.mcpb` only packages a **local stdio** server, but Remnus's MCP is **remote HTTP** — so the bundle ships a thin launcher (`mcpb/server/index.js`) that runs the bundled [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) proxy against `${user_config.server_url}` (default `https://www.remnus.com/api/mcp` — **must be the `www` canonical host**: the apex `remnus.com` 307-redirects to `www`, so the OAuth protected-resource metadata reports `www`, and `mcp-remote` fatally rejects a resource-indicator mismatch if handed the apex). `mcp-remote` bridges stdio ⇆ the remote Streamable-HTTP server and runs the **OAuth 2.1 + PKCE** browser flow on the first 401 (dynamic client registration against `/api/oauth/*`; the register endpoint already allows `localhost` redirect URIs). **No token to paste — real one-click + OAuth sign-in.**
+- Files: `mcpb/manifest.json` (`manifest_version 0.3`, `server.type: "node"`, `user_config.server_url` for self-hosters), `mcpb/server/{index.js,package.json}` (deps: `mcp-remote`), `mcpb/icon.png` (from `public/logo-square-dark.png`), `mcpb/.mcpbignore`.
+- Build: `npm run mcpb:build` (= `mcpb:install` + `mcpb:pack` via `npx @anthropic-ai/mcpb`) → `mcpb-build/remnus.mcpb` (~1.5 MB; `mcp-remote` + deps bundled so it's self-contained, no `npx` at runtime). Build outputs + `mcpb/server/node_modules/` + `*.pem` are git-ignored.
+- **Signing:** `mcpb sign --self-signed` produces a valid PKCS#7 trailer but Claude Desktop still shows an **"unverified publisher"** warning for self-signed (and local `mcpb verify` can't validate it — node-forge pkcs7 verify + self-signed not in the OS trust store). **Production trust needs a CA-issued code-signing certificate** (`mcpb sign --cert cert.pem --key key.pem`), best run in release CI (Linux). Tracked as follow-up.
+- **Distribution (follow-up):** not yet surfaced in the UI — wire a "Download for Claude Desktop" link (e.g. `/download` or `AgentsModal`) + attach `remnus.mcpb` to the GitHub release once signing is finalized.
+- **Install test is manual** (needs the Claude Desktop GUI): double-click / drag `remnus.mcpb` into Settings → Extensions → sign in via OAuth → run the test prompt.
 
 **Tauri** (`src-tauri/`) — Rust shell wrapping a system WebView.
 - Dev: `build.devUrl = "http://localhost:3000"` signals CLI to wait; `setup()` hook navigates to `localhost:3000/tauri-app` via `window.eval` (`#[cfg(debug_assertions)]`).

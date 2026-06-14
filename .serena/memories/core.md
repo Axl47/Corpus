@@ -97,6 +97,9 @@ messages/                   # i18n JSON (en, tr, hi, es, fr, de)
 - `StandalonePageEditor`/`PageEditor` both have `isAdmin` prop; header ⋯ menu contains width selector + Share button
 - `sitemap.ts` async — includes shared_pages WHERE in_sitemap=true; child pages cascade automatically via updateShare
 
+## Claude Desktop .mcpb bundle
+- `mcpb/` — one-click Claude Desktop install. .mcpb packages a LOCAL stdio server, but Remnus MCP is REMOTE HTTP → bundle ships a thin launcher (mcpb/server/index.js) running bundled `mcp-remote` against ${user_config.server_url} (default https://remnus.com/api/mcp). mcp-remote bridges stdio⇆Streamable-HTTP + runs OAuth 2.1/PKCE browser flow on first 401 (DCR vs /api/oauth/*; localhost redirect allowed). No token to paste. Files: manifest.json (manifest_version 0.3, server.type node, user_config.server_url), server/{index.js,package.json: mcp-remote}, icon.png (from public/logo-square-dark.png), .mcpbignore. Build: `npm run mcpb:build` (mcpb:install + mcpb:pack via npx @anthropic-ai/mcpb) → mcpb-build/remnus.mcpb (~1.5MB, mcp-remote bundled). Gitignored: mcpb/server/node_modules, mcpb-build/, *.pem. Signing: --self-signed = valid PKCS#7 but Claude Desktop still warns "unverified publisher"; real trust needs CA code-signing cert (mcpb sign --cert/--key, best in CI). Distribution (follow-up): no UI download link yet + attach to GitHub release. Install test is manual (Claude Desktop GUI).
+
 ## MCP feature files
 - `src/app/api/mcp/route.ts` — MCP route handler (Node runtime, stateless Streamable HTTP). Accepts both `rmns_` PAT tokens (agent_tokens table) and `oa_` OAuth tokens (oauth_access_tokens table). 401 response includes `WWW-Authenticate` header with resource_metadata pointer for OAuth discovery. Rate limit 60/min, **15 tools**, audit log every call.
 - `src/app/.well-known/oauth-protected-resource/route.ts` — Edge. Returns `{ resource, authorization_servers }` for MCP OAuth discovery (RFC 9728).

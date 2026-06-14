@@ -1,0 +1,61 @@
+{
+  "manifest_version": "0.2",
+  "name": "remnus",
+  "display_name": "Remnus",
+  "version": "1.0.0",
+  "description": "Read and write your Remnus workspace — pages, databases, kanban boards — directly from Claude.",
+  "long_description": "Remnus is the MCP-native, Notion-like workspace for vibe coders. This extension connects Claude Desktop to your Remnus workspace over a secure remote MCP server. Sign in once with OAuth (no token to paste) and Claude can search, read, create, and update your pages and database rows. Self-hosters can point the extension at their own instance via the configuration field.",
+  "author": {
+    "name": "Remnus",
+    "url": "https://remnus.com"
+  },
+  "homepage": "https://remnus.com",
+  "documentation": "https://remnus.com/docs/mcp",
+  "support": "https://remnus.com/contact",
+  "icon": "icon.png",
+  "keywords": ["notion", "workspace", "mcp", "database", "kanban", "notes", "remote"],
+  "license": "AGPL-3.0",
+  "privacy_policies": ["https://remnus.com/privacy"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js", "${user_config.server_url}"]
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "Remnus MCP URL",
+      "description": "The Remnus MCP endpoint. Leave as-is unless you self-host Remnus.",
+      "default": "https://www.remnus.com/api/mcp",
+      "required": false,
+      "sensitive": false
+    }
+  },
+  "tools_generated": true,
+  "tools": [
+    { "name": "search", "description": "Search pages and databases in your workspace by title." },
+    { "name": "list_workspace", "description": "List workspace items (pages and databases)." },
+    { "name": "get_page", "description": "Get the full content of a page or database row." },
+    { "name": "get_database_schema", "description": "Get a database's column schema." },
+    { "name": "query_database", "description": "Query a database's rows, with optional filters." },
+    { "name": "list_members", "description": "List the members of a workspace." },
+    { "name": "query_audit_log", "description": "Query the agent activity audit log." },
+    { "name": "create_page", "description": "Create a new page or database row." },
+    { "name": "update_page", "description": "Update a page or database row (merges properties)." },
+    { "name": "bulk_update", "description": "Update multiple database rows at once." },
+    { "name": "delete_page", "description": "Delete a page or database row." },
+    { "name": "move_item", "description": "Move/reparent a workspace item." },
+    { "name": "create_database", "description": "Create a new database with a custom schema." },
+    { "name": "update_database_schema", "description": "Add or remove database columns." }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

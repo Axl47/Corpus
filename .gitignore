@@ -69,3 +69,8 @@ next-env.d.ts
 
 # Notion export ZIPs (test/import data — never commit)
 *.zip
+
+# .mcpb bundle build outputs + bundled deps + signing keys (reproducible via `npm run mcpb:build`)
+/mcpb/server/node_modules/
+/mcpb-build/
+*.pem
