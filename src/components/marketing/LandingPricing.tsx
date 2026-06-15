@@ -355,12 +355,11 @@ function PlanCard({
   return (
     <div
       className={`relative flex flex-col h-full rounded-xl border ${
-        featured ? 'p-6 lg:p-8 lg:-my-4 lg:z-10' : 'p-6 lg:p-7'
+        featured ? 'pricing-card-featured p-6 lg:p-8 lg:-my-4 lg:z-10' : 'p-6 lg:p-7'
       }`}
       style={
         featured
           ? {
-              background: `linear-gradient(160deg, ${a.tintFrom} 0%, rgba(28,30,38,1) 55%)`,
               borderColor: 'rgba(68,92,149,0.5)',
               boxShadow: '0 0 0 1px rgba(68,92,149,0.15) inset, 0 24px 56px -16px rgba(68,92,149,0.3)',
             }

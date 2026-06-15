@@ -11,6 +11,14 @@ use tauri_plugin_updater::UpdaterExt;
 
 const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('remnus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";
 
+/// Exit the application cleanly. Called from the UpdateBanner after an
+/// update has been downloaded and installed — the user clicks "Quit & Reopen"
+/// which triggers this command instead of the tray-hide CloseRequested path.
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// Bring the existing main window to the foreground (used when a second
 /// instance is launched or the tray icon is clicked).
 fn focus_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
@@ -165,6 +173,7 @@ pub fn run() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![quit_app])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }

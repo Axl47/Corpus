@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import LanguageSwitcher from '@/components/features/LanguageSwitcher';
+import LandingThemeToggle from './LandingThemeToggle';
 
 export default async function LandingNav() {
   const t = await getTranslations('Landing');
@@ -48,6 +49,8 @@ export default async function LandingNav() {
               </Link>
             ))}
           </nav>
+
+          <LandingThemeToggle label={t('navThemeToggle')} />
 
           <LanguageSwitcher variant="header" />
 

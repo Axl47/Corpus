@@ -25,6 +25,7 @@ src/
   auth.ts                   # Full Auth.js config (DrizzleAdapter + callbacks)
   middleware.ts             # Route protection + locale rewrite
   components/marketing/     # Marketing/landing page components (public, no auth)
+    # Theme: data-theme on <html> (remnus dark default / catppuccin light + dracula/tokyo-night/nord), cookie remnus_theme via setTheme (lib/actions/preferences). LandingNav has LandingThemeToggle (client, Sun/Moon, useSyncExternalStore+MutationObserver on data-theme, no local state). Light-mode landing CSS fixes in globals.css: .pricing-card-featured (theme-aware gradient base), .hero-hover-dim (light wash on catppuccin), hero-ai-tile-light keyframes (softened glow). i18n key Landing.navThemeToggle (all 6 files).
     # MarketingShell (auth-aware wrapper), MarketingHeader (client, sticky nav),
     # MarketingFooter, HeroSection, FeaturesSection, PricingSection, ContactSection
     # DownloadView (client, OS detection + static releases/latest/download links; stable asset names from tauri-release.yml)

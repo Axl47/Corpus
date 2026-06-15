@@ -59,8 +59,18 @@ export default function UpdateBanner() {
           setState({ phase: 'ready' });
         }
       });
-    } catch {
+    } catch (err) {
+      console.error('[Remnus] Update install failed:', err);
       setState({ phase: 'idle' });
+    }
+  }
+
+  async function handleQuitAndReopen() {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('quit_app');
+    } catch {
+      // Fallback: if invoke fails for any reason the user can quit from the tray
     }
   }
 
@@ -117,10 +127,13 @@ export default function UpdateBanner() {
       )}
 
       {state.phase === 'ready' && (
-        <div className="flex items-center gap-1.5 text-xs text-green-400">
-          <RefreshCw size={12} />
+        <button
+          onClick={handleQuitAndReopen}
+          className="flex items-center justify-center gap-2 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/20 text-green-400 text-xs font-medium transition-colors"
+        >
+          <RefreshCw size={13} />
           {t('restartNote')}
-        </div>
+        </button>
       )}
     </div>
   );

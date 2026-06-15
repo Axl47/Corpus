@@ -228,6 +228,26 @@
 [data-theme="catppuccin"] ::-webkit-scrollbar-thumb { background: #c1cad6; border-radius: 4px; }
 [data-theme="catppuccin"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+/* ── Landing pricing: featured ("most popular") card ──────────────────────────
+   Dark-first design used a hardcoded dark gradient base; on the light theme that
+   left dark text on a dark card (unreadable). Base is theme-aware now. */
+.pricing-card-featured {
+  background: linear-gradient(160deg, rgba(68,92,149,0.14) 0%, rgba(28,30,38,1) 55%);
+}
+[data-theme="catppuccin"] .pricing-card-featured {
+  background: linear-gradient(160deg, rgba(68,92,149,0.12) 0%, var(--color-neutral-850) 55%);
+}
+
+/* ── Landing hero: hover dim over the workspace screenshot ─────────────────────
+   Dark wash on dark themes; light wash on catppuccin so it doesn't muddy the
+   bright screenshot — keeps the "Try the demo" button popping in both. */
+.hero-hover-dim {
+  background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.12) 60%, transparent 100%);
+}
+[data-theme="catppuccin"] .hero-hover-dim {
+  background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.22) 60%, transparent 100%);
+}
+
 /* ── Modal shadow utility — theme-aware ───────────────────────────────────── */
 .modal-shadow { box-shadow: 0 0 50px -12px rgba(0,0,0,0.8); }
 [data-theme="catppuccin"] .modal-shadow {
@@ -737,6 +757,25 @@ pre,
     border-color: var(--color-neutral-800);
     background: var(--color-neutral-900);
     box-shadow: none;
+  }
+}
+/* Light theme: the full-strength colored ring + 24px glow reads as a harsh,
+   "garish" border on a white background. Soften the ring, trade the wide glow
+   for a tight tinted drop shadow, and give resting tiles a faint shadow for
+   definition (their border is nearly invisible on light bg). */
+[data-theme="catppuccin"] .hero-ai-tile {
+  animation-name: hero-ai-tile-light;
+}
+@keyframes hero-ai-tile-light {
+  0%, 30% {
+    border-color: color-mix(in srgb, var(--tile-color) 60%, transparent);
+    background: color-mix(in srgb, var(--tile-color) 7%, var(--color-neutral-900));
+    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--tile-color) 55%, transparent);
+  }
+  33%, 100% {
+    border-color: var(--color-neutral-800);
+    background: var(--color-neutral-900);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   }
 }
 

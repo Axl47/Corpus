@@ -338,7 +338,8 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 
 **Marketing (`src/components/marketing/`)**
 - `LandingBridgeSwitcher` — Full landing page composition (pure server component, no auth check). Used by `page.tsx`.
-- `LandingNav` — Sticky header; "Go to app" → `/app` for authed, Sign in / Get started for guests. Includes `<LanguageSwitcher variant="header" />`.
+- `LandingNav` — Sticky header; "Go to app" → `/app` for authed, Sign in / Get started for guests. Includes `<LandingThemeToggle />` (light/dark) + `<LanguageSwitcher variant="header" />`.
+- `LandingThemeToggle` — Client component. Sun/Moon button in the marketing nav that toggles `data-theme` between `remnus` (dark) and `catppuccin` (light) + persists via `setTheme`. Tracks the live `<html data-theme>` via `useSyncExternalStore` + MutationObserver (no local state, SSR-safe). Light-mode landing fixes live in `globals.css`: `.pricing-card-featured` (theme-aware gradient base), `.hero-hover-dim` (light wash on catppuccin), and `hero-ai-tile-light` keyframes (softened active-tile glow).
 - `LandingHero` / `LandingWhy` / `LandingWhatsInside` / `LandingIntegrations` / `LandingSetup` / `LandingTools` / `LandingPricing` / `LandingClosing` / `LandingFooter` — Landing sections 01–08 + footer.
 - `HeroDemoOverlay` — Client component. Hover-reveal "Try the demo" CTA centered over the `LandingHero` workspace screenshot. Uses `useActionState(loginAsDemo)` — shows spinner while the server action runs.
 - `WhatsInsideViewer` — Client component. Auto-cycling Kanban/Table/Calendar viewer (4 s). All strings passed as props.

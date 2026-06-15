@@ -208,10 +208,11 @@ export default async function LandingHero() {
               style={{ height: 130, background: 'linear-gradient(to bottom, transparent 0%, var(--color-neutral-950) 75%)' }}
             />
 
-            {/* Hover dim — radial: dark at centre, fades to transparent at corners */}
+            {/* Hover dim — radial: dims at centre, fades to transparent at corners.
+                Colour is theme-aware (dark wash on dark themes, light wash on catppuccin). */}
             <div
-              className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{ top: 116, zIndex: 25, background: 'radial-gradient(ellipse 65% 55% at 50% 50%, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.12) 60%, transparent 100%)' }}
+              className="hero-hover-dim absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{ top: 116, zIndex: 25 }}
             />
 
             {/* Demo CTA — fades in on hover, centered over the workspace shot */}

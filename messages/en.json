@@ -686,6 +686,7 @@
     "navSignIn": "Sign in",
     "navGetStarted": "Get started",
     "navGoToApp": "Go to app",
+    "navThemeToggle": "Toggle light / dark theme",
     "heroTitle": "Your workspace,\nyour rules.",
     "heroSubtitle": "Build pages, databases, and Kanban boards that work the way you actually think.",
     "heroCtaPrimary": "Get started free",
