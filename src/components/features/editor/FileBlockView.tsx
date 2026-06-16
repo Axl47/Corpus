@@ -34,15 +34,11 @@ export default function FileBlockView({
   const { url, name, size } = node.attrs as { url: string | null; name: string; size: number };
   // Only ever put an http(s) URL into the download href (attributes may be tampered/synced).
   const safeUrl = /^https?:\/\//i.test(url || '') ? (url as string) : '';
-  // The HTML `download` attribute is ignored for cross-origin URLs (Cloudinary).
-  // Use Cloudinary's fl_attachment flag to force Content-Disposition: attachment
-  // with the original filename so the browser saves it with the correct name + extension.
-  function toDownloadUrl(rawUrl: string, filename: string): string {
-    if (!rawUrl || !filename || !rawUrl.includes('res.cloudinary.com')) return rawUrl;
-    const safeName = filename.replace(/\s+/g, '_').replace(/[^\w.\-]/g, '_');
-    return rawUrl.replace(/\/upload\//, `/upload/fl_attachment:${safeName}/`);
-  }
-  const downloadUrl = safeUrl ? toDownloadUrl(safeUrl, name) : '';
+  // Cross-origin `download` attribute is ignored by browsers. Proxy through our own
+  // API route so the server can set Content-Disposition with the correct filename.
+  const downloadUrl = safeUrl
+    ? `/api/upload/download?url=${encodeURIComponent(safeUrl)}&name=${encodeURIComponent(name || 'download')}`
+    : '';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
