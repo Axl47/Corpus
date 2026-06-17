@@ -92,7 +92,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           devLog('[client-token] accept');
           return { id: user.id, name: user.name, email: user.email, image: user.image, role: user.role };
         } catch (err) {
-          devLog('[client-token] reject: db lookup threw', { name: (err as Error)?.name });
+          // Dev-only: full error shape — message helps distinguish "no such table",
+          // "DATABASE_URL not set", schema mismatch, etc. Stays behind the dev gate.
+          devLog('[client-token] reject: db lookup threw', {
+            name: (err as Error)?.name,
+            message: (err as Error)?.message,
+            sub,
+            DATABASE_URL: process.env.DATABASE_URL,
+          });
           return null;
         }
       },
