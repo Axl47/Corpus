@@ -89,21 +89,19 @@ export function TabsProvider({
   const storageKey = `remnus_tabs_${workspaceId || 'default'}`;
 
   const [tabs, setTabs] = useState<Tab[]>([]);
+  const [activeIdState, setActiveIdState] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  // Latest-value refs for event handlers (assigned during render → always current).
+  // Latest-value refs for event handlers / effects (assigned during render → always current).
   const tabsRef = useRef(tabs);
+  const activeIdRef = useRef(activeIdState);
   const pathnameRef = useRef(pathname);
   // eslint-disable-next-line react-hooks/refs
   tabsRef.current = tabs;
   // eslint-disable-next-line react-hooks/refs
+  activeIdRef.current = activeIdState;
+  // eslint-disable-next-line react-hooks/refs
   pathnameRef.current = pathname;
-
-  // Previous tabbable path — lets the sync effect know which tab to navigate-in-place.
-  const prevPathRef = useRef<string>('');
-  // Id of a freshly-opened "new tab" placeholder whose final href the next
-  // navigation resolves (so `+` → /app collapses into the redirect target).
-  const pendingNewTabRef = useRef<string | null>(null);
 
   const resolveMeta = useCallback(
     (href: string): TabMeta | null => {
@@ -122,16 +120,34 @@ export function TabsProvider({
     [items],
   );
 
-  // Active tab is DERIVED from the current pathname (hrefs are unique), so there is
-  // no separate activeId state to drift out of sync.
+  // Effective active id: the explicit state when it still points at a live tab,
+  // otherwise fall back to the first tab matching the current path (robust to drift).
   const activeId = useMemo(() => {
+    if (activeIdState && tabs.some((t) => t.id === activeIdState)) return activeIdState;
     const norm = normalizePath(pathname);
     return tabs.find((t) => normalizePath(t.href) === norm)?.id ?? null;
-  }, [tabs, pathname]);
+  }, [activeIdState, tabs, pathname]);
+
+  const makeTab = useCallback(
+    (norm: string, id: string, metaHint?: Partial<TabMeta>): Tab => {
+      const meta = isTabbable(norm) ? resolveMeta(norm) : null;
+      // Only DB rows fall back to document.title; non-tabbable placeholders (e.g. /app
+      // before its redirect resolves) get an empty title to avoid showing a stale one.
+      const title = meta?.title ?? metaHint?.title ?? (isRowPath(norm) ? cleanDocTitle() : '');
+      return {
+        id,
+        href: norm,
+        title,
+        icon: meta?.icon ?? metaHint?.icon ?? null,
+        iconColor: meta?.iconColor ?? metaHint?.iconColor ?? null,
+      };
+    },
+    [resolveMeta],
+  );
 
   // ── Hydrate from localStorage on mount (keyed per workspace) ──────────────
   useEffect(() => {
-    let loaded: { tabs?: Tab[] } | null = null;
+    let loaded: { tabs?: Tab[]; activeId?: string | null } | null = null;
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) loaded = JSON.parse(raw);
@@ -150,8 +166,13 @@ export function TabsProvider({
     }
 
     setTabs(nextTabs);
+    // Prefer the tab matching the current URL; else the stored active id if still valid.
+    const norm = normalizePath(pathname);
+    const match = nextTabs.find((t) => normalizePath(t.href) === norm);
+    if (match) setActiveIdState(match.id);
+    else if (loaded?.activeId && nextTabs.some((t) => t.id === loaded!.activeId)) setActiveIdState(loaded.activeId);
+
     setHydrated(true);
-    // Current path is reconciled by the sync effect once `hydrated` flips true.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -159,68 +180,54 @@ export function TabsProvider({
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ tabs }));
+      localStorage.setItem(storageKey, JSON.stringify({ tabs, activeId: activeIdState }));
     } catch {
       /* ignore quota errors */
     }
-  }, [tabs, hydrated, storageKey]);
+  }, [tabs, activeIdState, hydrated, storageKey]);
 
   // ── Reconcile the tab list with the current pathname ──────────────────────
-  // Uses a functional updater so concurrent additions (rapid new-tab opens) never
-  // get clobbered by a stale snapshot.
+  // The active tab follows navigation in place (the chosen "open in active tab"
+  // model). New/duplicate tabs are created only by explicit user actions
+  // (openInNewTab) — never here. All writes use functional updaters + a
+  // deterministic auto-id so React Strict Mode's double-invoke can't duplicate.
   useEffect(() => {
     if (!hydrated) return;
     const norm = normalizePath(pathname);
-    if (!isTabbable(norm)) return; // ignore /app, /login etc — don't disturb tabs
+    if (!isTabbable(norm)) return; // ignore /app, /login, redirects-in-progress
 
-    const pendingId = pendingNewTabRef.current;
-    const prevPath = prevPathRef.current;
-    pendingNewTabRef.current = null;
-    prevPathRef.current = norm;
+    const cur = tabsRef.current;
+    const activeTab = cur.find((t) => t.id === activeIdRef.current);
 
-    setTabs((prev) => {
+    if (activeTab) {
+      if (normalizePath(activeTab.href) === norm) return; // already showing this path
+      // Navigate the active tab in place.
       const meta = resolveMeta(norm);
-      const mk = (over?: Partial<Tab>): Tab => ({
-        id: newId(),
-        href: norm,
-        title: meta?.title ?? cleanDocTitle() ?? '',
-        icon: meta?.icon ?? null,
-        iconColor: meta?.iconColor ?? null,
-        ...over,
-      });
-
-      // A real (non-placeholder) tab already points here → just drop any unused placeholder.
-      const existing = prev.find((t) => t.id !== pendingId && normalizePath(t.href) === norm);
-      if (existing) {
-        return pendingId ? prev.filter((t) => t.id !== pendingId) : prev;
-      }
-
-      // The placeholder we just opened resolves into this path.
-      if (pendingId && prev.some((t) => t.id === pendingId)) {
-        return prev.map((t) =>
-          t.id === pendingId
+      const id = activeTab.id;
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === id
             ? { ...t, href: norm, title: meta?.title ?? cleanDocTitle() ?? t.title, icon: meta?.icon ?? null, iconColor: meta?.iconColor ?? null }
             : t,
-        );
-      }
+        ),
+      );
+      return;
+    }
 
-      // Navigate-in-place: the tab that was active (matched the previous path) follows along.
-      const activeTab = prev.find((t) => normalizePath(t.href) === prevPath);
-      if (activeTab) {
-        return prev.map((t) =>
-          t.id === activeTab.id
-            ? { ...t, href: norm, title: meta?.title ?? cleanDocTitle() ?? t.title, icon: meta?.icon ?? null, iconColor: meta?.iconColor ?? null }
-            : t,
-        );
-      }
-
-      // Nothing to follow → append a fresh tab.
-      return [...prev, mk()];
-    });
+    // No valid active tab → switch to an existing match, or auto-create one.
+    const match = cur.find((t) => normalizePath(t.href) === norm);
+    if (match) {
+      setActiveIdState(match.id);
+      return;
+    }
+    const autoId = `auto:${norm}`;
+    const tab = makeTab(norm, autoId);
+    setTabs((prev) => (prev.some((t) => normalizePath(t.href) === norm) ? prev : [...prev, tab]));
+    setActiveIdState(autoId);
      
-  }, [pathname, hydrated, resolveMeta]);
+  }, [pathname, hydrated, resolveMeta, makeTab]);
 
-  // ── Keep the active DB-row tab's title in sync with document.title ─────────
+  // ── Keep DB-row tab titles in sync with document.title ────────────────────
   useEffect(() => {
     if (!hydrated) return;
     const titleEl = document.querySelector('title');
@@ -243,48 +250,52 @@ export function TabsProvider({
   }, [hydrated, pathname]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
+  // Always appends a fresh tab — duplicates of the same page are allowed (browser model).
   const openInNewTab = useCallback(
     (href: string, metaHint?: Partial<TabMeta>) => {
       const norm = normalizePath(href);
-      const existing = tabsRef.current.find((t) => normalizePath(t.href) === norm);
-      if (existing) {
-        router.push(href);
-        return;
-      }
-      const meta = isTabbable(norm) ? resolveMeta(norm) : null;
-      const tab: Tab = {
-        id: newId(),
-        href: norm,
-        title: meta?.title ?? metaHint?.title ?? '',
-        icon: meta?.icon ?? metaHint?.icon ?? null,
-        iconColor: meta?.iconColor ?? metaHint?.iconColor ?? null,
-      };
-      pendingNewTabRef.current = tab.id;
+      const tab = makeTab(norm, newId(), metaHint);
       setTabs((prev) => [...prev, tab]);
+      setActiveIdState(tab.id);
       router.push(href);
     },
-    [resolveMeta, router],
+    [makeTab, router],
   );
 
   const activateTab = useCallback(
     (id: string) => {
       const tab = tabsRef.current.find((t) => t.id === id);
-      if (tab) router.push(tab.href);
+      if (!tab) return;
+      setActiveIdState(id);
+      router.push(tab.href);
     },
     [router],
   );
 
   const closeTab = useCallback(
     (id: string) => {
-      const current = tabsRef.current;
-      const idx = current.findIndex((t) => t.id === id);
+      const cur = tabsRef.current;
+      const idx = cur.findIndex((t) => t.id === id);
       if (idx === -1) return;
-      const wasActive = normalizePath(current[idx].href) === normalizePath(pathnameRef.current);
-      setTabs((prev) => prev.filter((t) => t.id !== id));
-      if (wasActive) {
-        const next = current.filter((t) => t.id !== id);
+
+      const rawActive = activeIdRef.current;
+      const effActive =
+        rawActive && cur.some((t) => t.id === rawActive)
+          ? rawActive
+          : cur.find((t) => normalizePath(t.href) === normalizePath(pathnameRef.current))?.id ?? null;
+
+      const next = cur.filter((t) => t.id !== id);
+      setTabs(next);
+
+      if (id === effActive) {
         const neighbor = next[idx] ?? next[idx - 1] ?? null;
-        router.push(neighbor ? neighbor.href : '/app');
+        if (neighbor) {
+          setActiveIdState(neighbor.id);
+          router.push(neighbor.href);
+        } else {
+          setActiveIdState(null);
+          router.push('/app');
+        }
       }
     },
     [router],
@@ -295,6 +306,7 @@ export function TabsProvider({
       const keep = tabsRef.current.find((t) => t.id === id);
       if (!keep) return;
       setTabs([keep]);
+      setActiveIdState(keep.id);
       if (normalizePath(keep.href) !== normalizePath(pathnameRef.current)) router.push(keep.href);
     },
     [router],
@@ -302,6 +314,7 @@ export function TabsProvider({
 
   const closeAll = useCallback(() => {
     setTabs([]);
+    setActiveIdState(null);
     router.push('/app');
   }, [router]);
 
@@ -319,8 +332,7 @@ export function TabsProvider({
   }, []);
 
   // ── Global ctrl/middle-click on internal links → open in a new tab ─────────
-  // Covers the sidebar, in-editor page links, and links inside modals — anywhere
-  // an internal <a href> is clicked.
+  // Covers the sidebar, in-editor page links, and links inside modals.
   useEffect(() => {
     const onAux = (e: MouseEvent) => {
       if (e.button !== 1) return;

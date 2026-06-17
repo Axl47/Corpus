@@ -300,6 +300,18 @@ body {
   scrollbar-width: thin;
 }
 
+/* Tab strip: fully hidden scrollbar (scrolled via chevrons). Overrides the
+   global thin-scrollbar defaults above for this element only. */
+.tabstrip-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tabstrip-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 select,
 option,
 input,

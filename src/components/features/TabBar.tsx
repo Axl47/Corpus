@@ -100,7 +100,7 @@ export default function TabBar() {
 
       <div
         ref={scrollRef}
-        className="flex items-stretch min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="tabstrip-scroll flex items-stretch min-w-0 overflow-x-auto"
       >
         {list.map((tab) => {
           const meta = displayMeta(tab);
