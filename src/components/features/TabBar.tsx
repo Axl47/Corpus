@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import PageIcon from './PageIcon';
@@ -11,6 +12,7 @@ import { useTabs, type Tab } from '@/components/providers/TabsContext';
  */
 export default function TabBar() {
   const tabs = useTabs();
+  const router = useRouter();
   const t = useTranslations('Layout');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState({ left: false, right: false });
@@ -18,6 +20,13 @@ export default function TabBar() {
   const [overId, setOverId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Dedupe router.prefetch — Next caches by route key, but the call still costs.
+  const prefetchedRef = useRef<Set<string>>(new Set());
+  const prefetch = useCallback((href: string) => {
+    if (prefetchedRef.current.has(href)) return;
+    prefetchedRef.current.add(href);
+    try { router.prefetch(href); } catch { /* noop */ }
+  }, [router]);
 
   const activeId = tabs?.activeId ?? null;
   const count = tabs?.tabs.length ?? 0;
@@ -120,6 +129,8 @@ export default function TabBar() {
                 setDragId(null);
                 setOverId(null);
               }}
+              onMouseEnter={() => prefetch(tab.href)}
+              onFocus={() => prefetch(tab.href)}
               onClick={() => activateTab(tab.id)}
               onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab.id); } }}
               onContextMenu={(e) => { e.preventDefault(); setMenu({ id: tab.id, x: e.clientX, y: e.clientY }); }}

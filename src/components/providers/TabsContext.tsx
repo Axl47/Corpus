@@ -157,12 +157,12 @@ export function TabsProvider({
 
     let nextTabs: Tab[] = [];
     if (loaded?.tabs?.length) {
-      // Drop tabs whose backing item was deleted (page/db only; rows can't be checked).
-      nextTabs = loaded.tabs.filter((t) => {
-        const norm = normalizePath(t.href);
-        if (isRowPath(norm)) return true;
-        return resolveMeta(t.href) !== null;
-      });
+      // Accept any well-formed tab. Pruning deleted items is the prune effect's
+      // job — running below only once `items` has actually loaded — so a transient
+      // empty `items` prop can never wipe the strip on mount.
+      nextTabs = loaded.tabs.filter(
+        (t) => t && typeof t.href === 'string' && typeof t.id === 'string',
+      );
     }
 
     setTabs(nextTabs);
@@ -175,6 +175,29 @@ export function TabsProvider({
     setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Prune tabs whose backing workspace item was deleted ───────────────────
+  // Empty `items` is treated as "still loading", never as "everything is gone",
+  // so a transient render with an unfilled prop can't wipe the strip. Row paths
+  // (/db/x/y) aren't represented in `items` and are left untouched.
+  useEffect(() => {
+    if (!hydrated || items.length === 0) return;
+    setTabs((prev) => {
+      const dropIds = new Set<string>();
+      for (const t of prev) {
+        const norm = normalizePath(t.href);
+        if (isRowPath(norm)) continue;
+        const parts = norm.split('/').filter(Boolean);
+        if (parts[0] === 'page' && parts[1]) {
+          if (!items.some((i) => i.id === parts[1])) dropIds.add(t.id);
+        } else if (parts[0] === 'db' && parts[1]) {
+          if (!items.some((i) => i.databaseId === parts[1])) dropIds.add(t.id);
+        }
+      }
+      if (dropIds.size === 0) return prev;
+      return prev.filter((t) => !dropIds.has(t.id));
+    });
+  }, [items, hydrated]);
 
   // ── Persist to localStorage on change ────────────────────────────────────
   useEffect(() => {
