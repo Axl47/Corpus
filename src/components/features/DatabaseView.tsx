@@ -261,6 +261,9 @@ export default function DatabaseView({
   const [peekPageId, setPeekPageId] = useState<string | null>(null);
   const [peekPage, setPeekPage] = useState<any | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(false);
+  // True once the peek content is scrolled past the page title, so the header
+  // bar can reveal the title and keep it visible.
+  const [peekScrolled, setPeekScrolled] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const dbButtonRef = useRef<HTMLButtonElement>(null);
@@ -391,6 +394,7 @@ export default function DatabaseView({
 
     let active = true;
     setIsPageLoading(true);
+    setPeekScrolled(false);
     getPage(peekPageId)
       .then((page) => {
         if (active) {
@@ -1105,9 +1109,14 @@ export default function DatabaseView({
                     >
                       <X size={16} />
                     </button>
-                    <span className="hidden sm:inline-block text-[11px] bg-neutral-800 text-neutral-400 font-medium py-0.5 px-2 border border-neutral-700/40 uppercase tracking-wider rounded">
+                    <span className={`hidden sm:inline-block text-[11px] bg-neutral-800 text-neutral-400 font-medium py-0.5 px-2 border border-neutral-700/40 uppercase tracking-wider rounded transition-opacity ${peekScrolled ? 'opacity-0 sm:hidden' : ''}`}>
                       {t('openCenter')}
                     </span>
+                    {peekScrolled && peekPage && (
+                      <span className="text-sm font-medium text-neutral-200 truncate max-w-[50vw] sm:max-w-xs animate-fade-in">
+                        {peekPage.properties?.title || tPage('untitled')}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1168,7 +1177,10 @@ export default function DatabaseView({
                 </div>
 
                 {/* Peek Editor Scrollable Content */}
-                <div className="flex-1 overflow-y-auto min-h-0 bg-neutral-850">
+                <div
+                  className="flex-1 overflow-y-auto min-h-0 bg-neutral-850"
+                  onScroll={(e) => setPeekScrolled(e.currentTarget.scrollTop > 40)}
+                >
                   {isPageLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-neutral-500 gap-2 animate-fade-in">
                       <div className="w-5 h-5 border-2 border-neutral-800 border-t-neutral-500 rounded-full animate-spin" />
@@ -1202,9 +1214,14 @@ export default function DatabaseView({
                   >
                     <X size={16} />
                   </button>
-                  <span className="text-[11px] bg-neutral-800 text-neutral-400 font-medium py-0.5 px-2 border border-neutral-700/40 uppercase tracking-wider rounded">
+                  <span className={`text-[11px] bg-neutral-800 text-neutral-400 font-medium py-0.5 px-2 border border-neutral-700/40 uppercase tracking-wider rounded transition-opacity ${peekScrolled ? 'hidden' : ''}`}>
                     {t('openSide')}
                   </span>
+                  {peekScrolled && peekPage && (
+                    <span className="text-sm font-medium text-neutral-200 truncate max-w-[50vw] sm:max-w-xs animate-fade-in">
+                      {peekPage.properties?.title || tPage('untitled')}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1265,7 +1282,10 @@ export default function DatabaseView({
               </div>
 
               {/* Peek Editor Scrollable Content */}
-              <div className="flex-1 overflow-y-auto min-h-0 bg-neutral-850">
+              <div
+                className="flex-1 overflow-y-auto min-h-0 bg-neutral-850"
+                onScroll={(e) => setPeekScrolled(e.currentTarget.scrollTop > 40)}
+              >
                 {isPageLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 text-neutral-500 gap-2 animate-fade-in">
                     <div className="w-5 h-5 border-2 border-neutral-800 border-t-neutral-500 rounded-full animate-spin" />

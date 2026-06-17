@@ -261,7 +261,7 @@ export default function CalendarView({
   const todayStr = formatYYYYMMDD(new Date());
 
   return (
-    <div className="flex flex-col bg-neutral-850 text-neutral-200">
+    <div className="flex flex-col bg-neutral-850 text-neutral-200 h-full">
       {/* Calendar Header Nav */}
       <div className="flex items-center justify-between pb-3.5 mb-2.5 border-b border-neutral-850/60 shrink-0 select-none">
         <div className="flex items-center gap-1.5">
@@ -298,11 +298,13 @@ export default function CalendarView({
 
       {/* Scrollable calendar body — on phones a 7-col month grid squeezes each
           day to ~50px (unreadable). Give it a usable min-width and let the
-          weekday row + grid scroll horizontally together; desktop is unchanged. */}
-      <div className="overflow-x-auto">
+          weekday row + grid scroll horizontally together; desktop is unchanged.
+          This wrapper is also the vertical scroll container so the weekday row
+          can stay sticky to its top while the grid scrolls under it. */}
+      <div className="flex-1 min-h-0 overflow-auto">
       <div className="min-w-170 lg:min-w-0">
-      {/* Weekdays names row */}
-      <div className="grid grid-cols-7 border-b border-neutral-800/80 bg-neutral-900/10 shrink-0 select-none">
+      {/* Weekdays names row — sticky so it never scrolls out of view */}
+      <div className="grid grid-cols-7 border-b border-neutral-800/80 bg-neutral-850 shrink-0 select-none sticky top-0 z-20">
         {(firstDayOfWeek === 'monday' ? WEEKDAYS_MON : WEEKDAYS_SUN).map((day) => (
           <div
             key={day}

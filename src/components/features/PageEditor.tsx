@@ -34,6 +34,42 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   };
 }
 
+// Textarea that grows with its content instead of scrolling sideways — used for
+// the page title and free-text property values so long text wraps to new lines.
+function AutoGrowTextarea({
+  value,
+  onChange,
+  onKeyDown,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+  useEffect(() => { resize(); }, [value, resize]);
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      onChange={(e) => { onChange(e); resize(); }}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+}
+
 export default function PageEditor({
   database,
   initialPage,
@@ -317,8 +353,7 @@ export default function PageEditor({
         </div>
 
         <div className="flex-1 min-w-0">
-          <input
-            type="text"
+          <AutoGrowTextarea
             value={properties['title'] || ''}
             onChange={(e) => handleTextPropertyChange('title', e.target.value)}
             onKeyDown={(e) => {
@@ -326,12 +361,17 @@ export default function PageEditor({
                 e.preventDefault();
                 editorRef.current?.insertLineAtStart();
               } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                editorRef.current?.focusStart();
+                // Only fall through to the body when the caret is at the very
+                // end, so navigating a wrapped multi-line title still works.
+                const el = e.currentTarget;
+                if (el.selectionStart === el.value.length) {
+                  e.preventDefault();
+                  editorRef.current?.focusStart();
+                }
               }
             }}
             placeholder={t('untitled')}
-            className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
+            className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1 resize-none overflow-hidden block leading-tight"
           />
         </div>
       </div>
@@ -609,13 +649,20 @@ export default function PageEditor({
                   placeholder={tDb('empty')}
                   className="bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-neutral-700 rounded p-1 -ml-1 flex-1 text-sm placeholder:text-neutral-700 transition-shadow"
                 />
-              ) : (
+              ) : col.type === 'number' ? (
                 <input
-                  type={col.type === 'number' ? 'number' : 'text'}
+                  type="number"
                   value={val || ''}
                   onChange={(e) => handleTextPropertyChange(col.id, e.target.value)}
                   placeholder={tDb('empty')}
                   className="bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-neutral-700 rounded p-1 -ml-1 flex-1 text-sm placeholder:text-neutral-700 transition-shadow"
+                />
+              ) : (
+                <AutoGrowTextarea
+                  value={val || ''}
+                  onChange={(e) => handleTextPropertyChange(col.id, e.target.value)}
+                  placeholder={tDb('empty')}
+                  className="bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-neutral-700 rounded p-1 -ml-1 flex-1 text-sm placeholder:text-neutral-700 transition-shadow resize-none overflow-hidden block w-full leading-snug"
                 />
               )}
             </div>
