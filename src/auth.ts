@@ -52,19 +52,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: 'client-token',
       credentials: { token: { type: 'text' } },
       async authorize({ token }) {
-        if (!token || typeof token !== 'string') return null;
+        if (!token || typeof token !== 'string') {
+          console.log('[client-token] reject: token missing/non-string');
+          return null;
+        }
         try {
           const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
           const { payload } = await jwtVerify(token, secret, { audience: 'client-auth' });
-          if (!payload.sub) return null;
+          if (!payload.sub) {
+            console.log('[client-token] reject: jwt payload missing sub');
+            return null;
+          }
           const [user] = await db
             .select()
             .from(users)
             .where(eq(users.id, payload.sub))
             .limit(1);
-          if (!user) return null;
+          if (!user) {
+            console.log('[client-token] reject: user not found', { sub: payload.sub });
+            return null;
+          }
+          console.log('[client-token] accept', { userId: user.id });
           return { id: user.id, name: user.name, email: user.email, image: user.image, role: user.role };
-        } catch {
+        } catch (err) {
+          console.log('[client-token] reject: verify threw', {
+            name: (err as Error)?.name,
+            message: (err as Error)?.message,
+          });
           return null;
         }
       },
