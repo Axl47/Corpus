@@ -245,19 +245,6 @@ export const BlockSelection = Extension.create({
           let active = false;
           let rafId: number | null = null;
 
-          // The padded content column (ancestor wider than the editor, providing the
-          // left/right margins the user drags from). Falls back to the editor itself.
-          const findColumn = (): HTMLElement => {
-            const pmRect = editorView.dom.getBoundingClientRect();
-            let node: HTMLElement | null = editorView.dom.parentElement;
-            while (node) {
-              const r = node.getBoundingClientRect();
-              if (r.left < pmRect.left - 4 || r.right > pmRect.right + 4) return node;
-              node = node.parentElement;
-            }
-            return editorView.dom;
-          };
-
           const lastBlockBottom = (): number => {
             const blocks = allVisualBlocks(editorView.state.doc);
             let bottom = editorView.dom.getBoundingClientRect().top;
@@ -330,17 +317,18 @@ export const BlockSelection = Extension.create({
             if (isInteractiveTarget(event.target)) return;
 
             const pmRect = editorView.dom.getBoundingClientRect();
-            const colRect = findColumn().getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
             const x = event.clientX;
             const y = event.clientY;
             const bottomEdge = lastBlockBottom();
 
-            // Must be within the content column horizontally and within the editor's
-            // vertical span. The lower bound extends to the scroll container's bottom
-            // so the whole empty area under the last block (the blank space when the
-            // page ends short) can start a marquee — Notion-style.
-            const inColumnX = x >= colRect.left && x <= colRect.right;
+            // Horizontally allow the WHOLE scroll container (the full empty area left
+            // and right of the centered content column, not just the column's own
+            // padding) so a marquee can start from anywhere beside the content —
+            // including the wide blank gutter between the sidebar and the column.
+            // Vertically: from the editor top down to the container bottom (so the
+            // blank space under a short page can start a marquee too) — Notion-style.
+            const inContainerX = x >= containerRect.left && x <= containerRect.right;
             const inVerticalSpan = y >= pmRect.top - 4 && y <= containerRect.bottom;
 
             // Empty-area zones (NOT over text): left margin, right margin, or below
@@ -350,7 +338,7 @@ export const BlockSelection = Extension.create({
             const belowContent = y > bottomEdge;
             const isEmptyZone = inLeftMargin || inRightMargin || belowContent;
 
-            if (!inColumnX || !inVerticalSpan || !isEmptyZone) {
+            if (!inContainerX || !inVerticalSpan || !isEmptyZone) {
               // Clicking empty space (not text) with an active selection clears it.
               const cur = getBlockSelection(editorView.state);
               if (cur.selected.length && (inLeftMargin || inRightMargin || belowContent)) {
