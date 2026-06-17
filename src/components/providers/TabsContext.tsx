@@ -75,6 +75,19 @@ function cleanDocTitle(): string {
   return raw.replace(/\s*\|\s*Remnus\s*$/, '').trim();
 }
 
+ 
+// Temporary diagnostic logger — gated on `localStorage.remnus_tabs_debug === '1'`
+// or the global `__remnus_tabs_debug` flag. Set either to '1' in DevTools to enable.
+// REMOVE once the disappearing-tabs bug is fully diagnosed.
+function tlog(...args: any[]) {
+  if (typeof window === 'undefined') return;
+  const enabled =
+    (window as any).__remnus_tabs_debug === '1' ||
+    (() => { try { return localStorage.getItem('remnus_tabs_debug') === '1'; } catch { return false; } })();
+  if (enabled) console.log('[tabs]', ...args);
+}
+ 
+
 export function TabsProvider({
   items,
   workspaceId,
@@ -87,6 +100,14 @@ export function TabsProvider({
   const router = useRouter();
   const pathname = usePathname();
   const storageKey = `remnus_tabs_${workspaceId || 'default'}`;
+
+  // Diagnostic: track provider mount/unmount cycles to catch unexpected remounts
+  // (a prime suspect for the "tabs disappear then return" bug).
+  useEffect(() => {
+    tlog('PROVIDER mount', { workspaceId, storageKey });
+    return () => tlog('PROVIDER unmount', { workspaceId, storageKey });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeIdState, setActiveIdState] = useState<string | null>(null);
@@ -165,6 +186,7 @@ export function TabsProvider({
       );
     }
 
+    tlog('HYDRATE', { storageKey, rawLen: loaded?.tabs?.length ?? 0, acceptedLen: nextTabs.length, pathname, storedActive: loaded?.activeId });
     setTabs(nextTabs);
     // Prefer the tab matching the current URL; else the stored active id if still valid.
     const norm = normalizePath(pathname);
@@ -184,6 +206,7 @@ export function TabsProvider({
     if (!hydrated || items.length === 0) return;
     setTabs((prev) => {
       const dropIds = new Set<string>();
+      tlog('PRUNE check', { itemsLen: items.length, tabsLen: prev.length });
       for (const t of prev) {
         const norm = normalizePath(t.href);
         if (isRowPath(norm)) continue;
@@ -195,6 +218,7 @@ export function TabsProvider({
         }
       }
       if (dropIds.size === 0) return prev;
+      tlog('PRUNE drop', { droppedIds: Array.from(dropIds), keptLen: prev.length - dropIds.size });
       return prev.filter((t) => !dropIds.has(t.id));
     });
   }, [items, hydrated]);
@@ -204,6 +228,7 @@ export function TabsProvider({
     if (!hydrated) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify({ tabs, activeId: activeIdState }));
+      tlog('PERSIST', { storageKey, tabsLen: tabs.length, activeIdState });
     } catch {
       /* ignore quota errors */
     }
@@ -217,16 +242,21 @@ export function TabsProvider({
   useEffect(() => {
     if (!hydrated) return;
     const norm = normalizePath(pathname);
-    if (!isTabbable(norm)) return; // ignore /app, /login, redirects-in-progress
+    if (!isTabbable(norm)) {
+      tlog('RECONCILE skip (not tabbable)', { pathname });
+      return;
+    }
 
     const cur = tabsRef.current;
     const activeTab = cur.find((t) => t.id === activeIdRef.current);
+    tlog('RECONCILE', { pathname, activeIdRef: activeIdRef.current, activeTabFound: !!activeTab, tabsLen: cur.length });
 
     if (activeTab) {
       if (normalizePath(activeTab.href) === norm) return; // already showing this path
       // Navigate the active tab in place.
       const meta = resolveMeta(norm);
       const id = activeTab.id;
+      tlog('RECONCILE navigate-in-place', { from: activeTab.href, to: norm, id });
       setTabs((prev) =>
         prev.map((t) =>
           t.id === id
@@ -240,14 +270,16 @@ export function TabsProvider({
     // No valid active tab → switch to an existing match, or auto-create one.
     const match = cur.find((t) => normalizePath(t.href) === norm);
     if (match) {
+      tlog('RECONCILE activate match', { matchId: match.id });
       setActiveIdState(match.id);
       return;
     }
     const autoId = `auto:${norm}`;
     const tab = makeTab(norm, autoId);
+    tlog('RECONCILE auto-create', { autoId, href: norm });
     setTabs((prev) => (prev.some((t) => normalizePath(t.href) === norm) ? prev : [...prev, tab]));
     setActiveIdState(autoId);
-     
+
   }, [pathname, hydrated, resolveMeta, makeTab]);
 
   // ── Keep DB-row tab titles in sync with document.title ────────────────────
@@ -278,6 +310,7 @@ export function TabsProvider({
     (href: string, metaHint?: Partial<TabMeta>) => {
       const norm = normalizePath(href);
       const tab = makeTab(norm, newId(), metaHint);
+      tlog('ACTION openInNewTab', { href: norm, newId: tab.id });
       setTabs((prev) => [...prev, tab]);
       setActiveIdState(tab.id);
       router.push(href);
@@ -289,6 +322,7 @@ export function TabsProvider({
     (id: string) => {
       const tab = tabsRef.current.find((t) => t.id === id);
       if (!tab) return;
+      tlog('ACTION activateTab', { id, href: tab.href });
       setActiveIdState(id);
       router.push(tab.href);
     },
@@ -300,6 +334,7 @@ export function TabsProvider({
       const cur = tabsRef.current;
       const idx = cur.findIndex((t) => t.id === id);
       if (idx === -1) return;
+      tlog('ACTION closeTab', { id, idx, tabsLenBefore: cur.length });
 
       const rawActive = activeIdRef.current;
       const effActive =
@@ -328,6 +363,7 @@ export function TabsProvider({
     (id: string) => {
       const keep = tabsRef.current.find((t) => t.id === id);
       if (!keep) return;
+      tlog('ACTION closeOthers', { keepId: id, droppedLen: tabsRef.current.length - 1, stack: new Error().stack?.split('\n').slice(1, 5) });
       setTabs([keep]);
       setActiveIdState(keep.id);
       if (normalizePath(keep.href) !== normalizePath(pathnameRef.current)) router.push(keep.href);
@@ -336,6 +372,7 @@ export function TabsProvider({
   );
 
   const closeAll = useCallback(() => {
+    tlog('ACTION closeAll', { stack: new Error().stack?.split('\n').slice(1, 5) });
     setTabs([]);
     setActiveIdState(null);
     router.push('/app');
