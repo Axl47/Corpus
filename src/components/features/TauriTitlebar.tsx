@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import TabBar from './TabBar';
 
 export default function TauriTitlebar() {
   const [isTauri, setIsTauri] = useState(false);
@@ -46,10 +47,14 @@ export default function TauriTitlebar() {
   }
 
   return (
-    <div className="shrink-0 h-10 flex items-center bg-neutral-900 border-b border-neutral-800 select-none">
-      {/* Drag region — fills available space */}
+    <div className="shrink-0 h-10 flex items-stretch bg-neutral-900 border-b border-neutral-800 select-none">
+      {/* Browser-style tabs live in the titlebar row (rendered only when inside the
+          TabsProvider, i.e. the Tauri app). */}
+      <TabBar />
+
+      {/* Drag region — fills the remaining space (also the window-move grab area) */}
       <div
-        className="flex-1 h-full"
+        className="flex-1 h-full min-w-[60px]"
         onMouseDown={(e) => {
           if (e.button !== 0) return;
           const now = Date.now();

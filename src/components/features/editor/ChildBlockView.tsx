@@ -3,6 +3,7 @@ import { NodeViewWrapper } from '@tiptap/react';
 import { useRouter } from 'next/navigation';
 import { Lock } from 'lucide-react';
 import PageIcon from '../PageIcon';
+import { useTabs } from '@/components/providers/TabsContext';
 
 export default function ChildBlockView({
   node,
@@ -13,6 +14,7 @@ export default function ChildBlockView({
 }) {
   const { itemId, databaseId, title, itemType, icon, iconColor } = node.attrs;
   const router = useRouter();
+  const tabs = useTabs();
 
   const ext = editor.extensionManager.extensions.find((e: any) => e.name === 'childBlock');
   const shareMap = ext?.options?.shareMap as Record<string, string> | null;
@@ -29,13 +31,17 @@ export default function ChildBlockView({
     e.stopPropagation();
     if (isSharedView && !sharedSlug) return; // not shared — block navigation
 
+    // Ctrl/Cmd+click or middle-click → open in a new tab (Tauri only; web has no provider).
+    const newTab = !!tabs && !isSharedView && (e.metaKey || e.ctrlKey || e.button === 1);
+
     // Save content immediately before navigating so it persists on return
     const md = (editor as any).getMarkdown?.();
     if (md && typeof ext?.options?.onImmediateSave === 'function') {
       try { await ext.options.onImmediateSave(md); } catch {}
     }
 
-    router.push(href);
+    if (newTab) tabs!.openInNewTab(href);
+    else router.push(href);
   };
 
   // Drag + delete/duplicate are handled by the global BlockDragHandle (gutter),
@@ -53,6 +59,7 @@ export default function ChildBlockView({
 
         <button
           onClick={handleNavigate}
+          onAuxClick={(e) => { if (e.button === 1) handleNavigate(e); }}
           disabled={isSharedView && !sharedSlug}
           className={`flex-1 text-sm truncate text-left transition-colors ${
             isSharedView && !sharedSlug
