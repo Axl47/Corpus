@@ -88,24 +88,76 @@ function tlog(...args: any[]) {
 }
  
 
+// Single GLOBAL storage key — the tab strip is not per-workspace. Navigating
+// to a page in another workspace causes the server to flip `remnus_workspace_id`,
+// which would otherwise rebuild a per-workspace key and load a different bucket
+// of tabs (root cause of the "tabs replaced by other tabs" bug).
+const TABS_STORAGE_KEY = 'remnus_tabs';
+const LEGACY_KEY_PREFIX = 'remnus_tabs_';
+
+/**
+ * One-shot migration: previous versions kept tabs in `remnus_tabs_<workspaceId>`
+ * buckets. On first mount we merge any leftover per-workspace entries into the
+ * global key (preserving order, de-duped by href so opening multiple workspaces
+ * doesn't show the same page twice) and delete the old keys.
+ */
+function migrateLegacyTabs(globalKey: string): Tab[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const merged: Tab[] = [];
+    const seenHrefs = new Set<string>();
+    // Start with whatever is already in the global key.
+    const existingRaw = localStorage.getItem(globalKey);
+    if (existingRaw) {
+      try {
+        const parsed = JSON.parse(existingRaw) as { tabs?: Tab[] };
+        for (const t of parsed.tabs ?? []) {
+          if (t && typeof t.href === 'string' && typeof t.id === 'string' && !seenHrefs.has(t.href)) {
+            merged.push(t);
+            seenHrefs.add(t.href);
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    // Then pull in every legacy per-workspace bucket.
+    const legacyKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(LEGACY_KEY_PREFIX) && k !== globalKey) legacyKeys.push(k);
+    }
+    for (const k of legacyKeys) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(k) ?? '') as { tabs?: Tab[] };
+        for (const t of parsed.tabs ?? []) {
+          if (t && typeof t.href === 'string' && typeof t.id === 'string' && !seenHrefs.has(t.href)) {
+            merged.push(t);
+            seenHrefs.add(t.href);
+          }
+        }
+      } catch { /* ignore corrupt entry */ }
+      localStorage.removeItem(k);
+    }
+    return merged;
+  } catch {
+    return [];
+  }
+}
+
 export function TabsProvider({
   items,
-  workspaceId,
   children,
 }: {
   items: WorkspaceItemRow[];
-  workspaceId: string;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const storageKey = `remnus_tabs_${workspaceId || 'default'}`;
+  const storageKey = TABS_STORAGE_KEY;
 
-  // Diagnostic: track provider mount/unmount cycles to catch unexpected remounts
-  // (a prime suspect for the "tabs disappear then return" bug).
+  // Diagnostic: track provider mount/unmount cycles to catch unexpected remounts.
   useEffect(() => {
-    tlog('PROVIDER mount', { workspaceId, storageKey });
-    return () => tlog('PROVIDER unmount', { workspaceId, storageKey });
+    tlog('PROVIDER mount', { storageKey });
+    return () => tlog('PROVIDER unmount', { storageKey });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -166,33 +218,31 @@ export function TabsProvider({
     [resolveMeta],
   );
 
-  // ── Hydrate from localStorage on mount (keyed per workspace) ──────────────
+  // ── Hydrate from localStorage on mount (single GLOBAL key) ──────────────
   useEffect(() => {
-    let loaded: { tabs?: Tab[]; activeId?: string | null } | null = null;
+    // Pulls in any old per-workspace buckets the first time we run, then drops
+    // them — afterwards this is just reading the global key.
+    const merged = migrateLegacyTabs(storageKey);
+
+    // Also re-read the stored activeId from the global bucket (migration
+    // doesn't preserve it; we'll prefer the URL anyway below).
+    let storedActiveId: string | null = null;
     try {
       const raw = localStorage.getItem(storageKey);
-      if (raw) loaded = JSON.parse(raw);
-    } catch {
-      /* ignore corrupt storage */
-    }
+      if (raw) {
+        const parsed = JSON.parse(raw) as { activeId?: string | null };
+        if (parsed.activeId && typeof parsed.activeId === 'string') {
+          storedActiveId = parsed.activeId;
+        }
+      }
+    } catch { /* ignore */ }
 
-    let nextTabs: Tab[] = [];
-    if (loaded?.tabs?.length) {
-      // Accept any well-formed tab. Pruning deleted items is the prune effect's
-      // job — running below only once `items` has actually loaded — so a transient
-      // empty `items` prop can never wipe the strip on mount.
-      nextTabs = loaded.tabs.filter(
-        (t) => t && typeof t.href === 'string' && typeof t.id === 'string',
-      );
-    }
-
-    tlog('HYDRATE', { storageKey, rawLen: loaded?.tabs?.length ?? 0, acceptedLen: nextTabs.length, pathname, storedActive: loaded?.activeId });
-    setTabs(nextTabs);
-    // Prefer the tab matching the current URL; else the stored active id if still valid.
+    tlog('HYDRATE', { storageKey, acceptedLen: merged.length, pathname, storedActive: storedActiveId });
+    setTabs(merged);
     const norm = normalizePath(pathname);
-    const match = nextTabs.find((t) => normalizePath(t.href) === norm);
+    const match = merged.find((t) => normalizePath(t.href) === norm);
     if (match) setActiveIdState(match.id);
-    else if (loaded?.activeId && nextTabs.some((t) => t.id === loaded!.activeId)) setActiveIdState(loaded.activeId);
+    else if (storedActiveId && merged.some((t) => t.id === storedActiveId)) setActiveIdState(storedActiveId);
 
     setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
