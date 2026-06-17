@@ -52,8 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: 'client-token',
       credentials: { token: { type: 'text' } },
       async authorize({ token }) {
-        // Dev-only logging — never reach a production log sink (where secret-
-        // adjacent metadata or user ids could be archived/indexed).
+        // Dev-only logging — never reach a production log sink.
         const devLog = process.env.NODE_ENV !== 'production'
           ? (...args: unknown[]) => console.log(...args)
           : () => {};
@@ -62,17 +61,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           devLog('[client-token] reject: token missing/non-string');
           return null;
         }
+
+        // Step 1 — JWT verify (isolated try so a verify failure doesn't
+        // masquerade as a DB failure or vice versa).
+        let sub: string | undefined;
         try {
           const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
           const { payload } = await jwtVerify(token, secret, { audience: 'client-auth' });
-          if (!payload.sub) {
-            devLog('[client-token] reject: jwt payload missing sub');
-            return null;
-          }
+          sub = typeof payload.sub === 'string' ? payload.sub : undefined;
+        } catch (err) {
+          devLog('[client-token] reject: jwtVerify threw', { name: (err as Error)?.name });
+          return null;
+        }
+        if (!sub) {
+          devLog('[client-token] reject: jwt payload missing sub');
+          return null;
+        }
+
+        // Step 2 — DB lookup, separately.
+        try {
           const [user] = await db
             .select()
             .from(users)
-            .where(eq(users.id, payload.sub))
+            .where(eq(users.id, sub))
             .limit(1);
           if (!user) {
             devLog('[client-token] reject: user not found in db');
@@ -81,9 +92,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           devLog('[client-token] accept');
           return { id: user.id, name: user.name, email: user.email, image: user.image, role: user.role };
         } catch (err) {
-          // Only the error name — never `message` or `cause` (jose may include
-          // bytes from the token / secret in those fields).
-          devLog('[client-token] reject: verify threw', { name: (err as Error)?.name });
+          devLog('[client-token] reject: db lookup threw', { name: (err as Error)?.name });
           return null;
         }
       },
