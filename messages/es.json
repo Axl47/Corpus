@@ -122,7 +122,18 @@
     "loading": "Cargando…",
     "userNotFound": "Usuario no encontrado.",
     "storageUsed": "Almacenamiento",
-    "colStorage": "Almacenamiento"
+    "colStorage": "Almacenamiento",
+    "subscriptionPlan": "Plan de suscripción",
+    "setPlanManually": "Establecer plan manualmente",
+    "planRenews": "Se renueva",
+    "planManagedByStripe": "Este plan lo gestiona Stripe. Cámbialo desde el portal de facturación del cliente.",
+    "planSourceStripe": "Stripe",
+    "planSourceManual": "Manual",
+    "planSourceNone": "Gratis",
+    "planTier_free": "Gratis",
+    "planTier_startup": "Startup",
+    "planTier_professional": "Professional",
+    "planTier_enterprise": "Enterprise"
   },
   "Workspace": {
     "planBilling": "Plan y facturación",
@@ -662,6 +673,7 @@
     "billingUnavailable": "La facturación no está disponible ahora mismo.",
     "billingInvalidTier": "Plan seleccionado no válido.",
     "billingNoCustomer": "Aún no se encontró una cuenta de facturación. Inicia un plan primero.",
+    "billingStripeManaged": "Esta suscripción la gestiona Stripe y no se puede cambiar manualmente.",
     "emailRequired": "El correo y la contraseña son obligatorios",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
     "emailTaken": "Ya existe una cuenta con este correo",

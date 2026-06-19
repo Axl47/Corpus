@@ -122,7 +122,18 @@
     "loading": "लोड हो रहा है…",
     "userNotFound": "उपयोगकर्ता नहीं मिला।",
     "storageUsed": "भंडारण",
-    "colStorage": "भंडारण"
+    "colStorage": "भंडारण",
+    "subscriptionPlan": "सदस्यता योजना",
+    "setPlanManually": "योजना मैन्युअल रूप से सेट करें",
+    "planRenews": "नवीनीकरण",
+    "planManagedByStripe": "यह योजना Stripe द्वारा प्रबंधित है। इसे ग्राहक के बिलिंग पोर्टल से बदलें।",
+    "planSourceStripe": "Stripe",
+    "planSourceManual": "मैन्युअल",
+    "planSourceNone": "मुफ़्त",
+    "planTier_free": "मुफ़्त",
+    "planTier_startup": "Startup",
+    "planTier_professional": "Professional",
+    "planTier_enterprise": "Enterprise"
   },
   "Workspace": {
     "planBilling": "प्लान और बिलिंग",
@@ -662,6 +673,7 @@
     "billingUnavailable": "बिलिंग अभी उपलब्ध नहीं है।",
     "billingInvalidTier": "अमान्य प्लान चुना गया।",
     "billingNoCustomer": "अभी तक कोई बिलिंग खाता नहीं मिला। पहले एक प्लान शुरू करें।",
+    "billingStripeManaged": "यह सदस्यता Stripe द्वारा प्रबंधित है और इसे मैन्युअल रूप से नहीं बदला जा सकता।",
     "emailRequired": "ईमेल और पासवर्ड आवश्यक हैं",
     "passwordTooShort": "पासवर्ड कम से कम 8 अक्षर का होना चाहिए",
     "emailTaken": "इस ईमेल से पहले से एक खाता है",

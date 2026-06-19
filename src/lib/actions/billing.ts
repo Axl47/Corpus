@@ -8,7 +8,7 @@ import { getTranslations } from 'next-intl/server';
 import { stripe, priceIdForTier } from '@/lib/stripe';
 import { syncSubscriptionForCustomer } from '@/lib/billing/sync';
 import { getOwnerUsage, getOwnerPlan, countSeats, resolveBillingOwner } from '@/lib/services/billing';
-import type { PlanTier } from '@/lib/billing/plans';
+import { isPlanTier, type PlanTier } from '@/lib/billing/plans';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
@@ -128,6 +128,40 @@ export async function cancelSubscription(): Promise<{ ok?: boolean; error?: stri
     await stripe.subscriptions.cancel(s.id);
   }
   await syncSubscriptionForCustomer(row.stripeCustomerId, user.id);
+  return { ok: true };
+}
+
+// Admin-only: manually activate (or change) a user's plan without going through Stripe.
+// Stripe-managed subscriptions are left alone — the self-healing webhook sync would
+// overwrite any manual tier on the next event, so we refuse to fight it here.
+export async function adminSetUserPlan(
+  userId: string,
+  tier: PlanTier,
+): Promise<{ ok?: boolean; error?: string }> {
+  const admin = await getCurrentUser();
+  const t = await getTranslations('Errors');
+  if (admin.role !== 'admin') return { error: t('adminRequired') };
+  if (!isPlanTier(tier)) return { error: t('billingInvalidTier') };
+
+  const [row] = await db.select().from(subscriptions).where(eq(subscriptions.ownerUserId, userId)).limit(1);
+  if (row?.stripeSubscriptionId) return { error: t('billingStripeManaged') };
+
+  const now = new Date();
+  if (row) {
+    await db
+      .update(subscriptions)
+      .set({ tier, status: 'active', updatedAt: now })
+      .where(eq(subscriptions.ownerUserId, userId));
+  } else {
+    await db.insert(subscriptions).values({
+      ownerUserId: userId,
+      tier,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  revalidatePath('/admin');
   return { ok: true };
 }
 

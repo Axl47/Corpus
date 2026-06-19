@@ -122,7 +122,18 @@
     "loading": "Chargement…",
     "userNotFound": "Utilisateur introuvable.",
     "storageUsed": "Stockage",
-    "colStorage": "Stockage"
+    "colStorage": "Stockage",
+    "subscriptionPlan": "Forfait d'abonnement",
+    "setPlanManually": "Définir le forfait manuellement",
+    "planRenews": "Renouvellement",
+    "planManagedByStripe": "Ce forfait est géré par Stripe. Modifiez-le via le portail de facturation du client.",
+    "planSourceStripe": "Stripe",
+    "planSourceManual": "Manuel",
+    "planSourceNone": "Gratuit",
+    "planTier_free": "Gratuit",
+    "planTier_startup": "Startup",
+    "planTier_professional": "Professional",
+    "planTier_enterprise": "Enterprise"
   },
   "Workspace": {
     "planBilling": "Forfait et facturation",
@@ -662,6 +673,7 @@
     "billingUnavailable": "La facturation n'est pas disponible pour le moment.",
     "billingInvalidTier": "Forfait sélectionné invalide.",
     "billingNoCustomer": "Aucun compte de facturation trouvé. Démarrez d'abord un forfait.",
+    "billingStripeManaged": "Cet abonnement est géré par Stripe et ne peut pas être modifié manuellement.",
     "emailRequired": "L'e-mail et le mot de passe sont obligatoires",
     "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères",
     "emailTaken": "Un compte avec cet e-mail existe déjà",

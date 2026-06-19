@@ -122,7 +122,18 @@
     "loading": "Loading…",
     "userNotFound": "User not found.",
     "storageUsed": "Storage",
-    "colStorage": "Storage"
+    "colStorage": "Storage",
+    "subscriptionPlan": "Subscription Plan",
+    "setPlanManually": "Set plan manually",
+    "planRenews": "Renews",
+    "planManagedByStripe": "This plan is managed by Stripe. Change it through the customer's billing portal.",
+    "planSourceStripe": "Stripe",
+    "planSourceManual": "Manual",
+    "planSourceNone": "Free",
+    "planTier_free": "Free",
+    "planTier_startup": "Startup",
+    "planTier_professional": "Professional",
+    "planTier_enterprise": "Enterprise"
   },
   "Workspace": {
     "planBilling": "Plan & Billing",
@@ -662,6 +673,7 @@
     "billingUnavailable": "Billing is not available right now.",
     "billingInvalidTier": "Invalid plan selected.",
     "billingNoCustomer": "No billing account found yet. Start a plan first.",
+    "billingStripeManaged": "This subscription is managed by Stripe and can't be changed manually.",
     "emailRequired": "Email and password are required",
     "passwordTooShort": "Password must be at least 8 characters",
     "emailTaken": "An account with this email already exists",

@@ -122,7 +122,18 @@
     "loading": "Yükleniyor…",
     "userNotFound": "Kullanıcı bulunamadı.",
     "storageUsed": "Depolama",
-    "colStorage": "Depolama"
+    "colStorage": "Depolama",
+    "subscriptionPlan": "Abonelik Planı",
+    "setPlanManually": "Planı manuel olarak ayarla",
+    "planRenews": "Yenilenme",
+    "planManagedByStripe": "Bu plan Stripe tarafından yönetiliyor. Müşterinin faturalama portalından değiştirin.",
+    "planSourceStripe": "Stripe",
+    "planSourceManual": "Manuel",
+    "planSourceNone": "Ücretsiz",
+    "planTier_free": "Ücretsiz",
+    "planTier_startup": "Startup",
+    "planTier_professional": "Professional",
+    "planTier_enterprise": "Enterprise"
   },
   "Workspace": {
     "planBilling": "Plan ve Faturalama",
@@ -662,6 +673,7 @@
     "billingUnavailable": "Faturalama şu anda kullanılamıyor.",
     "billingInvalidTier": "Geçersiz plan seçildi.",
     "billingNoCustomer": "Henüz faturalama hesabı bulunamadı. Önce bir plan başlatın.",
+    "billingStripeManaged": "Bu abonelik Stripe tarafından yönetiliyor ve manuel olarak değiştirilemez.",
     "emailRequired": "E-posta ve şifre gereklidir",
     "passwordTooShort": "Şifre en az 8 karakter olmalıdır",
     "emailTaken": "Bu e-posta adresiyle zaten bir hesap var",
