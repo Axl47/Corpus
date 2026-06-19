@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Users, Bot, HardDrive, ScrollText, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { getMySubscription } from '@/lib/actions/billing';
+import { reconcileMySubscription } from '@/lib/actions/billing';
 import type { PlanTier } from '@/lib/billing/plans';
 
-type Sub = Awaited<ReturnType<typeof getMySubscription>>;
+type Sub = Awaited<ReturnType<typeof reconcileMySubscription>>;
 
 function formatBytes(n: number): string {
   if (!isFinite(n)) return '∞';
@@ -38,11 +38,13 @@ export default function BillingSuccessModal() {
     if (!show || fetched.current) return;
     fetched.current = true;
     let cancelled = false;
-    // The webhook may land a beat after Stripe redirects here — poll until the
-    // tier upgrades off Free (max ~5s), so we don't flash the old plan.
+    // Reconcile directly from Stripe (source of truth) instead of waiting on the
+    // webhook — robust to delayed/unreachable webhooks. A fresh checkout's subscription
+    // is normally live in Stripe by the time we land here, so the first call resolves;
+    // we still retry a few times (max ~5s) in case it's a beat behind.
     const poll = async (attempt = 0) => {
       try {
-        const sub = await getMySubscription();
+        const sub = await reconcileMySubscription();
         if (cancelled) return;
         setData(sub);
         if (sub.tier === 'free' && attempt < 4) setTimeout(() => poll(attempt + 1), 1200);

@@ -64,8 +64,12 @@ export async function createCheckoutSession(tier: PlanTier): Promise<{ url?: str
         proration_behavior: 'create_prorations',
         metadata: { ownerUserId: user.id },
       });
-      await syncSubscriptionForCustomer(customerId, user.id);
     }
+    // Always reconcile the DB from Stripe's live state — covers the "already on this
+    // plan" case too (no update fires, but the DB row can still be stale at Free if an
+    // earlier webhook never landed), not just the in-place price switch above.
+    await syncSubscriptionForCustomer(customerId, user.id);
+    revalidatePath('/');
     // Already on this plan (or just switched) → straight to the success screen.
     return { url: `${APP_URL}/app?billing=success` };
   }
@@ -104,6 +108,30 @@ export async function createPortalSession(): Promise<{ url?: string; error?: str
 // Current plan + usage meters for the Billing UI.
 export async function getMySubscription() {
   const user = await getCurrentUser();
+  return getOwnerUsage(user.id);
+}
+
+// Pull the caller's live subscription state from Stripe and persist it, then return
+// fresh usage. Stripe is the source of truth — this is what the post-Checkout success
+// screen calls so the plan reflects immediately even when the webhook is delayed,
+// unreachable (e.g. local dev without `stripe listen`), or its secret is misconfigured.
+export async function reconcileMySubscription() {
+  const user = await getCurrentUser();
+  if (stripe) {
+    const [row] = await db
+      .select({ customerId: subscriptions.stripeCustomerId })
+      .from(subscriptions)
+      .where(eq(subscriptions.ownerUserId, user.id))
+      .limit(1);
+    if (row?.customerId) {
+      try {
+        await syncSubscriptionForCustomer(row.customerId, user.id);
+        revalidatePath('/');
+      } catch (err) {
+        console.error('[billing] reconcile_failed', err);
+      }
+    }
+  }
   return getOwnerUsage(user.id);
 }
 
