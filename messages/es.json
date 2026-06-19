@@ -1240,7 +1240,10 @@
     "invalidRedirect": "URL de redirección inválida o faltante.",
     "accessLevel": "Nivel de acceso",
     "scopeReadLabel": "Solo lectura",
-    "scopeWriteLabel": "Lectura y escritura"
+    "scopeWriteLabel": "Lectura y escritura",
+    "agentTypeLabel": "Tipo de agente (opcional)",
+    "agentNameLabel": "Nombre de la conexión",
+    "agentNamePlaceholder": "p. ej. Claude Code"
   },
   "Security": {
     "title": "Seguridad y Autenticación",

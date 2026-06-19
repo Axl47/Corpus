@@ -1,5 +1,6 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { X, Bot, ChevronDown, RefreshCw, Link2, Check } from 'lucide-react';
 import PageIcon from '@/components/features/PageIcon';
@@ -75,12 +76,35 @@ function AgentTypePicker({
   t: ReturnType<typeof useTranslations>;
 }) {
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  // The token list lives inside an `overflow-hidden` card, so an absolutely-positioned
+  // dropdown gets clipped. Render it in a portal with fixed viewport coords instead.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const update = () => {
+      const r = btnRef.current!.getBoundingClientRect();
+      const W = 176, GAP = 6;
+      let left = r.left;
+      if (left + W > window.innerWidth - 8) left = window.innerWidth - 8 - W;
+      setCoords({ top: r.bottom + GAP, left: Math.max(8, left) });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
 
   const pick = (agentId: string | null) => { setOpen(false); onPick(agentId); };
 
   return (
-    <div className="relative shrink-0">
+    <div className="shrink-0">
       <button
+        ref={btnRef}
         type="button"
         onClick={() => canEdit && setOpen(v => !v)}
         disabled={!canEdit}
@@ -91,10 +115,13 @@ function AgentTypePicker({
       >
         <AgentMark override={override} hint={hint} size={14} fallback={fallback} />
       </button>
-      {open && (
+      {open && coords && createPortal(
         <>
-          <div className="fixed inset-0 z-[120]" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-8 z-[121] w-44 bg-neutral-900 border border-neutral-700 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.6)] py-1 max-h-64 overflow-y-auto">
+          <div className="fixed inset-0 z-200" onClick={() => setOpen(false)} />
+          <div
+            style={{ top: coords.top, left: coords.left }}
+            className="fixed z-201 w-44 bg-neutral-900 border border-neutral-700 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.6)] py-1 max-h-64 overflow-y-auto"
+          >
             <p className="px-2.5 py-1 text-[9px] font-semibold text-neutral-500 uppercase tracking-widest">{t('agentSetType')}</p>
             {AGENT_MARKS.map(a => (
               <button
@@ -117,7 +144,8 @@ function AgentTypePicker({
               {!override && <Check size={11} className="text-green-400 shrink-0" />}
             </button>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
@@ -139,7 +167,7 @@ function TokenRow({
   const isPat = row.kind === 'pat';
   const name = isPat
     ? row.data.name
-    : (row.data.clientName ?? row.data.clientId.slice(0, 12));
+    : (row.data.displayName ?? row.data.clientName ?? row.data.clientId.slice(0, 12));
   const scope = row.data.scope;
   const canRevoke = isPat ? row.data.canRevoke : row.data.canRevoke;
   const id = row.data.id;

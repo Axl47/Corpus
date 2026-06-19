@@ -1240,7 +1240,10 @@
     "invalidRedirect": "अमान्य या अनुपस्थित रीडायरेक्ट URL।",
     "accessLevel": "एक्सेस स्तर",
     "scopeReadLabel": "केवल पढ़ें",
-    "scopeWriteLabel": "पढ़ें और लिखें"
+    "scopeWriteLabel": "पढ़ें और लिखें",
+    "agentTypeLabel": "एजेंट प्रकार (वैकल्पिक)",
+    "agentNameLabel": "कनेक्शन नाम",
+    "agentNamePlaceholder": "जैसे Claude Code"
   },
   "Security": {
     "title": "सुरक्षा और प्रमाणीकरण",

@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
+import PageIcon from '@/components/features/PageIcon';
+import { AGENT_MARKS, MarkIcon, resolveAgentMark } from '@/components/features/agents/AgentMark';
 
 interface Workspace {
   id: string;
   name: string;
   icon: string | null;
+  iconColor?: string | null;
 }
 
 interface Props {
@@ -25,6 +28,16 @@ export function OAuthAuthorizeForm({ clientName, scope, workspaces, userName, on
 
   // Default to the scope the client requested, but let the user choose (incl. upgrading to write).
   const [selectedScope, setSelectedScope] = useState<'read' | 'write'>(scope);
+
+  // Workspace selection (icon picker grid instead of a bare <select>).
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string>(workspaces[0]?.id ?? '');
+
+  // Agent brand (icon). Default to whatever we can infer from the client name.
+  const inferred = AGENT_MARKS.find(a => a.mark === resolveAgentMark(clientName))?.id ?? null;
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(inferred);
+
+  // Friendly label for the connection — defaults to the client-reported name.
+  const [agentLabel, setAgentLabel] = useState<string>(clientName ?? '');
 
   const scopePermissions = selectedScope === 'write'
     ? [t('permReadWrite'), t('permCreateEdit')]
@@ -94,28 +107,86 @@ export function OAuthAuthorizeForm({ clientName, scope, workspaces, userName, on
             </ul>
           </div>
 
-          {/* Workspace selector + Authorize */}
           <form action={onApprove} className="px-6 py-5">
             <input type="hidden" name="scope" value={selectedScope} />
+            <input type="hidden" name="workspace_id" value={selectedWorkspace} />
+            <input type="hidden" name="agent_name" value={selectedAgent ?? ''} />
+
+            {/* Workspace selector — icon list */}
             <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">
               {t('selectWorkspace')}
             </label>
-            <select
-              name="workspace_id"
-              required
-              defaultValue={workspaces[0]?.id}
-              className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-blue-500 mb-4"
-            >
-              {workspaces.map((ws) => (
-                <option key={ws.id} value={ws.id}>
-                  {ws.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-1.5 mb-5 max-h-44 overflow-y-auto pr-0.5">
+              {workspaces.map((ws) => {
+                const active = selectedWorkspace === ws.id;
+                return (
+                  <button
+                    key={ws.id}
+                    type="button"
+                    onClick={() => setSelectedWorkspace(ws.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      active
+                        ? 'bg-blue-500/10 border-blue-500/40'
+                        : 'bg-neutral-800 border-neutral-700 hover:border-neutral-600'
+                    }`}
+                  >
+                    {ws.icon
+                      ? <PageIcon icon={ws.icon} iconColor={ws.iconColor} size={18} />
+                      : <span className="w-4.5 h-4.5 rounded bg-neutral-700 flex items-center justify-center text-[10px] font-bold text-neutral-300 shrink-0">
+                          {ws.name.charAt(0).toUpperCase()}
+                        </span>
+                    }
+                    <span className={`flex-1 text-sm truncate ${active ? 'text-blue-100' : 'text-neutral-200'}`}>
+                      {ws.name}
+                    </span>
+                    {active && <Check size={15} className="text-blue-400 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Agent identity — brand + friendly name */}
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">
+              {t('agentTypeLabel')}
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {AGENT_MARKS.map((a) => {
+                const active = selectedAgent === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    title={a.label}
+                    onClick={() => setSelectedAgent(active ? null : a.id)}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${
+                      active
+                        ? 'bg-blue-500/10 border-blue-500/40'
+                        : 'bg-neutral-800 border-neutral-700 hover:border-neutral-600'
+                    }`}
+                  >
+                    <MarkIcon mark={a.mark} size={15} />
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">
+              {t('agentNameLabel')}
+            </label>
+            <input
+              name="display_name"
+              type="text"
+              maxLength={60}
+              value={agentLabel}
+              onChange={(e) => setAgentLabel(e.target.value)}
+              placeholder={t('agentNamePlaceholder')}
+              className="w-full bg-neutral-800 border border-neutral-700 text-neutral-100 text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-blue-500 mb-4 placeholder:text-neutral-600"
+            />
 
             <button
               type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
+              disabled={!selectedWorkspace}
+              className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
             >
               {t('authorize')}
             </button>

@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { randomBytes, createHmac } from 'crypto';
 import { getTranslations } from 'next-intl/server';
 import { OAuthAuthorizeForm } from './OAuthAuthorizeForm';
+import { AGENT_MARKS } from '@/components/features/agents/AgentMark';
 
 function signRedirectUrl(url: string): string {
   const secret = process.env.AUTH_SECRET ?? 'fallback-secret-change-me';
@@ -85,7 +86,7 @@ export default async function OAuthAuthorizePage({
 
   // Fetch user's workspaces (owner or member)
   const userWorkspaces = await db
-    .select({ id: workspaces.id, name: workspaces.name, icon: workspaces.icon })
+    .select({ id: workspaces.id, name: workspaces.name, icon: workspaces.icon, iconColor: workspaces.iconColor })
     .from(workspaces)
     .innerJoin(workspaceMembers, and(
       eq(workspaceMembers.workspaceId, workspaces.id),
@@ -104,6 +105,11 @@ export default async function OAuthAuthorizePage({
 
     // User-chosen scope from the consent form (defaults to the requested scope, can be upgraded to write).
     const chosenScope = formData.get('scope') === 'write' ? 'write' : 'read';
+
+    // Agent brand (icon) + friendly label picked on the consent form.
+    const rawAgent = (formData.get('agent_name') as string | null)?.trim() || '';
+    const chosenAgent = AGENT_MARKS.some(a => a.id === rawAgent) ? rawAgent : null;
+    const chosenDisplayName = ((formData.get('display_name') as string | null)?.trim() || '').slice(0, 60) || null;
 
     // Verify user still has access to this workspace
     const currentUser = await getCurrentUser().catch(() => null);
@@ -130,6 +136,8 @@ export default async function OAuthAuthorizePage({
       codeChallenge:       code_challenge!,
       codeChallengeMethod: code_challenge_method,
       scope:               chosenScope,
+      agentName:           chosenAgent,
+      displayName:         chosenDisplayName,
       expiresAt:           new Date(Date.now() + 10 * 60 * 1000), // 10 min
     });
 

@@ -119,6 +119,9 @@ async function handleAuthorizationCode(params: URLSearchParams): Promise<Respons
     userId:             row.userId,
     workspaceId:        row.workspaceId,
     scope:              row.scope,
+    // Carry the agent brand + friendly label chosen on the consent screen.
+    agentName:          row.agentName ?? null,
+    displayName:        row.displayName ?? null,
     expiresAt:          new Date(now.getTime() + ACCESS_TOKEN_TTL_MS),
     createdAt:          now,
   });
@@ -194,6 +197,9 @@ async function handleRefreshToken(params: URLSearchParams): Promise<Response> {
     userId:             row.userId,
     workspaceId:        row.workspaceId,
     scope:              row.scope,
+    // Preserve the agent brand + friendly label across rotation.
+    agentName:          row.agentName ?? null,
+    displayName:        row.displayName ?? null,
     expiresAt:          new Date(now.getTime() + ACCESS_TOKEN_TTL_MS),
     createdAt:          now,
   });

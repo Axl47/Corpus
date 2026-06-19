@@ -1240,7 +1240,10 @@
     "invalidRedirect": "Geçersiz veya eksik yönlendirme URL'si.",
     "accessLevel": "Erişim seviyesi",
     "scopeReadLabel": "Salt okunur",
-    "scopeWriteLabel": "Okuma ve yazma"
+    "scopeWriteLabel": "Okuma ve yazma",
+    "agentTypeLabel": "Ajan türü (isteğe bağlı)",
+    "agentNameLabel": "Bağlantı adı",
+    "agentNamePlaceholder": "örn. Claude Code"
   },
   "Security": {
     "title": "Güvenlik ve Kimlik Doğrulama",

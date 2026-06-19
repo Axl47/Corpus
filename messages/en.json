@@ -1240,7 +1240,10 @@
     "invalidRedirect": "Invalid or missing redirect URL.",
     "accessLevel": "Access level",
     "scopeReadLabel": "Read only",
-    "scopeWriteLabel": "Read & write"
+    "scopeWriteLabel": "Read & write",
+    "agentTypeLabel": "Agent type (optional)",
+    "agentNameLabel": "Connection name",
+    "agentNamePlaceholder": "e.g. Claude Code"
   },
   "Security": {
     "title": "Security & Authentication",

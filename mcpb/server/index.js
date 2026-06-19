@@ -44,11 +44,19 @@ function log(line) {
 const MCP_URL = pickUrl();
 const proxy = require.resolve('mcp-remote/dist/proxy.js');
 
+// Identify the dynamically-registered OAuth client as "Claude" so Remnus can show
+// the Claude brand icon for this connection (mcp-remote otherwise registers under a
+// generic "MCP CLI Proxy" name). mcp-remote merges this metadata into the RFC 7591
+// registration body, overriding its default client_name.
+const STATIC_OAUTH_CLIENT_METADATA = JSON.stringify({ client_name: 'Claude' });
+
 log(`launcher start: node=${process.version} url=${MCP_URL} proxy=${proxy}`);
 
-const child = spawn(process.execPath, [proxy, MCP_URL], {
-  stdio: ['inherit', 'inherit', 'pipe'],
-});
+const child = spawn(
+  process.execPath,
+  [proxy, MCP_URL, '--static-oauth-client-metadata', STATIC_OAUTH_CLIENT_METADATA],
+  { stdio: ['inherit', 'inherit', 'pipe'] },
+);
 
 child.stderr.on('data', (buf) => {
   const text = buf.toString();

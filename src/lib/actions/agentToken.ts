@@ -292,6 +292,7 @@ export async function getUserOAuthTokens() {
       createdAt:      oauthAccessTokens.createdAt,
       revokedAt:      oauthAccessTokens.revokedAt,
       agentName:      oauthAccessTokens.agentName,
+      displayName:    oauthAccessTokens.displayName,
       workspaceName:  workspaces.name,
       workspaceIcon:  workspaces.icon,
       memberRole:     workspaceMembers.role,

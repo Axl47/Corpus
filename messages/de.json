@@ -1240,7 +1240,10 @@
     "invalidRedirect": "Ungültige oder fehlende Weiterleitungs-URL.",
     "accessLevel": "Zugriffsebene",
     "scopeReadLabel": "Nur Lesen",
-    "scopeWriteLabel": "Lesen & Schreiben"
+    "scopeWriteLabel": "Lesen & Schreiben",
+    "agentTypeLabel": "Agententyp (optional)",
+    "agentNameLabel": "Verbindungsname",
+    "agentNamePlaceholder": "z. B. Claude Code"
   },
   "Security": {
     "title": "Sicherheit und Authentifizierung",

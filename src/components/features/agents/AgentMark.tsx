@@ -52,6 +52,10 @@ export function resolveAgentMark(hint?: string | null): AgentMarkName | null {
   if (s.includes('continue'))    return 'continue';
   if (s.includes('cursor'))      return 'cursor';
   if (s.includes('claude'))      return 'claude';
+  // The Remnus .mcpb bundle connects Claude Desktop via the `mcp-remote` proxy,
+  // which dynamic-registers under a generic name ("MCP CLI Proxy"/"MCP CLI Client").
+  // Map those to Claude so the bundle shows the right brand icon out of the box.
+  if (s.includes('mcp cli') || s.includes('mcp-remote') || s.includes('mcp remote')) return 'claude';
   if (s.includes('codex') || s.includes('chatgpt') || s.includes('openai')) return 'chatgpt';
   if (s.includes('gemini'))      return 'gemini';
   if (s.includes('zed'))         return 'zed';

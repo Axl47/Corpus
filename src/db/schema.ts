@@ -256,6 +256,10 @@ export const oauthAuthCodes = sqliteTable('oauth_auth_codes', {
   codeChallenge:       text('code_challenge').notNull(),
   codeChallengeMethod: text('code_challenge_method').notNull().default('S256'),
   scope:               text('scope').notNull().default('read'),
+  // Agent brand (canonical AGENT_MARKS id) + friendly label chosen on the consent
+  // screen; copied onto the access token at exchange. Both nullable. Migration 0030.
+  agentName:           text('agent_name'),
+  displayName:         text('display_name'),
   expiresAt:           integer('expires_at', { mode: 'timestamp' }).notNull(),
   usedAt:              integer('used_at', { mode: 'timestamp' }),
 });
@@ -272,6 +276,8 @@ export const oauthAccessTokens = sqliteTable('oauth_access_tokens', {
   scope:              text('scope').notNull().default('read'),
   // User-set canonical agent id override (AGENT_MARKS id) for icon display; nullable. Migration 0024.
   agentName:          text('agent_name'),
+  // Friendly label chosen on the consent screen; falls back to client_name in the UI. Migration 0030.
+  displayName:        text('display_name'),
   expiresAt:          integer('expires_at', { mode: 'timestamp' }).notNull(),
   revokedAt:          integer('revoked_at', { mode: 'timestamp' }),
   createdAt:          integer('created_at', { mode: 'timestamp' }).notNull(),
