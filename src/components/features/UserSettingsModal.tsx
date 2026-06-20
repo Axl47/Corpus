@@ -1,20 +1,32 @@
-﻿'use client';
-import { useState, useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import { X, User, Download, HardDrive, Crown, SlidersHorizontal } from 'lucide-react';
-import ImportTab from './workspace-settings/ImportTab';
-import { getCurrentUserStorageBytes } from '@/lib/actions/workspace';
+﻿"use client";
+import { useState, useEffect } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import {
-  setEditorFontSize, setSidebarDensity, setDefaultPageWidth, setTheme,
-  type EditorFontSize, type SidebarDensity, type DefaultPageWidth,
-} from '@/lib/actions/preferences';
-import { APP_THEMES } from '@/lib/themes';
-import type { AppTheme } from '@/lib/themes';
-import { setLocale } from '@/lib/actions/locale';
+  X,
+  User,
+  Download,
+  HardDrive,
+  Crown,
+  SlidersHorizontal,
+} from "lucide-react";
+import ImportTab from "./workspace-settings/ImportTab";
+import { getCurrentUserStorageBytes } from "@/lib/actions/workspace";
+import {
+  setEditorFontSize,
+  setSidebarDensity,
+  setDefaultPageWidth,
+  setTheme,
+  type EditorFontSize,
+  type SidebarDensity,
+  type DefaultPageWidth,
+} from "@/lib/actions/preferences";
+import { APP_THEMES } from "@/lib/themes";
+import type { AppTheme } from "@/lib/themes";
+import { setLocale } from "@/lib/actions/locale";
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -23,7 +35,12 @@ function formatBytes(bytes: number): string {
 // ── Preference row ─────────────────────────────────────────────────────────────
 
 function PrefRow<T extends string>({
-  label, hint, options, value, onChange, wrap = false,
+  label,
+  hint,
+  options,
+  value,
+  onChange,
+  wrap = false,
 }: {
   label: string;
   hint?: string;
@@ -33,20 +50,22 @@ function PrefRow<T extends string>({
   wrap?: boolean;
 }) {
   return (
-    <div className={`py-4 border-b border-neutral-800 last:border-b-0 ${wrap ? '' : 'flex items-start justify-between gap-6'}`}>
-      <div className={`min-w-0 ${wrap ? 'mb-3' : ''}`}>
+    <div
+      className={`py-4 border-b border-neutral-800 last:border-b-0 ${wrap ? "" : "flex items-start justify-between gap-6"}`}
+    >
+      <div className={`min-w-0 ${wrap ? "mb-3" : ""}`}>
         <p className="text-sm font-medium text-neutral-200">{label}</p>
         {hint && <p className="text-[11px] text-neutral-500 mt-0.5">{hint}</p>}
       </div>
-      <div className={wrap ? 'flex flex-wrap gap-1.5' : 'flex gap-1 shrink-0'}>
-        {options.map(opt => (
+      <div className={wrap ? "flex flex-wrap gap-1.5" : "flex gap-1 shrink-0"}>
+        {options.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={`px-3 py-1.5 text-xs font-medium border transition-colors cursor-pointer ${
               value === opt.value
-                ? 'bg-neutral-700 border-neutral-600 text-neutral-100'
-                : 'bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300'
+                ? "bg-neutral-700 border-neutral-600 text-neutral-100"
+                : "bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300"
             }`}
           >
             {opt.label}
@@ -59,40 +78,60 @@ function PrefRow<T extends string>({
 
 // ── Theme picker ──────────────────────────────────────────────────────────────
 
-function ThemePicker({ value, onChange }: { value: AppTheme; onChange: (v: AppTheme) => void }) {
-  const t = useTranslations('UserSettings');
+function ThemePicker({
+  value,
+  onChange,
+}: {
+  value: AppTheme;
+  onChange: (v: AppTheme) => void;
+}) {
+  const t = useTranslations("UserSettings");
   return (
     <div className="py-4 border-b border-neutral-800">
       <div className="mb-3">
-        <p className="text-sm font-medium text-neutral-200">{t('prefTheme')}</p>
-        <p className="text-[11px] text-neutral-500 mt-0.5">{t('prefThemeHint')}</p>
+        <p className="text-sm font-medium text-neutral-200">{t("prefTheme")}</p>
+        <p className="text-[11px] text-neutral-500 mt-0.5">
+          {t("prefThemeHint")}
+        </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {APP_THEMES.map(theme => (
+        {APP_THEMES.map((theme) => (
           <button
             key={theme.value}
             onClick={() => onChange(theme.value)}
             title={theme.label}
             className={`group flex flex-col items-center gap-1.5 cursor-pointer transition-opacity ${
-              value === theme.value ? 'opacity-100' : 'opacity-60 hover:opacity-90'
+              value === theme.value
+                ? "opacity-100"
+                : "opacity-60 hover:opacity-90"
             }`}
           >
             {/* Swatch strip — extra outline ensures visibility on light and dark bg */}
             <div
               className={`flex h-8 w-16 overflow-hidden border transition-all ${
                 value === theme.value
-                  ? 'border-blue-500 ring-1 ring-blue-500/50'
-                  : 'border-neutral-700 group-hover:border-neutral-500'
+                  ? "border-blue-500 ring-1 ring-blue-500/50"
+                  : "border-neutral-700 group-hover:border-neutral-500"
               }`}
-              style={theme.dark ? undefined : { outline: '1px solid #d1d5db', outlineOffset: '-1px' }}
+              style={
+                theme.dark
+                  ? undefined
+                  : { outline: "1px solid #d1d5db", outlineOffset: "-1px" }
+              }
             >
               {theme.swatches.map((color, i) => (
-                <div key={i} className="flex-1 h-full" style={{ background: color }} />
+                <div
+                  key={i}
+                  className="flex-1 h-full"
+                  style={{ background: color }}
+                />
               ))}
             </div>
-            <span className={`text-[10px] font-medium leading-none ${
-              value === theme.value ? 'text-neutral-100' : 'text-neutral-500'
-            }`}>
+            <span
+              className={`text-[10px] font-medium leading-none ${
+                value === theme.value ? "text-neutral-100" : "text-neutral-500"
+              }`}
+            >
               {theme.label}
             </span>
           </button>
@@ -105,12 +144,12 @@ function ThemePicker({ value, onChange }: { value: AppTheme; onChange: (v: AppTh
 // ── Locale names ───────────────────────────────────────────────────────────────
 
 const LOCALE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'tr', label: 'Türkçe' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'fr', label: 'Français' },
-  { value: 'es', label: 'Español' },
-  { value: 'hi', label: 'हिन्दी' },
+  { value: "en", label: "English" },
+  { value: "tr", label: "Türkçe" },
+  { value: "de", label: "Deutsch" },
+  { value: "fr", label: "Français" },
+  { value: "es", label: "Español" },
+  { value: "hi", label: "हिन्दी" },
 ] as const;
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -128,35 +167,47 @@ interface UserSettingsModalProps {
   onClose: () => void;
 }
 
-type Tab = 'account' | 'preferences' | 'import';
+type Tab = "account" | "preferences" | "import";
 
-export default function UserSettingsModal({ currentUser, onClose }: UserSettingsModalProps) {
-  const t = useTranslations('UserSettings');
+export default function UserSettingsModal({
+  currentUser,
+  onClose,
+}: UserSettingsModalProps) {
+  const t = useTranslations("UserSettings");
   const router = useRouter();
   const currentLocale = useLocale();
 
-  const [activeTab, setActiveTab] = useState<Tab>('account');
+  const [activeTab, setActiveTab] = useState<Tab>("account");
   const [storageBytes, setStorageBytes] = useState<number | null>(null);
   const [avatarError, setAvatarError] = useState(false);
 
   // Preference states — read from cookie-derived data attributes on <html>
   const [locale, setLocaleState] = useState(currentLocale);
   const [editorSize, setEditorSizeState] = useState<EditorFontSize>(() => {
-    if (typeof document === 'undefined') return 'md';
-    return (document.documentElement.dataset.editorSize as EditorFontSize) ?? 'md';
+    if (typeof document === "undefined") return "md";
+    return (
+      (document.documentElement.dataset.editorSize as EditorFontSize) ?? "md"
+    );
   });
-  const [density, setDensityState] = useState<SidebarDensity>('comfortable');
-  const [defaultWidth, setDefaultWidthState] = useState<DefaultPageWidth>(() => {
-    if (typeof document === 'undefined') return 'narrow';
-    return (document.documentElement.dataset.defaultWidth as DefaultPageWidth) ?? 'narrow';
-  });
+  const [density, setDensityState] = useState<SidebarDensity>("comfortable");
+  const [defaultWidth, setDefaultWidthState] = useState<DefaultPageWidth>(
+    () => {
+      if (typeof document === "undefined") return "narrow";
+      return (
+        (document.documentElement.dataset.defaultWidth as DefaultPageWidth) ??
+        "narrow"
+      );
+    },
+  );
   const [theme, setThemeState] = useState<AppTheme>(() => {
-    if (typeof document === 'undefined') return 'remnus';
-    return (document.documentElement.dataset.theme as AppTheme) ?? 'remnus';
+    if (typeof document === "undefined") return "corpus";
+    return (document.documentElement.dataset.theme as AppTheme) ?? "corpus";
   });
 
   useEffect(() => {
-    getCurrentUserStorageBytes().then(setStorageBytes).catch(() => setStorageBytes(0));
+    getCurrentUserStorageBytes()
+      .then(setStorageBytes)
+      .catch(() => setStorageBytes(0));
   }, []);
 
   // Apply editor size immediately via data attribute + refresh for SSR components
@@ -190,12 +241,19 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
     await setTheme(v);
   }
 
-  const initials = (currentUser.name || currentUser.email || 'U').trim().charAt(0).toUpperCase();
+  const initials = (currentUser.name || currentUser.email || "U")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'account', label: t('tabAccount'), icon: <User size={13} /> },
-    { id: 'preferences', label: t('tabPreferences'), icon: <SlidersHorizontal size={13} /> },
-    { id: 'import', label: t('tabImport'), icon: <Download size={13} /> },
+    { id: "account", label: t("tabAccount"), icon: <User size={13} /> },
+    {
+      id: "preferences",
+      label: t("tabPreferences"),
+      icon: <SlidersHorizontal size={13} />,
+    },
+    { id: "import", label: t("tabImport"), icon: <Download size={13} /> },
   ];
 
   return (
@@ -206,11 +264,13 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
       <div
         className="w-full max-w-full sm:max-w-2xl bg-neutral-850 border border-neutral-800 rounded-lg modal-shadow flex flex-col overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: '92vh', minHeight: 'min(480px, 85vh)' }}
+        style={{ maxHeight: "92vh", minHeight: "min(480px, 85vh)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/30 shrink-0">
-          <span className="text-sm font-semibold text-neutral-100 shrink-0">{t('title')}</span>
+          <span className="text-sm font-semibold text-neutral-100 shrink-0">
+            {t("title")}
+          </span>
           <button
             onClick={onClose}
             className="p-1 text-neutral-500 hover:text-neutral-200 transition-colors rounded hover:bg-neutral-800 cursor-pointer"
@@ -221,14 +281,14 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
 
         {/* Mobile tab strip */}
         <div className="flex sm:hidden border-b border-neutral-800 bg-neutral-900/50 shrink-0 overflow-x-auto scrollbar-none">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-3 text-xs whitespace-nowrap border-b-2 transition-colors cursor-pointer shrink-0 ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-neutral-100 font-medium'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                  ? "border-blue-500 text-neutral-100 font-medium"
+                  : "border-transparent text-neutral-500 hover:text-neutral-300"
               }`}
             >
               {tab.icon}
@@ -239,18 +299,17 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
 
         {/* Body: left nav + content */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-
           {/* Desktop left nav */}
           <div className="hidden sm:flex w-44 shrink-0 border-r border-neutral-800 flex-col bg-neutral-900/50">
             <nav className="flex-1 p-2 space-y-0.5 pt-3">
-              {tabs.map(tab => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors cursor-pointer rounded ${
                     activeTab === tab.id
-                      ? 'bg-neutral-800 text-neutral-100 font-medium'
-                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/60'
+                      ? "bg-neutral-800 text-neutral-100 font-medium"
+                      : "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/60"
                   }`}
                 >
                   {tab.icon}
@@ -261,17 +320,19 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
           </div>
 
           {/* Tab content */}
-          <div key={activeTab} className="flex-1 overflow-y-auto p-4 sm:p-6 animate-tab-fade">
-
-          {/* Account */}
-          {activeTab === 'account' && (
+          <div
+            key={activeTab}
+            className="flex-1 overflow-y-auto p-4 sm:p-6 animate-tab-fade"
+          >
+            {/* Account */}
+            {activeTab === "account" && (
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="shrink-0">
                     {currentUser.image && !avatarError ? (
                       <img
                         src={currentUser.image}
-                        alt={currentUser.name ?? 'User'}
+                        alt={currentUser.name ?? "User"}
                         className="w-14 h-14 rounded-full object-cover"
                         onError={() => setAvatarError(true)}
                       />
@@ -283,10 +344,12 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-neutral-100 truncate">
-                      {currentUser.name ?? currentUser.email ?? 'User'}
+                      {currentUser.name ?? currentUser.email ?? "User"}
                     </p>
                     {currentUser.name && currentUser.email && (
-                      <p className="text-xs text-neutral-500 truncate mt-0.5">{currentUser.email}</p>
+                      <p className="text-xs text-neutral-500 truncate mt-0.5">
+                        {currentUser.email}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -294,87 +357,106 @@ export default function UserSettingsModal({ currentUser, onClose }: UserSettings
                 <div className="border-t border-neutral-800" />
 
                 <div className="border-t border-neutral-800 pt-5 space-y-4">
-                  <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">{t('planTitle')}</p>
+                  <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    {t("planTitle")}
+                  </p>
                   <div className="flex items-center justify-between py-3 border-b border-neutral-800">
                     <div className="flex items-center gap-2.5">
                       <Crown size={14} className="text-amber-400 shrink-0" />
                       <div>
-                        <p className="text-xs font-semibold text-neutral-200">{t('planFree')}</p>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">{t('planFreeHint')}</p>
+                        <p className="text-xs font-semibold text-neutral-200">
+                          {t("planFree")}
+                        </p>
+                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                          {t("planFreeHint")}
+                        </p>
                       </div>
                     </div>
                     <span className="text-[10px] font-semibold px-2 py-0.5 bg-neutral-800 text-neutral-500 border border-neutral-700 shrink-0">
-                      {t('planCurrentBadge')}
+                      {t("planCurrentBadge")}
                     </span>
                   </div>
 
-                  <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider pt-1">{t('storageTitle')}</p>
+                  <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider pt-1">
+                    {t("storageTitle")}
+                  </p>
                   <div className="flex items-center gap-3 py-3 border-b border-neutral-800">
-                    <HardDrive size={14} className="text-neutral-500 shrink-0" />
+                    <HardDrive
+                      size={14}
+                      className="text-neutral-500 shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-neutral-300">
                         {storageBytes === null
-                          ? t('storageLoading')
-                          : t('storageUsed', { size: formatBytes(storageBytes) })}
+                          ? t("storageLoading")
+                          : t("storageUsed", {
+                              size: formatBytes(storageBytes),
+                            })}
                       </p>
-                      <p className="text-[11px] text-neutral-600 mt-0.5">{t('storageHint')}</p>
+                      <p className="text-[11px] text-neutral-600 mt-0.5">
+                        {t("storageHint")}
+                      </p>
                     </div>
                   </div>
                 </div>
-          </div>
-          )}
+              </div>
+            )}
 
-          {/* Preferences */}
-          {activeTab === 'preferences' && (
-            <div>
-              <ThemePicker value={theme} onChange={handleTheme} />
-              <PrefRow
-                label={t('prefLanguage')}
-                hint={t('prefLanguageHint')}
-                options={LOCALE_OPTIONS.map(l => ({ value: l.value, label: l.label }))}
-                value={locale}
-                onChange={handleLocale}
-                wrap
-              />
-              <PrefRow
-                label={t('prefEditorSize')}
-                hint={t('prefEditorSizeHint')}
-                options={[
-                  { value: 'sm', label: t('prefSizeSmall') },
-                  { value: 'md', label: t('prefSizeMedium') },
-                  { value: 'lg', label: t('prefSizeLarge') },
-                ]}
-                value={editorSize}
-                onChange={handleEditorSize}
-              />
-              <PrefRow
-                label={t('prefSidebarDensity')}
-                hint={t('prefSidebarDensityHint')}
-                options={[
-                  { value: 'compact', label: t('prefDensityCompact') },
-                  { value: 'comfortable', label: t('prefDensityComfortable') },
-                ]}
-                value={density}
-                onChange={handleDensity}
-              />
-              <PrefRow
-                label={t('prefDefaultWidth')}
-                hint={t('prefDefaultWidthHint')}
-                options={[
-                  { value: 'narrow', label: t('prefWidthNarrow') },
-                  { value: 'wide', label: t('prefWidthWide') },
-                  { value: 'full', label: t('prefWidthFull') },
-                ]}
-                value={defaultWidth}
-                onChange={handleDefaultWidth}
-              />
-            </div>
-          )}
+            {/* Preferences */}
+            {activeTab === "preferences" && (
+              <div>
+                <ThemePicker value={theme} onChange={handleTheme} />
+                <PrefRow
+                  label={t("prefLanguage")}
+                  hint={t("prefLanguageHint")}
+                  options={LOCALE_OPTIONS.map((l) => ({
+                    value: l.value,
+                    label: l.label,
+                  }))}
+                  value={locale}
+                  onChange={handleLocale}
+                  wrap
+                />
+                <PrefRow
+                  label={t("prefEditorSize")}
+                  hint={t("prefEditorSizeHint")}
+                  options={[
+                    { value: "sm", label: t("prefSizeSmall") },
+                    { value: "md", label: t("prefSizeMedium") },
+                    { value: "lg", label: t("prefSizeLarge") },
+                  ]}
+                  value={editorSize}
+                  onChange={handleEditorSize}
+                />
+                <PrefRow
+                  label={t("prefSidebarDensity")}
+                  hint={t("prefSidebarDensityHint")}
+                  options={[
+                    { value: "compact", label: t("prefDensityCompact") },
+                    {
+                      value: "comfortable",
+                      label: t("prefDensityComfortable"),
+                    },
+                  ]}
+                  value={density}
+                  onChange={handleDensity}
+                />
+                <PrefRow
+                  label={t("prefDefaultWidth")}
+                  hint={t("prefDefaultWidthHint")}
+                  options={[
+                    { value: "narrow", label: t("prefWidthNarrow") },
+                    { value: "wide", label: t("prefWidthWide") },
+                    { value: "full", label: t("prefWidthFull") },
+                  ]}
+                  value={defaultWidth}
+                  onChange={handleDefaultWidth}
+                />
+              </div>
+            )}
 
-          {/* Import */}
-          {activeTab === 'import' && (
-            <ImportTab workspaceId="" />
-          )}
+            {/* Import */}
+            {activeTab === "import" && <ImportTab workspaceId="" />}
           </div>
         </div>
       </div>

@@ -1,22 +1,22 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  remnus:
+  corpus:
     build:
       context: .
       dockerfile: Dockerfile
-    image: remnus:latest
-    container_name: remnus
+    image: corpus:latest
+    container_name: corpus
     restart: always
     ports:
       - "3000:3000"
     volumes:
-      - remnus-data:/app/data
+      - corpus-data:/app/data
     environment:
       - DATABASE_URL=file:/app/data/local.db
       - AUTH_SECRET=GDjlewq5nSmwJkLmOVI2dZv3zyWWsGYYRb9bbwOkaKg= # Değiştirilmesi zorunludur (örn: openssl rand -base64 33)
       - AUTH_TRUST_HOST=true
-      - MCP_TOKEN_PREFIX=rmns
+      - MCP_TOKEN_PREFIX=crps
       - CLOUDINARY_CLOUD_NAME=your_cloud_name
       - CLOUDINARY_API_KEY=your_api_key
       - CLOUDINARY_API_SECRET=your_api_secret
@@ -28,5 +28,5 @@ services:
       - NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 
 volumes:
-  remnus-data:
+  corpus-data:
     driver: local

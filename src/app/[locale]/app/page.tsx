@@ -1,9 +1,12 @@
-import { auth } from '@/auth';
-import { getActiveWorkspaceId, getWorkspaceItems } from '@/lib/actions/workspace';
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
+import { auth } from "@/auth";
+import {
+  getActiveWorkspaceId,
+  getWorkspaceItems,
+} from "@/lib/actions/workspace";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import Image from "next/image";
 
 export default async function AppRedirectPage({
   searchParams,
@@ -13,18 +16,18 @@ export default async function AppRedirectPage({
   const session = await auth();
 
   if (!session?.user) {
-    redirect('/login');
+    redirect("/login");
   }
 
   // A pending invite (set while logged out) takes priority — finish accepting it.
-  const pendingInvite = (await cookies()).get('pending_invite')?.value;
+  const pendingInvite = (await cookies()).get("pending_invite")?.value;
   if (pendingInvite) {
     redirect(`/invite/${pendingInvite}`);
   }
 
   // Preserve the post-checkout flag through the redirect so the success modal can show.
   const sp = await searchParams;
-  const suffix = sp?.billing === 'success' ? '?billing=success' : '';
+  const suffix = sp?.billing === "success" ? "?billing=success" : "";
 
   const activeWorkspaceId = await getActiveWorkspaceId();
 
@@ -36,7 +39,7 @@ export default async function AppRedirectPage({
 
     if (items.length > 0) {
       const first = items[0];
-      if (first.type === 'database' && first.databaseId) {
+      if (first.type === "database" && first.databaseId) {
         redirect(`/db/${first.databaseId}${suffix}`);
       } else {
         redirect(`/page/${first.id}${suffix}`);
@@ -44,20 +47,22 @@ export default async function AppRedirectPage({
     }
   }
 
-  const t = await getTranslations('Home');
+  const t = await getTranslations("Home");
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6 h-full">
       <Image
         src="/logo-square-transparent.png"
-        alt="Remnus"
+        alt="Corpus"
         width={52}
         height={52}
         className="opacity-20"
       />
-      <h2 className="text-base font-medium text-neutral-300">{t('welcomeTitle')}</h2>
+      <h2 className="text-base font-medium text-neutral-300">
+        {t("welcomeTitle")}
+      </h2>
       <p className="text-sm text-neutral-500 max-w-xs leading-relaxed">
-        {hasWorkspace ? t('emptyWorkspaceHint') : t('noWorkspaceHint')}
+        {hasWorkspace ? t("emptyWorkspaceHint") : t("noWorkspaceHint")}
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 
 export { cloudinary };
 
@@ -9,11 +9,11 @@ cloudinary.config({
 });
 
 // The only folder we ever write icons into — deletions are restricted to this prefix.
-const ICONS_FOLDER = 'remnus/icons/';
+const ICONS_FOLDER = "corpus/icons/";
 
 function extractPublicId(url: string): string | null {
-  // https://res.cloudinary.com/{cloud}/image/upload/v123456789/remnus/icons/abc.jpg
-  // public_id = remnus/icons/abc  (no extension)
+  // https://res.cloudinary.com/{cloud}/image/upload/v123456789/corpus/icons/abc.jpg
+  // public_id = corpus/icons/abc  (no extension)
   const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^./]+)?$/);
   return match?.[1] ?? null;
 }
@@ -27,15 +27,18 @@ export function isCloudinaryUrl(url: string | null | undefined): boolean {
 
 export async function deleteCloudinaryImage(url: string): Promise<void> {
   const publicId = extractPublicId(url);
-  // Hard-scope: refuse to delete anything outside remnus/icons/
+  // Hard-scope: refuse to delete anything outside corpus/icons/
   // This prevents accidental or injected deletions of unrelated assets.
   if (!publicId || !publicId.startsWith(ICONS_FOLDER)) {
-    console.warn('[cloudinary] Refusing to delete out-of-scope asset:', publicId);
+    console.warn(
+      "[cloudinary] Refusing to delete out-of-scope asset:",
+      publicId,
+    );
     return;
   }
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch {
-    console.warn('[cloudinary] Failed to delete image:', publicId);
+    console.warn("[cloudinary] Failed to delete image:", publicId);
   }
 }

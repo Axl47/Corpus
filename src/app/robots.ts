@@ -1,14 +1,31 @@
-import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: ['/', '/pricing', '/contact', '/download', '/privacy', '/security', '/share/'],
-        disallow: ['/app', '/db/', '/page/', '/admin/', '/api/', '/login', '/client-login', '/tauri-app'],
+        userAgent: "*",
+        allow: [
+          "/",
+          "/pricing",
+          "/contact",
+          "/download",
+          "/privacy",
+          "/security",
+          "/share/",
+        ],
+        disallow: [
+          "/app",
+          "/db/",
+          "/page/",
+          "/admin/",
+          "/api/",
+          "/login",
+          "/client-login",
+          "/tauri-app",
+        ],
       },
     ],
-    sitemap: 'https://remnus.com/sitemap.xml',
+    sitemap: "https://corpus.com/sitemap.xml",
   };
 }

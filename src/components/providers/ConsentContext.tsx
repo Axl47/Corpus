@@ -8,6 +8,7 @@ import {
   type ConsentValue,
 } from '@/lib/consent';
 import { setAnalyticsConsent } from '@/lib/actions/consent';
+import { IS_POSTHOG_CONFIGURED } from './PostHogProvider';
 
 interface ConsentContextValue {
   /** Whether this visitor's jurisdiction requires prior opt-in (EU/EEA/UK). */
@@ -51,14 +52,16 @@ export function ConsentProvider({
     const isAdmin = userRole === 'admin';
     const allowed = !isAdmin && (!consentRequired || consent === 'accepted');
 
-    if (allowed) {
-      posthog.set_config({ persistence: 'localStorage+cookie' });
-      if (posthog.has_opted_out_capturing()) posthog.opt_in_capturing();
-    } else {
-      if (!posthog.has_opted_out_capturing()) posthog.opt_out_capturing();
-      // Drop cookies for visitors who must consent but haven't (or rejected).
-      if (consentRequired && consent !== 'accepted') {
-        posthog.set_config({ persistence: 'memory' });
+    if (IS_POSTHOG_CONFIGURED) {
+      if (allowed) {
+        posthog.set_config({ persistence: 'localStorage+cookie' });
+        if (posthog.has_opted_out_capturing()) posthog.opt_in_capturing();
+      } else {
+        if (!posthog.has_opted_out_capturing()) posthog.opt_out_capturing();
+        // Drop cookies for visitors who must consent but haven't (or rejected).
+        if (consentRequired && consent !== 'accepted') {
+          posthog.set_config({ persistence: 'memory' });
+        }
       }
     }
 

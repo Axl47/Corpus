@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Remnus desktop app",
+  "description": "Default capabilities for Corpus desktop app",
   "windows": ["main"],
   "remote": {
     "urls": ["https://*", "http://localhost:3000/*"]

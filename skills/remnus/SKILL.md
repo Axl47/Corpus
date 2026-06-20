@@ -1,15 +1,15 @@
 ---
-name: remnus
-description: Read and edit a Remnus workspace (Notion-like pages and databases) through the Remnus MCP server. Use whenever the user wants to find, read, create, update, organize, or report on Remnus pages, database rows, or schemas via the `remnus` MCP tools.
+name: corpus
+description: Read and edit a Corpus workspace (Notion-like pages and databases) through the Corpus MCP server. Use whenever the user wants to find, read, create, update, organize, or report on Corpus pages, database rows, or schemas via the `corpus` MCP tools.
 ---
 
-# Working with Remnus
+# Working with Corpus
 
-Remnus is a Notion-like workspace. You interact with it through the **`remnus` MCP server** — a single connected workspace exposed via bearer-token auth. Every call already runs inside one fixed workspace; you never pass a workspace ID.
+Corpus is a Notion-like workspace. You interact with it through the **`corpus` MCP server** — a single connected workspace exposed via bearer-token auth. Every call already runs inside one fixed workspace; you never pass a workspace ID.
 
 The server exposes all three MCP primitives:
 - **Tools** — actions you call to read and write (the bulk of your work).
-- **Resources** — read-only data you can attach as context, addressed by `remnus://…` URIs.
+- **Resources** — read-only data you can attach as context, addressed by `corpus://…` URIs.
 - **Prompts** — server-side templates that fetch + format data for common tasks (summaries, reports, triage).
 
 Use the right one: resources to *pull context cheaply*, tools to *act*, prompts to *kick off a structured task*.
@@ -48,20 +48,20 @@ Column types: `text` | `number` | `select` | `multi_select` | `date` | `datetime
 
 If a write tool returns "This token only has read scope," the user connected a read-only token — tell them; do not retry.
 
-## Resources — `remnus://…`
+## Resources — `corpus://…`
 
 Resources are read-only and listable; many clients let you attach them directly as context, which is cheaper and cleaner than a tool round-trip when you just need to *read*:
 
-- `remnus://workspace/{id}/schema` — every database in the workspace plus its columns, in one document. Best first pull to understand what databases exist and their shapes.
-- `remnus://database/{id}/schema` — columns of one database (same data as `get_database_schema`).
-- `remnus://page/{id}` — a page or row rendered as markdown (title + properties + content). Listing returns the 20 most recently updated; any page is reachable by its ID.
-- `remnus://audit-log/recent` — the last 50 activity entries for *this* token.
+- `corpus://workspace/{id}/schema` — every database in the workspace plus its columns, in one document. Best first pull to understand what databases exist and their shapes.
+- `corpus://database/{id}/schema` — columns of one database (same data as `get_database_schema`).
+- `corpus://page/{id}` — a page or row rendered as markdown (title + properties + content). Listing returns the 20 most recently updated; any page is reachable by its ID.
+- `corpus://audit-log/recent` — the last 50 activity entries for *this* token.
 
 Rule of thumb: if the user just wants you to **read/understand**, prefer attaching the resource. If you need to **filter, paginate, or act**, use the equivalent tool (`query_database`, `get_page`, etc.). The schema resources and the `get_database_schema` tool return the same thing — either is fine.
 
 ## Prompts — structured task starters
 
-The server ships five prompt templates that pre-fetch the relevant Remnus data and hand you a ready-to-run instruction. When the client surfaces prompts, **prefer them** over assembling the same context by hand:
+The server ships five prompt templates that pre-fetch the relevant Corpus data and hand you a ready-to-run instruction. When the client surfaces prompts, **prefer them** over assembling the same context by hand:
 
 - `summarize-page` — `page_id`, optional `style` (`bullet` | `paragraph` | `tldr`).
 - `weekly-status-report` — `database_id`, optional `period` (e.g. "last week"). Groups by status, flags blockers/wins.

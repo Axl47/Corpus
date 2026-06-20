@@ -1,12 +1,12 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
-import { auth } from '@/auth';
-import LanguageSwitcher from '@/components/features/LanguageSwitcher';
-import LandingThemeToggle from './LandingThemeToggle';
+import Image from "next/image";
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { auth } from "@/auth";
+import LanguageSwitcher from "@/components/features/LanguageSwitcher";
+import LandingThemeToggle from "./LandingThemeToggle";
 
 export default async function LandingNav() {
-  const t = await getTranslations('Landing');
+  const t = await getTranslations("Landing");
   const session = await auth();
   const isAuthed = !!session?.user;
 
@@ -15,29 +15,35 @@ export default async function LandingNav() {
       <div className="px-4 sm:px-8 lg:px-14 py-4">
         <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-4 lg:gap-7">
           <Link href="/" className="inline-flex items-center gap-2.5 shrink-0">
-            <Image src="/logo-square-transparent.png" alt="Remnus" width={22} height={22} className="block" />
+            <Image
+              src="/logo-square-transparent.png"
+              alt="Corpus"
+              width={22}
+              height={22}
+              className="block"
+            />
             <span className="font-sans font-semibold text-base tracking-[-0.01em] text-neutral-100">
-              Remnus
+              Corpus
             </span>
           </Link>
 
           <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-amber-400/70 bg-amber-500/8 border border-amber-500/20 px-1.5 py-0.5 rounded-full shrink-0 tracking-wide">
-            {t('earlyAccess')} · v0.1.2
+            {t("earlyAccess")} · v0.1.2
           </span>
 
           <span className="font-mono text-[11px] text-dimmer tracking-widest ml-2 hidden md:block">
-            {t('bridgeNavCaption')}
+            {t("bridgeNavCaption")}
           </span>
 
           <span className="flex-1" />
 
           <nav className="hidden lg:flex items-center gap-6.5 text-[13.5px] text-neutral-50">
             {[
-              { key: 'bridgeNavWhyRemnus',    href: '/#why'          },
-              { key: 'bridgeNavIntegrations', href: '/#integrations' },
-              { key: 'bridgeNavMcp',          href: '/#tools'        },
-              { key: 'bridgeNavPricing',      href: '/pricing'       },
-              { key: 'bridgeNavDownload',     href: '/download'      },
+              { key: "bridgeNavWhyCorpus", href: "/#why" },
+              { key: "bridgeNavIntegrations", href: "/#integrations" },
+              { key: "bridgeNavMcp", href: "/#tools" },
+              { key: "bridgeNavPricing", href: "/pricing" },
+              { key: "bridgeNavDownload", href: "/download" },
               // { key: 'bridgeNavDocs',         href: '#'              },
             ].map(({ key, href }) => (
               <Link
@@ -50,7 +56,7 @@ export default async function LandingNav() {
             ))}
           </nav>
 
-          <LandingThemeToggle label={t('navThemeToggle')} />
+          <LandingThemeToggle label={t("navThemeToggle")} />
 
           <LanguageSwitcher variant="header" />
 
@@ -60,7 +66,7 @@ export default async function LandingNav() {
                 href="/app"
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium bg-blue-500 hover:bg-accent-strong text-white rounded-md transition-colors duration-150"
               >
-                {t('navGoToApp')}
+                {t("navGoToApp")}
               </Link>
             ) : (
               <>
@@ -68,14 +74,16 @@ export default async function LandingNav() {
                   href="/login"
                   className="hidden sm:block px-4 py-2 text-[13px] text-neutral-50 hover:text-neutral-100 transition-colors duration-150 rounded-md hover:bg-white/5"
                 >
-                  {t('navSignIn')}
+                  {t("navSignIn")}
                 </Link>
                 <Link
                   href="/login"
                   className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-[13px] font-medium bg-blue-500 hover:bg-accent-strong text-white rounded-md transition-colors duration-150"
                 >
-                  {t('navGetStarted')}
-                  <span aria-hidden className="hidden sm:inline">→</span>
+                  {t("navGetStarted")}
+                  <span aria-hidden className="hidden sm:inline">
+                    →
+                  </span>
                 </Link>
               </>
             )}

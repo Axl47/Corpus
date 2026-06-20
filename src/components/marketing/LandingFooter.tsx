@@ -1,39 +1,48 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { getTranslations } from 'next-intl/server';
+import Link from "next/link";
+import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 
 export default async function LandingFooter() {
-  const t = await getTranslations('Landing');
+  const t = await getTranslations("Landing");
   const year = new Date().getFullYear();
 
   const cols = [
     {
-      head: t('bridgeFooterColProtocol'),
+      head: t("bridgeFooterColProtocol"),
       links: [
-        { label: t('bridgeFooterProtocolMcp'),      href: '/share/docs/mcp' },
-        { label: t('bridgeFooterProtocolSdk'),       href: '/share/docs/mcp/getting-started' },
-        { label: t('bridgeFooterProtocolTools'),     href: '/share/docs/mcp/read-tools' },
-        { label: t('bridgeFooterProtocolResources'), href: '/share/docs/mcp/resources' },
+        { label: t("bridgeFooterProtocolMcp"), href: "/share/docs/mcp" },
+        {
+          label: t("bridgeFooterProtocolSdk"),
+          href: "/share/docs/mcp/getting-started",
+        },
+        {
+          label: t("bridgeFooterProtocolTools"),
+          href: "/share/docs/mcp/read-tools",
+        },
+        {
+          label: t("bridgeFooterProtocolResources"),
+          href: "/share/docs/mcp/resources",
+        },
       ],
     },
     {
-      head: t('bridgeFooterColIntegrations'),
+      head: t("bridgeFooterColIntegrations"),
       links: [
-        { label: 'Claude',   href: '/#integrations' },
-        { label: 'Cursor',   href: '/#integrations' },
-        { label: 'Windsurf', href: '/#integrations' },
-        { label: 'ChatGPT',  href: '/#integrations' },
+        { label: "Claude", href: "/#integrations" },
+        { label: "Cursor", href: "/#integrations" },
+        { label: "Windsurf", href: "/#integrations" },
+        { label: "ChatGPT", href: "/#integrations" },
       ],
     },
     {
-      head: t('bridgeFooterColCompany'),
+      head: t("bridgeFooterColCompany"),
       links: [
-        { label: t('bridgeFooterCompanyManifesto'), href: '/#why' },
-        { label: t('bridgeFooterCompanyBlog'),      href: '/share/blog' },
-        { label: t('bridgeFooterCompanyPricing'),   href: '/pricing' },
-        { label: t('bridgeFooterCompanyContact'),   href: '/contact' },
-        { label: t('bridgeFooterCompanyPrivacy'),   href: '/privacy' },
-        { label: t('bridgeFooterCompanySecurity'),  href: '/security' },
+        { label: t("bridgeFooterCompanyManifesto"), href: "/#why" },
+        { label: t("bridgeFooterCompanyBlog"), href: "/share/blog" },
+        { label: t("bridgeFooterCompanyPricing"), href: "/pricing" },
+        { label: t("bridgeFooterCompanyContact"), href: "/contact" },
+        { label: t("bridgeFooterCompanyPrivacy"), href: "/privacy" },
+        { label: t("bridgeFooterCompanySecurity"), href: "/security" },
       ],
     },
   ];
@@ -44,14 +53,21 @@ export default async function LandingFooter() {
         {/* Left: logo + tagline + copyright */}
         <div className="flex flex-col gap-4 col-span-2 sm:col-span-3 lg:col-span-1">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <Image src="/logo-square-transparent.png" alt="Remnus" width={22} height={22} />
-            <span className="font-semibold text-neutral-100 text-[15px] tracking-[-0.01em]">Remnus</span>
+            <Image
+              src="/logo-square-transparent.png"
+              alt="Corpus"
+              width={22}
+              height={22}
+            />
+            <span className="font-semibold text-neutral-100 text-[15px] tracking-[-0.01em]">
+              Corpus
+            </span>
           </Link>
           <p className="text-[13.5px] text-dim leading-[1.55] max-w-55">
-            {t('bridgeFooterTagline')}
+            {t("bridgeFooterTagline")}
           </p>
           <span className="font-mono text-[11px] text-dimmer mt-auto">
-            {t('bridgeFooterCopyright', { year })}
+            {t("bridgeFooterCopyright", { year })}
           </span>
         </div>
 

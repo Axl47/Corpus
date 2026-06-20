@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect } from "react";
+import Link from "next/link";
 
 interface Props {
   to: string;
@@ -10,7 +10,12 @@ interface Props {
   successClose: string;
 }
 
-export function OAuthSuccessView({ to, successTitle, successMessage, successClose }: Props) {
+export function OAuthSuccessView({
+  to,
+  successTitle,
+  successMessage,
+  successClose,
+}: Props) {
   useEffect(() => {
     const timer = setTimeout(() => {
       window.location.replace(to);
@@ -20,16 +25,27 @@ export function OAuthSuccessView({ to, successTitle, successMessage, successClos
 
   return (
     <div className="w-full max-w-sm text-center">
-      <Link href="/" className="inline-flex flex-col items-center hover:opacity-80 transition-opacity mb-8">
+      <Link
+        href="/"
+        className="inline-flex flex-col items-center hover:opacity-80 transition-opacity mb-8"
+      >
         <img
           src="/logo-square-dark.png"
-          alt="Remnus"
+          alt="Corpus"
           className="w-14 h-14 object-contain rounded-xl shadow-lg"
         />
       </Link>
 
       <div className="w-14 h-14 bg-green-400/15 rounded-full flex items-center justify-center mx-auto mb-5">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#7fc36d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#7fc36d"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-7 h-7"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>

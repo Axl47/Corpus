@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 const PING_INTERVAL_MS = 30_000; // heartbeat cadence while the tab is visible
-const PING_URL = '/api/activity/ping';
+const PING_URL = "/api/activity/ping";
 
 /**
  * Heartbeat-based engagement tracker. While the tab is visible it POSTs to
@@ -13,13 +13,13 @@ const PING_URL = '/api/activity/ping';
  * rather than wall-clock time with the tab buried.
  *
  * The ping response carries a cheap `changeVersion` (max updatedAt across the
- * user's workspaces). We re-broadcast it as a `remnus:change` window event so
+ * user's workspaces). We re-broadcast it as a `corpus:change` window event so
  * useWorkspaceEvents can refresh server components ONLY when something actually
  * changed — instead of an unconditional 10s router.refresh() poll.
  *
  * Mounted only for authenticated users (see [locale]/layout.tsx).
  */
-export const CHANGE_EVENT = 'remnus:change';
+export const CHANGE_EVENT = "corpus:change";
 
 export default function ActivityTracker() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -28,11 +28,13 @@ export default function ActivityTracker() {
     const ping = async () => {
       try {
         // keepalive lets the request survive a tab close / navigation
-        const res = await fetch(PING_URL, { method: 'POST', keepalive: true });
+        const res = await fetch(PING_URL, { method: "POST", keepalive: true });
         if (!res.ok) return;
         const data = await res.json().catch(() => null);
-        if (data && typeof data.changeVersion === 'number') {
-          window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: data.changeVersion }));
+        if (data && typeof data.changeVersion === "number") {
+          window.dispatchEvent(
+            new CustomEvent(CHANGE_EVENT, { detail: data.changeVersion }),
+          );
         }
       } catch {
         // best-effort — ignore network/parse failures
@@ -53,15 +55,15 @@ export default function ActivityTracker() {
     };
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') start();
+      if (document.visibilityState === "visible") start();
       else stop();
     };
 
-    if (document.visibilityState === 'visible') start();
-    document.addEventListener('visibilitychange', handleVisibility);
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener("visibilitychange", handleVisibility);
       stop();
     };
   }, []);

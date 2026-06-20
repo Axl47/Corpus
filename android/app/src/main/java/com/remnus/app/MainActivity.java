@@ -1,4 +1,4 @@
-package com.remnus.app;
+package com.corpus.app;
 
 import com.getcapacitor.BridgeActivity;
 

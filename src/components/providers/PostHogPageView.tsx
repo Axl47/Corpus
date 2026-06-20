@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, Suspense } from 'react';
 import { usePostHog } from 'posthog-js/react';
+import { IS_POSTHOG_CONFIGURED } from './PostHogProvider';
 
 interface Props {
   skip?: boolean;
@@ -14,6 +15,7 @@ function PostHogPageViewContent({ skip }: Props) {
   const posthog = usePostHog();
 
   useEffect(() => {
+    if (!IS_POSTHOG_CONFIGURED) return;
     if (skip) return;
 
     if (pathname && posthog) {

@@ -1,12 +1,12 @@
 [package]
-name = "remnus-app"
+name = "corpus-app"
 version = "0.1.6"
-description = "Remnus Desktop App"
+description = "Corpus Desktop App"
 authors = ["Emir OĞUZ"]
 edition = "2021"
 
 [lib]
-name = "remnus_app_lib"
+name = "corpus_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

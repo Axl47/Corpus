@@ -1,37 +1,44 @@
-import type { Metadata } from 'next';
-import LandingBridgeSwitcher from '@/components/marketing/LandingBridgeSwitcher';
-import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
+import type { Metadata } from "next";
+import LandingBridgeSwitcher from "@/components/marketing/LandingBridgeSwitcher";
+import {
+  METADATA_BASE_URL,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+} from "@/lib/metadata";
 
 export const metadata: Metadata = {
   metadataBase: new URL(METADATA_BASE_URL),
   title: {
-    absolute: 'Remnus | MCP-Native workspace for vibe coders',
+    absolute: "Corpus | MCP-Native workspace for vibe coders",
   },
-  description: 'The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.',
+  description:
+    "The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.",
   alternates: {
-    canonical: 'https://remnus.com',
+    canonical: "https://corpus.com",
     languages: {
-      'en': 'https://remnus.com',
-      'tr': 'https://remnus.com',
-      'hi': 'https://remnus.com',
-      'es': 'https://remnus.com',
-      'fr': 'https://remnus.com',
-      'de': 'https://remnus.com',
-      'x-default': 'https://remnus.com',
+      en: "https://corpus.com",
+      tr: "https://corpus.com",
+      hi: "https://corpus.com",
+      es: "https://corpus.com",
+      fr: "https://corpus.com",
+      de: "https://corpus.com",
+      "x-default": "https://corpus.com",
     },
   },
   openGraph: {
-    title: 'Remnus | MCP-Native workspace for vibe coders',
-    description: 'The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.',
+    title: "Corpus | MCP-Native workspace for vibe coders",
+    description:
+      "The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.",
     url: METADATA_BASE_URL,
-    siteName: 'Remnus',
+    siteName: "Corpus",
     images: [DEFAULT_OG_IMAGE],
-    type: 'website',
+    type: "website",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Remnus | MCP-Native workspace for vibe coders',
-    description: 'The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.',
+    card: "summary_large_image",
+    title: "Corpus | MCP-Native workspace for vibe coders",
+    description:
+      "The workspace built for vibe coders and AI agents. Build databases, kanban boards, and pages that Claude, Cursor, Windsurf, and any MCP client can read and write.",
     images: [DEFAULT_TWITTER_IMAGE],
   },
 };

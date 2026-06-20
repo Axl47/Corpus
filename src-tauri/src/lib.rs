@@ -1,15 +1,15 @@
+#[cfg(not(debug_assertions))]
+use tauri::Emitter;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
-#[cfg(not(debug_assertions))]
-use tauri::Emitter;
 use tauri_plugin_deep_link::DeepLinkExt;
 #[cfg(not(debug_assertions))]
 use tauri_plugin_updater::UpdaterExt;
 
-const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('remnus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";
+const ZOOM_INIT: &str = "(function(){try{var z=parseFloat(localStorage.getItem('corpus_desktop_zoom'));if(z&&z>=0.5&&z<=2.0){var el=document.documentElement;el.style.zoom=String(z);if(z<1){var p=(100/z).toFixed(2)+'%';el.style.width=p;el.style.height=p;el.style.overflow='hidden';}}}catch(e){}})();";
 
 /// Exit the application cleanly. Called from the UpdateBanner after an
 /// update has been downloaded and installed — the user clicks "Quit & Reopen"
@@ -29,11 +29,11 @@ fn focus_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     }
 }
 
-/// Handle a `remnus://auth?token=<jwt>` deep-link URL by navigating the main
+/// Handle a `corpus://auth?token=<jwt>` deep-link URL by navigating the main
 /// webview to the client-activate endpoint. Shared between the macOS
 /// `on_open_url` handler and the Windows/Linux single-instance argv path.
 fn handle_deep_link_url<R: tauri::Runtime>(app: &tauri::AppHandle<R>, url: &url::Url) {
-    if url.scheme() != "remnus" {
+    if url.scheme() != "corpus" {
         return;
     }
     let token = url
@@ -42,12 +42,12 @@ fn handle_deep_link_url<R: tauri::Runtime>(app: &tauri::AppHandle<R>, url: &url:
         .map(|(_, v)| v.into_owned());
     if let Some(token) = token {
         #[cfg(not(debug_assertions))]
-        let base = "https://remnus.com/api/auth/client-activate";
+        let base = "https://corpus.com/api/auth/client-activate";
         #[cfg(debug_assertions)]
         let base = "http://localhost:3000/api/auth/client-activate";
         // Build a parsed URL and navigate via the typed API instead of
         // interpolating the token into a JS string (eval) — avoids code
-        // injection from a crafted remnus:// deep-link (argv on Windows/Linux).
+        // injection from a crafted corpus:// deep-link (argv on Windows/Linux).
         // The token is set via the URL API so it is properly percent-encoded and
         // cannot inject extra query params / fragments.
         if let Ok(mut target) = url::Url::parse(base) {
@@ -69,10 +69,10 @@ pub fn run() {
         // process exits immediately — preventing duplicate windows/processes.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             // Windows/Linux deliver deep-link URLs as a process argument to the
-            // second instance; forward any remnus:// URL to the primary window.
+            // second instance; forward any corpus:// URL to the primary window.
             for arg in &argv {
                 if let Ok(url) = url::Url::parse(arg) {
-                    if url.scheme() == "remnus" {
+                    if url.scheme() == "corpus" {
                         handle_deep_link_url(app, &url);
                     }
                 }
@@ -88,14 +88,14 @@ pub fn run() {
             #[cfg(debug_assertions)]
             let url = "http://localhost:3000/tauri-app";
             #[cfg(not(debug_assertions))]
-            let url = "https://remnus.com/tauri-app";
+            let url = "https://corpus.com/tauri-app";
 
             let window = WebviewWindowBuilder::new(
                 app,
                 "main",
                 WebviewUrl::External(url.parse().unwrap()),
             )
-            .title("Remnus")
+            .title("Corpus")
             .inner_size(1280.0, 800.0)
             .min_inner_size(900.0, 600.0)
             .center()
@@ -119,7 +119,7 @@ pub fn run() {
                 }
             });
 
-            // Handle OAuth deep-link callbacks: remnus://auth?token=<jwt>
+            // Handle OAuth deep-link callbacks: corpus://auth?token=<jwt>
             let handle = app.handle().clone();
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
@@ -147,13 +147,13 @@ pub fn run() {
                 });
             }
 
-            let quit = MenuItem::with_id(app, "quit", "Quit Remnus", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit Corpus", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("Remnus")
+                .tooltip("Corpus")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),

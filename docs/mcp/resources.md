@@ -1,14 +1,14 @@
 # Resources
 
-MCP resources provide structured, addressable data that clients can subscribe to or read on demand. Remnus exposes four resource templates.
+MCP resources provide structured, addressable data that clients can subscribe to or read on demand. Corpus exposes four resource templates.
 
 ---
 
-## remnus://workspace/{id}/schema
+## corpus://workspace/{id}/schema
 
 Get the full JSON schema of a workspace — all databases with their column definitions.
 
-**URI** — `remnus://workspace/{workspaceId}/schema`
+**URI** — `corpus://workspace/{workspaceId}/schema`
 
 **Mime type** — `application/json`
 
@@ -35,11 +35,11 @@ Get the full JSON schema of a workspace — all databases with their column defi
 
 ---
 
-## remnus://page/{id}
+## corpus://page/{id}
 
 Get the markdown content and properties of any page or database row.
 
-**URI** — `remnus://page/{pageId}`
+**URI** — `corpus://page/{pageId}`
 
 **Mime type** — `text/markdown`
 
@@ -49,11 +49,11 @@ Get the markdown content and properties of any page or database row.
 
 ---
 
-## remnus://database/{id}/schema
+## corpus://database/{id}/schema
 
 Get the column schema of a specific database.
 
-**URI** — `remnus://database/{databaseId}/schema`
+**URI** — `corpus://database/{databaseId}/schema`
 
 **Mime type** — `application/json`
 
@@ -72,11 +72,11 @@ Get the column schema of a specific database.
 
 ---
 
-## remnus://audit-log/recent
+## corpus://audit-log/recent
 
 Get the 50 most recent audit log entries for the current MCP token.
 
-**URI** — `remnus://audit-log/recent`
+**URI** — `corpus://audit-log/recent`
 
 **Mime type** — `application/json`
 

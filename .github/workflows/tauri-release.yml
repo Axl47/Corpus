@@ -3,7 +3,7 @@ name: Tauri Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -15,13 +15,13 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-22.04
-            args: ''
+            args: ""
           - platform: windows-latest
-            args: ''
+            args: ""
           - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
+            args: "--target aarch64-apple-darwin"
           - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
+            args: "--target x86_64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
 
@@ -43,7 +43,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         continue-on-error: true
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -65,8 +65,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Remnus ${{ github.ref_name }}'
-          releaseBody: 'Download the installer for your platform below.'
+          releaseName: "Corpus ${{ github.ref_name }}"
+          releaseBody: "Download the installer for your platform below."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
@@ -97,14 +97,14 @@ jobs:
           }
           case "$RUNNER_OS" in
             Windows)
-              upload "src-tauri/target/release/bundle/nsis/*-setup.exe" "Remnus-windows-x64-setup.exe"
+              upload "src-tauri/target/release/bundle/nsis/*-setup.exe" "Corpus-windows-x64-setup.exe"
               ;;
             macOS)
-              upload "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg" "Remnus-macos-aarch64.dmg"
-              upload "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg" "Remnus-macos-intel.dmg"
+              upload "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg" "Corpus-macos-aarch64.dmg"
+              upload "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg" "Corpus-macos-intel.dmg"
               ;;
             Linux)
-              upload "src-tauri/target/release/bundle/appimage/*.AppImage" "Remnus-linux-x86_64.AppImage"
-              upload "src-tauri/target/release/bundle/deb/*.deb" "Remnus-linux-amd64.deb"
+              upload "src-tauri/target/release/bundle/appimage/*.AppImage" "Corpus-linux-x86_64.AppImage"
+              upload "src-tauri/target/release/bundle/deb/*.deb" "Corpus-linux-amd64.deb"
               ;;
           esac

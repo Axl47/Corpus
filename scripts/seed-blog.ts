@@ -8,19 +8,19 @@
 // Run once after initial deployment, or again whenever blog content changes.
 // Existing pages are updated in-place; missing pages are created from scratch.
 
-import { createClient } from '@libsql/client';
-import { drizzle } from 'drizzle-orm/libsql';
-import { eq } from 'drizzle-orm';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import * as dotenv from 'dotenv';
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { eq } from "drizzle-orm";
+import { readFileSync } from "fs";
+import { join } from "path";
+import * as dotenv from "dotenv";
 
 dotenv.config();
 
-import * as schema from '../src/db/schema';
+import * as schema from "../src/db/schema";
 
 const client = createClient({
-  url: process.env.DATABASE_URL || 'file:local.db',
+  url: process.env.DATABASE_URL || "file:local.db",
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
 const db = drizzle(client, { schema });
@@ -38,46 +38,46 @@ type BlogPage = {
 
 const BLOGS: BlogPage[] = [
   {
-    slug: 'blog',
-    file: 'README.md',
-    title: 'Remnus Blog',
+    slug: "blog",
+    file: "README.md",
+    title: "Corpus Blog",
     sortOrder: 0,
     parentSlug: null,
-    icon: '✍️',
+    icon: "✍️",
   },
   {
-    slug: 'blog/why-agpl-3',
-    file: 'why-agpl-3.md',
-    title: 'Why We Chose AGPL-3.0 for Remnus',
+    slug: "blog/why-agpl-3",
+    file: "why-agpl-3.md",
+    title: "Why We Chose AGPL-3.0 for Corpus",
     sortOrder: 0,
-    parentSlug: 'blog',
-    icon: '⚖️',
+    parentSlug: "blog",
+    icon: "⚖️",
   },
   {
-    slug: 'blog/mcp-native-vs-integrated',
-    file: 'mcp-native-vs-integrated.md',
-    title: 'MCP-Native vs MCP-Integrated',
+    slug: "blog/mcp-native-vs-integrated",
+    file: "mcp-native-vs-integrated.md",
+    title: "MCP-Native vs MCP-Integrated",
     sortOrder: 1,
-    parentSlug: 'blog',
-    icon: '🤖',
+    parentSlug: "blog",
+    icon: "🤖",
   },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function readBlog(file: string): string {
-  return readFileSync(join('docs', 'blog', file), 'utf8');
+  return readFileSync(join("docs", "blog", file), "utf8");
 }
 
 async function findAdminUser(): Promise<string> {
   const [user] = await db
     .select({ id: schema.users.id })
     .from(schema.users)
-    .where(eq(schema.users.role, 'admin'))
+    .where(eq(schema.users.role, "admin"))
     .limit(1);
 
   if (!user) {
-    throw new Error('No admin user found. Create an admin account first.');
+    throw new Error("No admin user found. Create an admin account first.");
   }
   return user.id;
 }
@@ -86,7 +86,7 @@ async function findOrCreateBlogWorkspace(adminUserId: string): Promise<string> {
   const [existingRoot] = await db
     .select({ workspaceId: schema.sharedPages.workspaceId })
     .from(schema.sharedPages)
-    .where(eq(schema.sharedPages.slug, 'blog'))
+    .where(eq(schema.sharedPages.slug, "blog"))
     .limit(1);
 
   if (existingRoot) return existingRoot.workspaceId;
@@ -94,8 +94,8 @@ async function findOrCreateBlogWorkspace(adminUserId: string): Promise<string> {
   const workspaceId = crypto.randomUUID();
   await db.insert(schema.workspaces).values({
     id: workspaceId,
-    name: 'Remnus Blog',
-    icon: '✍️',
+    name: "Corpus Blog",
+    icon: "✍️",
     sortOrder: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -105,7 +105,7 @@ async function findOrCreateBlogWorkspace(adminUserId: string): Promise<string> {
     id: crypto.randomUUID(),
     workspaceId,
     userId: adminUserId,
-    role: 'owner',
+    role: "owner",
     createdAt: new Date(),
   });
 
@@ -116,7 +116,7 @@ async function findOrCreateBlogWorkspace(adminUserId: string): Promise<string> {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('Seeding blog pages...\n');
+  console.log("Seeding blog pages...\n");
 
   const adminUserId = await findAdminUser();
   console.log(`Admin user: ${adminUserId}`);
@@ -150,20 +150,22 @@ async function main() {
           .where(eq(schema.standalonePages.itemId, existing.pageId)),
         db
           .update(schema.sharedPages)
-          .set({ inSitemap: true, width: 'wide' })
+          .set({ inSitemap: true, width: "wide" })
           .where(eq(schema.sharedPages.id, existing.shareId)),
       ]);
 
       slugToItemId.set(blog.slug, existing.pageId);
       console.log(`  [updated] /share/${blog.slug}`);
     } else {
-      const parentItemId = blog.parentSlug ? (slugToItemId.get(blog.parentSlug) ?? null) : null;
+      const parentItemId = blog.parentSlug
+        ? (slugToItemId.get(blog.parentSlug) ?? null)
+        : null;
       const itemId = crypto.randomUUID();
 
       await db.insert(schema.workspaceItems).values({
         id: itemId,
         workspaceId,
-        type: 'page',
+        type: "page",
         title: blog.title,
         icon: blog.icon,
         parentId: parentItemId,
@@ -185,8 +187,8 @@ async function main() {
         slug: blog.slug,
         pageId: itemId,
         workspaceId,
-        permission: 'read',
-        width: 'wide',
+        permission: "read",
+        width: "wide",
         inSitemap: true,
         createdBy: adminUserId,
         createdAt: new Date(),
@@ -197,9 +199,9 @@ async function main() {
     }
   }
 
-  console.log('\nDone. Public URLs:');
+  console.log("\nDone. Public URLs:");
   for (const blog of BLOGS) {
-    console.log(`  https://remnus.com/share/${blog.slug}`);
+    console.log(`  https://corpus.com/share/${blog.slug}`);
   }
 
   process.exit(0);

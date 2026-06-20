@@ -1,5 +1,5 @@
 {
-  "name": "remnus-app",
+  "name": "corpus-app",
   "version": "0.1.6",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -21,7 +21,7 @@
     "cap:open:ios": "cap open ios",
     "cap:open:android": "cap open android",
     "mcpb:install": "npm --prefix mcpb/server install --omit=dev",
-    "mcpb:pack": "npx --yes @anthropic-ai/mcpb pack mcpb mcpb-build/remnus.mcpb",
+    "mcpb:pack": "npx --yes @anthropic-ai/mcpb pack mcpb mcpb-build/corpus.mcpb",
     "mcpb:build": "npm run mcpb:install && npm run mcpb:pack",
     "version:bump": "npm version patch && sed -i 's/^version = .*/version = \"'$(node -p \"require('./package.json').version\")'\"/' src-tauri/Cargo.toml"
   },

@@ -1,8 +1,22 @@
-import { db } from '@/db';
-import { workspaces, workspaceItems, standalonePages, databases, pages, workspaceMembers, agentTokens, agentActivity } from '@/db/schema';
+import { db } from "@/db";
+import {
+  workspaces,
+  workspaceItems,
+  standalonePages,
+  databases,
+  pages,
+  workspaceMembers,
+  agentTokens,
+  agentActivity,
+} from "@/db/schema";
 
-export async function createSeedWorkspace(userId: string, userName?: string | null) {
-  const workspaceName = userName ? `${userName} Workspace` : 'Personal Workspace';
+export async function createSeedWorkspace(
+  userId: string,
+  userName?: string | null,
+) {
+  const workspaceName = userName
+    ? `${userName} Workspace`
+    : "Personal Workspace";
   await createRichWorkspaceData(userId, workspaceName);
 }
 
@@ -10,9 +24,9 @@ export async function createSeedWorkspace(userId: string, userName?: string | nu
 
 const START_HERE_CONTENT = `### Hey everyone!
 
-To show you how **Remnus helps** us stay on top of a project while building with AI agents, I'm building a basic *clone of Microsoft Paint as an example project*.
+To show you how **Corpus helps** us stay on top of a project while building with AI agents, I'm building a basic *clone of Microsoft Paint as an example project*.
 
-Everything you see here was put together by *Claude Code* and *Remnus* working side by side!
+Everything you see here was put together by *Claude Code* and *Corpus* working side by side!
 
 <div data-yt-id="OVi9pjY_p84"></div>
 
@@ -22,7 +36,7 @@ Everything you see here was put together by *Claude Code* and *Remnus* working s
 
 ### What the AI agent actually did
 
-Here's a trace of the real session that built this workspace, pulled straight from Remnus's agent audit log:
+Here's a trace of the real session that built this workspace, pulled straight from Corpus's agent audit log:
 
 | When | Action | What happened |
 |------|--------|---------------|
@@ -39,7 +53,7 @@ Want the full story in writing? Open the page below 👇
 {{HOW_BUILT_CB}}
 `;
 
-const HOW_THIS_WAS_BUILT_CONTENT = `This workspace wasn't filled in by hand. An AI agent (**Claude Code**) connected to Remnus over **MCP** and built the whole thing: the spec, the task board, and the progress tracking, while a human watched it all happen in real time.
+const HOW_THIS_WAS_BUILT_CONTENT = `This workspace wasn't filled in by hand. An AI agent (**Claude Code**) connected to Corpus over **MCP** and built the whole thing: the spec, the task board, and the progress tracking, while a human watched it all happen in real time.
 
 This page is the written companion to the video on **Start Here**: same story, just readable at your own pace.
 
@@ -53,7 +67,7 @@ This page is the written companion to the video on **Start Here**: same story, j
 
 ## How to read the signals
 
-Remnus makes the agent's work **visible and auditable**. This is the part that doesn't show up in other tools:
+Corpus makes the agent's work **visible and auditable**. This is the part that doesn't show up in other tools:
 
 <div data-callout-icon="⚡" data-callout-color="blue" data-callout-text="The agent badge on a row means an AI agent last edited it. Hover it to see which token made the change and when."></div>
 
@@ -65,12 +79,12 @@ Remnus makes the agent's work **visible and auditable**. This is the part that d
 You can point your own AI agent at your own workspace in under a minute:
 
 1. Open **Workspace Settings → Tokens** and create an MCP token (read or write scope).
-2. Add Remnus as an MCP server in your client (Cursor, VS Code, or Claude). The endpoint and auth header are shown right after you create the token, and there are one-click install buttons too.
+2. Add Corpus as an MCP server in your client (Cursor, VS Code, or Claude). The endpoint and auth header are shown right after you create the token, and there are one-click install buttons too.
 3. Ask your agent to plan a project, fill a database, or summarize a page. Every action it takes shows up in the audit log, stamped and reversible.
 
 <div data-callout-icon="🔒" data-callout-color="green" data-callout-text="You stay in control: tokens are scoped, every write is logged, and you can revoke access at any time."></div>
 
-That's the whole idea behind Remnus. Your AI agents get a real workspace to work in, and you keep full visibility over everything they do.
+That's the whole idea behind Corpus. Your AI agents get a real workspace to work in, and you keep full visibility over everything they do.
 `;
 
 const PRODUCT_SPEC_CONTENT = `# Product Spec: Paint Clone
@@ -428,70 +442,79 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   // ── Ids — declared up front so the single batched write at the end can reference them ──
 
   const ws1 = crypto.randomUUID();
-  const demoTokenId = crypto.randomUUID();            // stamps selected rows with an "agent edited" badge
+  const demoTokenId = crypto.randomUUID(); // stamps selected rows with an "agent edited" badge
   const startHereItem = crypto.randomUUID();
-  const howBuiltItem = crypto.randomUUID();           // child page of Start Here; id needed for the inline link below
+  const howBuiltItem = crypto.randomUUID(); // child page of Start Here; id needed for the inline link below
   const productSpecItem = crypto.randomUUID();
   const howBuiltCb = `<div data-cb-id="${howBuiltItem}" data-cb-dbid="" data-cb-type="page" data-cb-title="How This Was Built" data-cb-icon="🛠️" data-cb-iconcolor="" data-cb-link=""></div>`;
 
   // ── Sprint Board database ───────────────────────────────────────────────────
 
   const sprintSchema = [
-    { id: 'title', name: 'Title', type: 'text' as const },
+    { id: "title", name: "Title", type: "text" as const },
     {
-      id: 'status', name: 'Status', type: 'select' as const, options: [
-        { value: 'Backlog', color: 'default' as const },
-        { value: 'In Progress', color: 'orange' as const },
-        { value: 'Done', color: 'green' as const },
+      id: "status",
+      name: "Status",
+      type: "select" as const,
+      options: [
+        { value: "Backlog", color: "default" as const },
+        { value: "In Progress", color: "orange" as const },
+        { value: "Done", color: "green" as const },
       ],
     },
     {
-      id: 'priority', name: 'Priority', type: 'select' as const, options: [
-        { value: 'High', color: 'red' as const },
-        { value: 'Medium', color: 'yellow' as const },
-        { value: 'Low', color: 'green' as const },
+      id: "priority",
+      name: "Priority",
+      type: "select" as const,
+      options: [
+        { value: "High", color: "red" as const },
+        { value: "Medium", color: "yellow" as const },
+        { value: "Low", color: "green" as const },
       ],
     },
     {
-      id: 'category', name: 'Category', type: 'select' as const, options: [
-        { value: 'Canvas', color: 'red' as const },
-        { value: 'Color', color: 'orange' as const },
-        { value: 'Shapes', color: 'yellow' as const },
-        { value: 'File', color: 'green' as const },
-        { value: 'UI', color: 'teal' as const },
+      id: "category",
+      name: "Category",
+      type: "select" as const,
+      options: [
+        { value: "Canvas", color: "red" as const },
+        { value: "Color", color: "orange" as const },
+        { value: "Shapes", color: "yellow" as const },
+        { value: "File", color: "green" as const },
+        { value: "UI", color: "teal" as const },
       ],
     },
   ];
 
   const sprintViews = [
     {
-      id: 'v-sprint-1',
-      name: 'Board',
+      id: "v-sprint-1",
+      name: "Board",
       config: {
-        type: 'kanban' as const,
-        groupByCol: 'status',
-        groupOrder: ['Backlog', 'In Progress', 'Done'],
+        type: "kanban" as const,
+        groupByCol: "status",
+        groupOrder: ["Backlog", "In Progress", "Done"],
         filters: [],
         sorts: [],
-        openBehavior: 'center' as const,
-        cardProperties: ['priority', 'category'],
+        openBehavior: "center" as const,
+        cardProperties: ["priority", "category"],
         showPropertyLabels: true,
-        propertyTextClamp: 'truncate' as const,
-        cardColorCol: 'category',
+        propertyTextClamp: "truncate" as const,
+        cardColorCol: "category",
         groupColBg: true,
       },
     },
     {
-      id: 'v-sprint-2',
-      name: 'Table',
+      id: "v-sprint-2",
+      name: "Table",
       config: {
-        type: 'table' as const,
-        columnOrder: ['title', 'status', 'priority', 'category'],
+        type: "table" as const,
+        columnOrder: ["title", "status", "priority", "category"],
         hiddenColumns: [],
         filters: [],
         sorts: [],
-        openBehavior: 'center' as const,
-        rowColorCol: 'status',
+        openBehavior: "center" as const,
+        rowColorCol: "status",
       },
     },
   ];
@@ -500,65 +523,222 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   const sprintDb = crypto.randomUUID();
 
   const sprintTasks = [
-    { title: 'Set up project scaffold', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_SCAFFOLD, agentAt: h(-30) },
-    { title: 'Implement freehand brush / pencil tool', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_BRUSH, agentAt: h(-28) },
-    { title: 'Implement eraser tool', status: 'Done', priority: 'High', category: 'Canvas', content: TASK_ERASER, agentAt: h(-24) },
-    { title: 'Implement adjustable brush size', status: 'Backlog', priority: 'High', category: 'Canvas', content: TASK_BRUSH_SIZE },
-    { title: 'Implement flood fill (bucket tool)', status: 'Backlog', priority: 'Medium', category: 'Canvas', content: TASK_FILL },
-    { title: 'Implement clear canvas button', status: 'Backlog', priority: 'Medium', category: 'Canvas', content: TASK_CLEAR },
-    { title: 'Implement color picker', status: 'Backlog', priority: 'High', category: 'Color', content: TASK_COLOR_PICKER },
-    { title: 'Implement preset color palette', status: 'Backlog', priority: 'Medium', category: 'Color', content: TASK_PALETTE },
-    { title: 'Implement line tool', status: 'In Progress', priority: 'Medium', category: 'Shapes', content: TASK_LINE, agentAt: h(-2) },
-    { title: 'Implement rectangle tool', status: 'Backlog', priority: 'Medium', category: 'Shapes', content: TASK_RECT },
-    { title: 'Implement circle / ellipse tool', status: 'Backlog', priority: 'Medium', category: 'Shapes', content: TASK_ELLIPSE },
-    { title: 'Implement save as PNG', status: 'Backlog', priority: 'High', category: 'File', content: TASK_SAVE },
-    { title: 'Implement open / load image', status: 'Backlog', priority: 'Medium', category: 'File', content: TASK_OPEN },
-    { title: 'Implement undo history', status: 'Backlog', priority: 'High', category: 'UI', content: TASK_UNDO },
-    { title: 'Implement toolbar UI and tool icons', status: 'Backlog', priority: 'High', category: 'UI', content: TASK_TOOLBAR },
-    { title: 'Implement keyboard shortcuts', status: 'Backlog', priority: 'Low', category: 'UI', content: TASK_SHORTCUTS },
+    {
+      title: "Set up project scaffold",
+      status: "Done",
+      priority: "High",
+      category: "Canvas",
+      content: TASK_SCAFFOLD,
+      agentAt: h(-30),
+    },
+    {
+      title: "Implement freehand brush / pencil tool",
+      status: "Done",
+      priority: "High",
+      category: "Canvas",
+      content: TASK_BRUSH,
+      agentAt: h(-28),
+    },
+    {
+      title: "Implement eraser tool",
+      status: "Done",
+      priority: "High",
+      category: "Canvas",
+      content: TASK_ERASER,
+      agentAt: h(-24),
+    },
+    {
+      title: "Implement adjustable brush size",
+      status: "Backlog",
+      priority: "High",
+      category: "Canvas",
+      content: TASK_BRUSH_SIZE,
+    },
+    {
+      title: "Implement flood fill (bucket tool)",
+      status: "Backlog",
+      priority: "Medium",
+      category: "Canvas",
+      content: TASK_FILL,
+    },
+    {
+      title: "Implement clear canvas button",
+      status: "Backlog",
+      priority: "Medium",
+      category: "Canvas",
+      content: TASK_CLEAR,
+    },
+    {
+      title: "Implement color picker",
+      status: "Backlog",
+      priority: "High",
+      category: "Color",
+      content: TASK_COLOR_PICKER,
+    },
+    {
+      title: "Implement preset color palette",
+      status: "Backlog",
+      priority: "Medium",
+      category: "Color",
+      content: TASK_PALETTE,
+    },
+    {
+      title: "Implement line tool",
+      status: "In Progress",
+      priority: "Medium",
+      category: "Shapes",
+      content: TASK_LINE,
+      agentAt: h(-2),
+    },
+    {
+      title: "Implement rectangle tool",
+      status: "Backlog",
+      priority: "Medium",
+      category: "Shapes",
+      content: TASK_RECT,
+    },
+    {
+      title: "Implement circle / ellipse tool",
+      status: "Backlog",
+      priority: "Medium",
+      category: "Shapes",
+      content: TASK_ELLIPSE,
+    },
+    {
+      title: "Implement save as PNG",
+      status: "Backlog",
+      priority: "High",
+      category: "File",
+      content: TASK_SAVE,
+    },
+    {
+      title: "Implement open / load image",
+      status: "Backlog",
+      priority: "Medium",
+      category: "File",
+      content: TASK_OPEN,
+    },
+    {
+      title: "Implement undo history",
+      status: "Backlog",
+      priority: "High",
+      category: "UI",
+      content: TASK_UNDO,
+    },
+    {
+      title: "Implement toolbar UI and tool icons",
+      status: "Backlog",
+      priority: "High",
+      category: "UI",
+      content: TASK_TOOLBAR,
+    },
+    {
+      title: "Implement keyboard shortcuts",
+      status: "Backlog",
+      priority: "Low",
+      category: "UI",
+      content: TASK_SHORTCUTS,
+    },
   ];
 
   const taskRowIds = sprintTasks.map(() => crypto.randomUUID());
   const taskRows = sprintTasks.map((task, i) => {
-    const t = task as typeof sprintTasks[0] & { agentAt?: Date };
+    const t = task as (typeof sprintTasks)[0] & { agentAt?: Date };
     return {
       id: taskRowIds[i],
       databaseId: sprintDb,
       title: t.title,
       content: t.content,
-      properties: { title: t.title, status: t.status, priority: t.priority, category: t.category },
+      properties: {
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        category: t.category,
+      },
       sortOrder: i,
-      ...(t.agentAt ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId } : {}),
+      ...(t.agentAt
+        ? { agentEditedAt: t.agentAt, agentTokenId: demoTokenId }
+        : {}),
     };
   });
 
   // ── Agent audit log ─────────────────────────────────────────────────────────
-  // Mirrors the real Claude Code session that built this workspace (from Remnus's
+  // Mirrors the real Claude Code session that built this workspace (from Corpus's
   // own MCP audit log). Powers the live activity feed in the "AI Agents" panel.
 
   const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 3_600_000);
-  const activityRows = ([
-    { tool: 'list_workspace', targetType: null, targetId: null, at: at(32) },
-    { tool: 'create_page', targetType: 'page', targetId: productSpecItem, at: at(31.7) },
-    { tool: 'create_database', targetType: 'database', targetId: sprintDb, at: at(31.5) },
-    // 16 task rows generated one after another
-    ...taskRowIds.map((id, i) => ({
-      tool: 'create_page', targetType: 'db-row' as const, targetId: id, at: at(31.3 - i * 0.07),
-    })),
-    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[0], at: at(30) },  // scaffold → Done
-    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[1], at: at(28) },  // brush → Done
-    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[2], at: at(24) },  // eraser → Done
-    { tool: 'query_database', targetType: 'database', targetId: sprintDb, at: at(6) },
-    { tool: 'update_page', targetType: 'db-row', targetId: taskRowIds[8], at: at(2) },   // line tool → In Progress
-    { tool: 'get_page', targetType: 'page', targetId: productSpecItem, at: at(1) },
-  ] as { tool: string; targetType: string | null; targetId: string | null; at: Date }[]).map((a) => ({
+  const activityRows = (
+    [
+      { tool: "list_workspace", targetType: null, targetId: null, at: at(32) },
+      {
+        tool: "create_page",
+        targetType: "page",
+        targetId: productSpecItem,
+        at: at(31.7),
+      },
+      {
+        tool: "create_database",
+        targetType: "database",
+        targetId: sprintDb,
+        at: at(31.5),
+      },
+      // 16 task rows generated one after another
+      ...taskRowIds.map((id, i) => ({
+        tool: "create_page",
+        targetType: "db-row" as const,
+        targetId: id,
+        at: at(31.3 - i * 0.07),
+      })),
+      {
+        tool: "update_page",
+        targetType: "db-row",
+        targetId: taskRowIds[0],
+        at: at(30),
+      }, // scaffold → Done
+      {
+        tool: "update_page",
+        targetType: "db-row",
+        targetId: taskRowIds[1],
+        at: at(28),
+      }, // brush → Done
+      {
+        tool: "update_page",
+        targetType: "db-row",
+        targetId: taskRowIds[2],
+        at: at(24),
+      }, // eraser → Done
+      {
+        tool: "query_database",
+        targetType: "database",
+        targetId: sprintDb,
+        at: at(6),
+      },
+      {
+        tool: "update_page",
+        targetType: "db-row",
+        targetId: taskRowIds[8],
+        at: at(2),
+      }, // line tool → In Progress
+      {
+        tool: "get_page",
+        targetType: "page",
+        targetId: productSpecItem,
+        at: at(1),
+      },
+    ] as {
+      tool: string;
+      targetType: string | null;
+      targetId: string | null;
+      at: Date;
+    }[]
+  ).map((a) => ({
     id: crypto.randomUUID(),
     tokenId: demoTokenId,
     workspaceId: ws1,
     tool: a.tool,
     targetType: a.targetType,
     targetId: a.targetId,
-    status: 'success' as const,
+    status: "success" as const,
     createdAt: a.at,
   }));
 
@@ -569,23 +749,100 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
   // collapses it to a single round-trip. Order is FK-safe: parents precede children.
 
   await db.batch([
-    db.insert(workspaces).values({ id: ws1, name: workspaceName, sortOrder: 0, billingOwnerId: userId, createdAt: new Date() }),
-    db.insert(workspaceMembers).values({ id: crypto.randomUUID(), workspaceId: ws1, userId, role: 'owner', createdAt: new Date() }),
-    db.insert(agentTokens).values({ id: demoTokenId, workspaceId: ws1, name: 'Claude AI Agent', agentName: 'claude-code', tokenPrefix: 'rmns-demo', tokenHash: 'demo-seed-not-valid', scope: 'write', createdBy: userId, createdAt: h(-48), lastUsedAt: h(-1) }),
-    db.insert(workspaceItems).values({ id: startHereItem, workspaceId: ws1, type: 'page', title: 'Start Here', sortOrder: 0, icon: '⭐', iconColor: 'default' }),
-    db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: startHereItem, content: START_HERE_CONTENT.replace('{{HOW_BUILT_CB}}', howBuiltCb) }),
-    db.insert(workspaceItems).values({ id: productSpecItem, workspaceId: ws1, type: 'page', title: 'Product Spec', sortOrder: 1, icon: '🎨', iconColor: 'default' }),
-    db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: productSpecItem, content: PRODUCT_SPEC_CONTENT }),
-    db.insert(workspaceItems).values({ id: howBuiltItem, workspaceId: ws1, type: 'page', title: 'How This Was Built', parentId: startHereItem, sortOrder: 0, icon: '🛠️', iconColor: 'default' }),
-    db.insert(standalonePages).values({ id: crypto.randomUUID(), itemId: howBuiltItem, content: HOW_THIS_WAS_BUILT_CONTENT }),
-    db.insert(workspaceItems).values({ id: sprintDbItem, workspaceId: ws1, type: 'database', title: 'Sprint Board', sortOrder: 2, icon: '📋', iconColor: 'default' }),
-    db.insert(databases).values({ id: sprintDb, name: 'Sprint Board', itemId: sprintDbItem, schema: sprintSchema, views: sprintViews }),
+    db.insert(workspaces).values({
+      id: ws1,
+      name: workspaceName,
+      sortOrder: 0,
+      billingOwnerId: userId,
+      createdAt: new Date(),
+    }),
+    db.insert(workspaceMembers).values({
+      id: crypto.randomUUID(),
+      workspaceId: ws1,
+      userId,
+      role: "owner",
+      createdAt: new Date(),
+    }),
+    db.insert(agentTokens).values({
+      id: demoTokenId,
+      workspaceId: ws1,
+      name: "Claude AI Agent",
+      agentName: "claude-code",
+      tokenPrefix: "crps-demo",
+      tokenHash: "demo-seed-not-valid",
+      scope: "write",
+      createdBy: userId,
+      createdAt: h(-48),
+      lastUsedAt: h(-1),
+    }),
+    db.insert(workspaceItems).values({
+      id: startHereItem,
+      workspaceId: ws1,
+      type: "page",
+      title: "Start Here",
+      sortOrder: 0,
+      icon: "⭐",
+      iconColor: "default",
+    }),
+    db.insert(standalonePages).values({
+      id: crypto.randomUUID(),
+      itemId: startHereItem,
+      content: START_HERE_CONTENT.replace("{{HOW_BUILT_CB}}", howBuiltCb),
+    }),
+    db.insert(workspaceItems).values({
+      id: productSpecItem,
+      workspaceId: ws1,
+      type: "page",
+      title: "Product Spec",
+      sortOrder: 1,
+      icon: "🎨",
+      iconColor: "default",
+    }),
+    db.insert(standalonePages).values({
+      id: crypto.randomUUID(),
+      itemId: productSpecItem,
+      content: PRODUCT_SPEC_CONTENT,
+    }),
+    db.insert(workspaceItems).values({
+      id: howBuiltItem,
+      workspaceId: ws1,
+      type: "page",
+      title: "How This Was Built",
+      parentId: startHereItem,
+      sortOrder: 0,
+      icon: "🛠️",
+      iconColor: "default",
+    }),
+    db.insert(standalonePages).values({
+      id: crypto.randomUUID(),
+      itemId: howBuiltItem,
+      content: HOW_THIS_WAS_BUILT_CONTENT,
+    }),
+    db.insert(workspaceItems).values({
+      id: sprintDbItem,
+      workspaceId: ws1,
+      type: "database",
+      title: "Sprint Board",
+      sortOrder: 2,
+      icon: "📋",
+      iconColor: "default",
+    }),
+    db.insert(databases).values({
+      id: sprintDb,
+      name: "Sprint Board",
+      itemId: sprintDbItem,
+      schema: sprintSchema,
+      views: sprintViews,
+    }),
     db.insert(pages).values(taskRows),
     db.insert(agentActivity).values(activityRows),
   ]);
 }
 
-export async function createDemoSeedData(userId: string, userName?: string | null) {
-  const workspaceName = userName ? `${userName} Workspace` : 'Demo Workspace';
+export async function createDemoSeedData(
+  userId: string,
+  userName?: string | null,
+) {
+  const workspaceName = userName ? `${userName} Workspace` : "Demo Workspace";
   await createRichWorkspaceData(userId, workspaceName);
 }

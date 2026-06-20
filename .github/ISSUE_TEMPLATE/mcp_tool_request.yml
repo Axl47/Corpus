@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Remnus exposes workspace data via the Model Context Protocol. Suggest a new tool, resource, or prompt template that would make AI agents more capable.
+        Corpus exposes workspace data via the Model Context Protocol. Suggest a new tool, resource, or prompt template that would make AI agents more capable.
 
   - type: dropdown
     id: type
@@ -23,7 +23,7 @@ body:
     id: name
     attributes:
       label: Suggested name
-      placeholder: "e.g. archive_page, remnus://database/{id}/stats"
+      placeholder: "e.g. archive_page, corpus://database/{id}/stats"
     validations:
       required: true
 

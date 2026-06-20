@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
+import { IS_POSTHOG_CONFIGURED } from './PostHogProvider';
 
 interface Props {
   user: {
@@ -16,6 +17,7 @@ export default function PostHogIdentify({ user }: Props) {
   const posthog = usePostHog();
 
   useEffect(() => {
+    if (!IS_POSTHOG_CONFIGURED) return;
     if (!posthog) return;
 
     // Capture on/off is owned entirely by ConsentProvider (geo + consent + admin).

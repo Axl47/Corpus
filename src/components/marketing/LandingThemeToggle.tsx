@@ -1,23 +1,30 @@
-'use client';
-import { useSyncExternalStore } from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { setTheme } from '@/lib/actions/preferences';
+"use client";
+import { useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
+import { setTheme } from "@/lib/actions/preferences";
 
-const LIGHT = 'catppuccin';
-const DARK = 'remnus';
+const LIGHT = "catppuccin";
+const DARK = "corpus";
 
 // Track the live <html data-theme> attribute via the DOM so the icon stays in
 // sync with any other surface that changes the theme — no local state needed.
 function subscribe(onChange: () => void) {
   const obs = new MutationObserver(onChange);
-  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
   return () => obs.disconnect();
 }
 const getSnapshot = () => document.documentElement.dataset.theme === LIGHT;
 const getServerSnapshot = () => false;
 
 export default function LandingThemeToggle({ label }: { label: string }) {
-  const isLight = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isLight = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   function toggle() {
     const next = isLight ? DARK : LIGHT;

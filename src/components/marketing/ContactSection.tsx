@@ -1,29 +1,29 @@
-import { getTranslations } from 'next-intl/server';
-import { GitBranch, Mail, MessageSquare } from 'lucide-react';
+import { getTranslations } from "next-intl/server";
+import { GitBranch, Mail, MessageSquare } from "lucide-react";
 
 export default async function ContactSection() {
-  const t = await getTranslations('Contact');
+  const t = await getTranslations("Contact");
 
   const channels = [
     {
       icon: GitBranch,
-      title: t('githubTitle'),
-      desc: t('githubDesc'),
-      label: t('githubLabel'),
-      href: 'https://github.com',
+      title: t("githubTitle"),
+      desc: t("githubDesc"),
+      label: t("githubLabel"),
+      href: "https://github.com",
     },
     {
       icon: Mail,
-      title: t('emailTitle'),
-      desc: t('emailDesc'),
-      label: t('emailLabel'),
-      href: 'mailto:hello@remnus.com',
+      title: t("emailTitle"),
+      desc: t("emailDesc"),
+      label: t("emailLabel"),
+      href: "mailto:hello@corpus.com",
     },
     {
       icon: MessageSquare,
-      title: t('communityTitle'),
-      desc: t('communityDesc'),
-      label: t('communityLabel'),
+      title: t("communityTitle"),
+      desc: t("communityDesc"),
+      label: t("communityLabel"),
       href: null,
     },
   ];
@@ -32,8 +32,12 @@ export default async function ContactSection() {
     <section>
       <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
         <div className="text-center mb-14">
-          <h1 className="text-3xl md:text-5xl font-bold text-neutral-100">{t('title')}</h1>
-          <p className="mt-3 text-neutral-400 max-w-xl mx-auto leading-relaxed">{t('subtitle')}</p>
+          <h1 className="text-3xl md:text-5xl font-bold text-neutral-100">
+            {t("title")}
+          </h1>
+          <p className="mt-3 text-neutral-400 max-w-xl mx-auto leading-relaxed">
+            {t("subtitle")}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -46,8 +50,12 @@ export default async function ContactSection() {
                 <Icon size={20} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-neutral-100 mb-1">{title}</h3>
-                <p className="text-sm text-neutral-400 leading-relaxed">{desc}</p>
+                <h3 className="text-base font-semibold text-neutral-100 mb-1">
+                  {title}
+                </h3>
+                <p className="text-sm text-neutral-400 leading-relaxed">
+                  {desc}
+                </p>
               </div>
               {href ? (
                 <a
@@ -65,7 +73,9 @@ export default async function ContactSection() {
           ))}
         </div>
 
-        <p className="text-center text-xs text-neutral-600 mt-10">{t('responseNote')}</p>
+        <p className="text-center text-xs text-neutral-600 mt-10">
+          {t("responseNote")}
+        </p>
       </div>
     </section>
   );

@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface Props {
   linkLabel: string;
   title: string;
   subtitle: string;
-  s1Label: string; s1Title: string; s1Body: string;
-  s2Label: string; s2Title: string; s2Body: string;
-  s3Label: string; s3Title: string; s3Body: string;
+  s1Label: string;
+  s1Title: string;
+  s1Body: string;
+  s2Label: string;
+  s2Title: string;
+  s2Body: string;
+  s3Label: string;
+  s3Title: string;
+  s3Body: string;
   endpointLabel: string;
   headerLabel: string;
   docsNote: string;
@@ -30,20 +36,22 @@ export default function SetupGuideModal(props: Props) {
         onClick={() => setOpen(true)}
         className="mt-[18px] inline-flex items-center gap-1.5 font-mono text-[12px] text-accent-strong hover:text-blue-400 transition-colors duration-150 cursor-pointer"
       >
-        {props.linkLabel}{' '}
-        <span aria-hidden className="text-[11px]">→</span>
+        {props.linkLabel}{" "}
+        <span aria-hidden className="text-[11px]">
+          →
+        </span>
       </button>
 
       {open && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.65)' }}
+          style={{ background: "rgba(0,0,0,0.65)" }}
           onClick={() => setOpen(false)}
         >
           <div
             className="relative w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden"
-            style={{ boxShadow: '0 32px 64px -16px rgba(0,0,0,0.7)' }}
-            onClick={e => e.stopPropagation()}
+            style={{ boxShadow: "0 32px 64px -16px rgba(0,0,0,0.7)" }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* header */}
             <div className="px-7 pt-6 pb-5 border-b border-neutral-800">
@@ -62,7 +70,7 @@ export default function SetupGuideModal(props: Props) {
                   <div className="shrink-0 flex flex-col items-center gap-1.5 pt-0.5">
                     <span
                       className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white font-mono shrink-0"
-                      style={{ background: 'var(--color-blue-500)' }}
+                      style={{ background: "var(--color-blue-500)" }}
                     >
                       {i + 1}
                     </span>
@@ -72,7 +80,9 @@ export default function SetupGuideModal(props: Props) {
                     <div className="text-[13.5px] font-semibold text-neutral-100 leading-none mb-1.5">
                       {s.title}
                     </div>
-                    <p className="m-0 text-[12.5px] text-dim leading-[1.6]">{s.body}</p>
+                    <p className="m-0 text-[12.5px] text-dim leading-[1.6]">
+                      {s.body}
+                    </p>
 
                     {/* code snippets on step 3 */}
                     {i === 2 && (
@@ -82,7 +92,7 @@ export default function SetupGuideModal(props: Props) {
                             {props.endpointLabel}
                           </span>
                           <code className="block font-mono text-[11.5px] text-accent-strong bg-neutral-850 border border-neutral-800 rounded px-3 py-1.5">
-                            https://remnus.com/api/mcp
+                            https://corpus.com/api/mcp
                           </code>
                         </div>
                         <div>
@@ -90,8 +100,8 @@ export default function SetupGuideModal(props: Props) {
                             {props.headerLabel}
                           </span>
                           <code className="block font-mono text-[11.5px] text-neutral-100 bg-neutral-850 border border-neutral-800 rounded px-3 py-1.5">
-                            Authorization: Bearer{' '}
-                            <span className="text-dim">rmns_xxxxxxxx_…</span>
+                            Authorization: Bearer{" "}
+                            <span className="text-dim">crps_xxxxxxxx_…</span>
                           </code>
                         </div>
                       </div>
@@ -102,9 +112,13 @@ export default function SetupGuideModal(props: Props) {
             </div>
 
             {/* docs note */}
-            <div className="mx-7 mb-5 flex items-start gap-2.5 px-3.5 py-3 bg-neutral-850 border border-neutral-800 rounded-md"
-              style={{ borderLeft: '3px solid var(--color-blue-500)' }}>
-              <span className="text-[12px] text-dim leading-[1.55]">{props.docsNote}</span>
+            <div
+              className="mx-7 mb-5 flex items-start gap-2.5 px-3.5 py-3 bg-neutral-850 border border-neutral-800 rounded-md"
+              style={{ borderLeft: "3px solid var(--color-blue-500)" }}
+            >
+              <span className="text-[12px] text-dim leading-[1.55]">
+                {props.docsNote}
+              </span>
             </div>
 
             {/* footer */}

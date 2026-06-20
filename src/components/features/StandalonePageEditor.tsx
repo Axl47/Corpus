@@ -1,17 +1,29 @@
-'use client';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+"use client";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, RefreshCw, MoreHorizontal, Globe, ArrowLeftRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { updateStandalonePageContent, updateWorkspaceItemTitle, updateWorkspaceItemIcon } from '@/lib/actions/workspace';
-import BlockEditor, { type BlockEditorHandle } from '@/components/features/editor/BlockEditor';
-import PageIcon from './PageIcon';
-import IconPicker from './IconPicker';
-import SaveStatus, { type SaveState } from './SaveStatus';
-import ShareModal from '@/components/share/ShareModal';
-import type { WorkspaceItemRow } from '@/lib/actions/workspace';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ChevronLeft,
+  RefreshCw,
+  MoreHorizontal,
+  Globe,
+  ArrowLeftRight,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  updateStandalonePageContent,
+  updateWorkspaceItemTitle,
+  updateWorkspaceItemIcon,
+} from "@/lib/actions/workspace";
+import BlockEditor, {
+  type BlockEditorHandle,
+} from "@/components/features/editor/BlockEditor";
+import PageIcon from "./PageIcon";
+import IconPicker from "./IconPicker";
+import SaveStatus, { type SaveState } from "./SaveStatus";
+import ShareModal from "@/components/share/ShareModal";
+import type { WorkspaceItemRow } from "@/lib/actions/workspace";
 
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   let timer: ReturnType<typeof setTimeout>;
@@ -21,7 +33,14 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   };
 }
 
-type Item = { id: string; workspaceId: string; title: string; parentId?: string | null; icon?: string | null; iconColor?: string | null };
+type Item = {
+  id: string;
+  workspaceId: string;
+  title: string;
+  parentId?: string | null;
+  icon?: string | null;
+  iconColor?: string | null;
+};
 type Page = { id: string; content: string };
 
 export default function StandalonePageEditor({
@@ -35,10 +54,10 @@ export default function StandalonePageEditor({
   subItems?: WorkspaceItemRow[];
   isAdmin?: boolean;
 }) {
-  const t = useTranslations('Page');
-  const tEditor = useTranslations('Editor');
-  const tWs = useTranslations('Workspace');
-  const tSharing = useTranslations('Sharing');
+  const t = useTranslations("Page");
+  const tEditor = useTranslations("Editor");
+  const tWs = useTranslations("Workspace");
+  const tSharing = useTranslations("Sharing");
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [title, setTitle] = useState(item.title);
@@ -47,9 +66,9 @@ export default function StandalonePageEditor({
   const [iconColor, setIconColor] = useState(item.iconColor);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
-  const [saveState, setSaveState] = useState<SaveState>('idle');
-  type WidthMode = 'narrow' | 'wide' | 'full';
-  const [widthMode, setWidthMode] = useState<WidthMode>('narrow');
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  type WidthMode = "narrow" | "wide" | "full";
+  const [widthMode, setWidthMode] = useState<WidthMode>("narrow");
   const [openMenu, setOpenMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -64,36 +83,55 @@ export default function StandalonePageEditor({
   }, [router]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`page-width-${item.id}`) as WidthMode | null;
-    if (saved === 'narrow' || saved === 'wide' || saved === 'full') setWidthMode(saved);
-    else if (saved === 'true') setWidthMode('full'); // migrate old boolean
+    const saved = localStorage.getItem(
+      `page-width-${item.id}`,
+    ) as WidthMode | null;
+    if (saved === "narrow" || saved === "wide" || saved === "full")
+      setWidthMode(saved);
+    else if (saved === "true")
+      setWidthMode("full"); // migrate old boolean
     else {
-      const pref = document.documentElement.dataset.defaultWidth as WidthMode | undefined;
-      if (pref === 'narrow' || pref === 'wide' || pref === 'full') setWidthMode(pref);
+      const pref = document.documentElement.dataset.defaultWidth as
+        | WidthMode
+        | undefined;
+      if (pref === "narrow" || pref === "wide" || pref === "full")
+        setWidthMode(pref);
     }
   }, [item.id]);
 
   const cycleWidth = () => {
-    const next: WidthMode = widthMode === 'narrow' ? 'wide' : widthMode === 'wide' ? 'full' : 'narrow';
+    const next: WidthMode =
+      widthMode === "narrow"
+        ? "wide"
+        : widthMode === "wide"
+          ? "full"
+          : "narrow";
     setWidthMode(next);
     localStorage.setItem(`page-width-${item.id}`, next);
   };
 
-  const handleIconSelect = async (newIcon: string | null, newColor: string | null) => {
+  const handleIconSelect = async (
+    newIcon: string | null,
+    newColor: string | null,
+  ) => {
     setIcon(newIcon);
     setIconColor(newColor);
     await updateWorkspaceItemIcon(item.id, newIcon, newColor);
   };
 
-  const widthLabels: Record<WidthMode, string> = { narrow: t('narrow'), wide: t('wide'), full: t('full') };
+  const widthLabels: Record<WidthMode, string> = {
+    narrow: t("narrow"),
+    wide: t("wide"),
+    full: t("full"),
+  };
 
   useEffect(() => {
     if (!openMenu) return;
     const handler = (e: MouseEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setOpenMenu(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [openMenu]);
 
   useEffect(() => {
@@ -106,28 +144,33 @@ export default function StandalonePageEditor({
   }, [title, item.id]);
 
   useEffect(() => {
-    document.title = `${title || 'Untitled'} | Remnus`;
+    document.title = `${title || "Untitled"} | Corpus`;
   }, [title]);
 
-  const saveContent = useCallback(async (md: string) => {
-    setSaveState('saving');
-    try {
-      await updateStandalonePageContent(item.id, md);
-      setSaveState('saved');
-    } catch {
-      setSaveState('error');
-    }
-  }, [item.id]);
+  const saveContent = useCallback(
+    async (md: string) => {
+      setSaveState("saving");
+      try {
+        await updateStandalonePageContent(item.id, md);
+        setSaveState("saved");
+      } catch {
+        setSaveState("error");
+      }
+    },
+    [item.id],
+  );
 
   const handleContentChange = useMemo(
     () => debounce(saveContent, 1000),
-    [saveContent]
+    [saveContent],
   );
 
   const containerClass =
-    widthMode === 'full' ? 'px-4 sm:px-8 md:px-16 py-6 sm:py-10' :
-    widthMode === 'wide' ? 'max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10' :
-    'max-w-4xl mx-auto px-4 sm:px-8 lg:px-16 py-6 sm:py-10';
+    widthMode === "full"
+      ? "px-4 sm:px-8 md:px-16 py-6 sm:py-10"
+      : widthMode === "wide"
+        ? "max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10"
+        : "max-w-4xl mx-auto px-4 sm:px-8 lg:px-16 py-6 sm:py-10";
 
   return (
     <div className={containerClass}>
@@ -141,7 +184,7 @@ export default function StandalonePageEditor({
               className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
             >
               <ChevronLeft size={14} />
-              {t('back')}
+              {t("back")}
             </Link>
           )}
         </div>
@@ -152,16 +195,19 @@ export default function StandalonePageEditor({
           <button
             onClick={handleRefresh}
             className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors p-1 cursor-pointer"
-            title={tWs('refresh')}
+            title={tWs("refresh")}
           >
-            <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-blue-400' : ''} />
-            <span className="hidden sm:inline">{tWs('refresh')}</span>
+            <RefreshCw
+              size={14}
+              className={isRefreshing ? "animate-spin text-blue-400" : ""}
+            />
+            <span className="hidden sm:inline">{tWs("refresh")}</span>
           </button>
 
           {/* ⋯ Options menu */}
           <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setOpenMenu(v => !v)}
+              onClick={() => setOpenMenu((v) => !v)}
               className="flex items-center justify-center p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/40 border border-neutral-800 cursor-pointer rounded transition-colors"
             >
               <MoreHorizontal size={14} />
@@ -175,17 +221,32 @@ export default function StandalonePageEditor({
                   <p className="px-3 pt-0.5 pb-1 text-[9px] font-semibold text-neutral-600 uppercase tracking-widest">
                     {widthLabels[widthMode]}
                   </p>
-                  {(['narrow', 'wide', 'full'] as WidthMode[]).map(w => (
+                  {(["narrow", "wide", "full"] as WidthMode[]).map((w) => (
                     <button
                       key={w}
-                      onClick={() => { setWidthMode(w); localStorage.setItem(`page-width-${item.id}`, w); setOpenMenu(false); }}
+                      onClick={() => {
+                        setWidthMode(w);
+                        localStorage.setItem(`page-width-${item.id}`, w);
+                        setOpenMenu(false);
+                      }}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors cursor-pointer ${
-                        widthMode === w ? 'text-blue-400 bg-blue-500/8' : 'text-neutral-300 hover:bg-neutral-800'
+                        widthMode === w
+                          ? "text-blue-400 bg-blue-500/8"
+                          : "text-neutral-300 hover:bg-neutral-800"
                       }`}
                     >
-                      <ArrowLeftRight size={12} className={widthMode === w ? 'text-blue-400' : 'text-neutral-600'} />
+                      <ArrowLeftRight
+                        size={12}
+                        className={
+                          widthMode === w ? "text-blue-400" : "text-neutral-600"
+                        }
+                      />
                       {widthLabels[w]}
-                      {widthMode === w && <span className="ml-auto text-[9px] text-blue-400">✓</span>}
+                      {widthMode === w && (
+                        <span className="ml-auto text-[9px] text-blue-400">
+                          ✓
+                        </span>
+                      )}
                     </button>
                   ))}
 
@@ -194,11 +255,14 @@ export default function StandalonePageEditor({
 
                 {/* Share */}
                 <button
-                  onClick={() => { setOpenMenu(false); setShowShareModal(true); }}
+                  onClick={() => {
+                    setOpenMenu(false);
+                    setShowShareModal(true);
+                  }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 cursor-pointer transition-colors"
                 >
                   <Globe size={12} className="text-neutral-500" />
-                  {tSharing('shareButton')}
+                  {tSharing("shareButton")}
                 </button>
               </div>
             )}
@@ -223,9 +287,14 @@ export default function StandalonePageEditor({
               ref={iconButtonRef}
               onClick={() => setShowIconPicker(!showIconPicker)}
               className="p-1 hover:bg-neutral-800 rounded transition-colors duration-150 cursor-pointer flex items-center justify-center shrink-0"
-              title={icon ? t('changeIcon') : t('addIcon')}
+              title={icon ? t("changeIcon") : t("addIcon")}
             >
-              <PageIcon icon={icon} iconColor={iconColor} size={40} fallbackType="page" />
+              <PageIcon
+                icon={icon}
+                iconColor={iconColor}
+                size={40}
+                fallbackType="page"
+              />
             </button>
             {icon && (
               <button
@@ -254,15 +323,15 @@ export default function StandalonePageEditor({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 e.preventDefault();
                 editorRef.current?.insertLineAtStart();
-              } else if (e.key === 'ArrowDown') {
+              } else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 editorRef.current?.focusStart();
               }
             }}
-            placeholder={t('untitled')}
+            placeholder={t("untitled")}
             className="w-full bg-transparent text-white font-bold text-2xl sm:text-4xl focus:outline-none placeholder:text-neutral-700 tracking-tight py-1"
           />
         </div>
@@ -273,7 +342,7 @@ export default function StandalonePageEditor({
         key={page.id}
         initialContent={page.content}
         onChange={handleContentChange}
-        placeholder={tEditor('placeholder')}
+        placeholder={tEditor("placeholder")}
         workspaceId={item.workspaceId}
         parentId={item.id}
         initialSubItems={subItems}

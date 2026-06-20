@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Download, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { Download, ArrowRight } from "lucide-react";
 
-const REPO = 'Ranork/remnus-app';
+const REPO = "Ranork/corpus-app";
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
 const downloadUrl = (file: string) => `${RELEASES_URL}/latest/download/${file}`;
 
-type DetectedOS = 'windows' | 'mac' | 'linux' | 'unknown';
+type DetectedOS = "windows" | "mac" | "linux" | "unknown";
 
 type Platform = {
   id: string;
@@ -19,33 +19,78 @@ type Platform = {
 };
 
 const PLATFORMS: Platform[] = [
-  { id: 'windows',  logo: '/os/windows.svg', labelKey: 'osWindows',  hintKey: 'fileExe',      file: 'Remnus-windows-x64-setup.exe' },
-  { id: 'macApple', logo: '/os/apple.svg',   labelKey: 'osMacApple', hintKey: 'fileDmgApple', file: 'Remnus-macos-aarch64.dmg' },
-  { id: 'macIntel', logo: '/os/apple.svg',   labelKey: 'osMacIntel', hintKey: 'fileDmgIntel', file: 'Remnus-macos-intel.dmg' },
-  { id: 'linuxApp', logo: '/os/linux.svg',   labelKey: 'osLinuxApp', hintKey: 'fileAppImage', file: 'Remnus-linux-x86_64.AppImage' },
-  { id: 'linuxDeb', logo: '/os/linux.svg',   labelKey: 'osLinuxDeb', hintKey: 'fileDeb',      file: 'Remnus-linux-amd64.deb' },
+  {
+    id: "windows",
+    logo: "/os/windows.svg",
+    labelKey: "osWindows",
+    hintKey: "fileExe",
+    file: "Corpus-windows-x64-setup.exe",
+  },
+  {
+    id: "macApple",
+    logo: "/os/apple.svg",
+    labelKey: "osMacApple",
+    hintKey: "fileDmgApple",
+    file: "Corpus-macos-aarch64.dmg",
+  },
+  {
+    id: "macIntel",
+    logo: "/os/apple.svg",
+    labelKey: "osMacIntel",
+    hintKey: "fileDmgIntel",
+    file: "Corpus-macos-intel.dmg",
+  },
+  {
+    id: "linuxApp",
+    logo: "/os/linux.svg",
+    labelKey: "osLinuxApp",
+    hintKey: "fileAppImage",
+    file: "Corpus-linux-x86_64.AppImage",
+  },
+  {
+    id: "linuxDeb",
+    logo: "/os/linux.svg",
+    labelKey: "osLinuxDeb",
+    hintKey: "fileDeb",
+    file: "Corpus-linux-amd64.deb",
+  },
 ];
 
 function detectOS(): DetectedOS {
-  if (typeof navigator === 'undefined') return 'unknown';
+  if (typeof navigator === "undefined") return "unknown";
   const ua = navigator.userAgent.toLowerCase();
-  const plat = (navigator.platform || '').toLowerCase();
-  if (ua.includes('win') || plat.includes('win')) return 'windows';
-  if (ua.includes('mac') || plat.includes('mac')) return 'mac';
-  if (ua.includes('linux') || ua.includes('x11')) return 'linux';
-  return 'unknown';
+  const plat = (navigator.platform || "").toLowerCase();
+  if (ua.includes("win") || plat.includes("win")) return "windows";
+  if (ua.includes("mac") || plat.includes("mac")) return "mac";
+  if (ua.includes("linux") || ua.includes("x11")) return "linux";
+  return "unknown";
 }
 
 // The single asset recommended for a detected OS (Apple Silicon / AppImage as sensible defaults).
-const PRIMARY_BY_OS: Record<Exclude<DetectedOS, 'unknown'>, { osKey: string; file: string; logo: string }> = {
-  windows: { osKey: 'osWindows',  file: 'Remnus-windows-x64-setup.exe',  logo: '/os/windows.svg' },
-  mac:     { osKey: 'osMac',      file: 'Remnus-macos-aarch64.dmg',      logo: '/os/apple.svg' },
-  linux:   { osKey: 'osLinux',    file: 'Remnus-linux-x86_64.AppImage',  logo: '/os/linux.svg' },
+const PRIMARY_BY_OS: Record<
+  Exclude<DetectedOS, "unknown">,
+  { osKey: string; file: string; logo: string }
+> = {
+  windows: {
+    osKey: "osWindows",
+    file: "Corpus-windows-x64-setup.exe",
+    logo: "/os/windows.svg",
+  },
+  mac: {
+    osKey: "osMac",
+    file: "Corpus-macos-aarch64.dmg",
+    logo: "/os/apple.svg",
+  },
+  linux: {
+    osKey: "osLinux",
+    file: "Corpus-linux-x86_64.AppImage",
+    logo: "/os/linux.svg",
+  },
 };
 
 export default function DownloadView() {
-  const t = useTranslations('Download');
-  const [os, setOs] = useState<DetectedOS>('unknown');
+  const t = useTranslations("Download");
+  const [os, setOs] = useState<DetectedOS>("unknown");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -53,33 +98,38 @@ export default function DownloadView() {
     setReady(true);
   }, []);
 
-  const primary = os !== 'unknown' ? PRIMARY_BY_OS[os] : null;
+  const primary = os !== "unknown" ? PRIMARY_BY_OS[os] : null;
 
   return (
     <section className="relative overflow-hidden px-4 sm:px-8 lg:px-14 pt-16 pb-20 lg:pt-24 lg:pb-28">
       <div
         className="absolute top-10 -right-60 w-[700px] h-[700px] pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(68,92,149,0.16), transparent 60%)' }}
+        style={{
+          background:
+            "radial-gradient(circle, rgba(68,92,149,0.16), transparent 60%)",
+        }}
       />
 
       <div className="relative max-w-3xl mx-auto text-center">
         <span className="font-mono text-[11px] text-dim uppercase tracking-[0.18em]">
-          {t('eyebrow')}
+          {t("eyebrow")}
         </span>
         <h1
           className="mt-4 font-sans font-semibold text-neutral-100 leading-[1.02] text-[40px] sm:text-[56px] lg:text-[64px]"
-          style={{ letterSpacing: '-0.035em' }}
+          style={{ letterSpacing: "-0.035em" }}
         >
-          {t('title')}
+          {t("title")}
         </h1>
         <p className="mt-5 text-base lg:text-[17px] leading-[1.55] text-neutral-50 max-w-xl mx-auto">
-          {t('subtitle')}
+          {t("subtitle")}
         </p>
 
         {/* Smart primary button */}
         <div className="mt-9 flex flex-col items-center gap-3">
           {!ready ? (
-            <span className="font-mono text-[13px] text-dim animate-pulse">{t('detecting')}</span>
+            <span className="font-mono text-[13px] text-dim animate-pulse">
+              {t("detecting")}
+            </span>
           ) : primary ? (
             <>
               <a
@@ -87,13 +137,26 @@ export default function DownloadView() {
                 className="inline-flex items-center gap-2.5 bg-blue-500 hover:bg-accent-strong text-white px-7 py-4 rounded-md text-[15px] font-medium transition-colors duration-150"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={primary.logo} alt="" width={18} height={18} className="brightness-0 invert" aria-hidden />
-                {t('downloadFor', { os: t(primary.osKey as Parameters<typeof t>[0]) })}
+                <img
+                  src={primary.logo}
+                  alt=""
+                  width={18}
+                  height={18}
+                  className="brightness-0 invert"
+                  aria-hidden
+                />
+                {t("downloadFor", {
+                  os: t(primary.osKey as Parameters<typeof t>[0]),
+                })}
               </a>
-              <span className="font-mono text-[11px] text-dim">{t('yourSystemBadge')}</span>
+              <span className="font-mono text-[11px] text-dim">
+                {t("yourSystemBadge")}
+              </span>
             </>
           ) : (
-            <span className="font-mono text-[13px] text-dim">{t('chooseBelow')}</span>
+            <span className="font-mono text-[13px] text-dim">
+              {t("chooseBelow")}
+            </span>
           )}
         </div>
       </div>
@@ -102,7 +165,7 @@ export default function DownloadView() {
       <div className="relative max-w-3xl mx-auto mt-16">
         <div className="flex items-center gap-3 mb-6">
           <span className="font-mono text-[11px] text-dim uppercase tracking-[0.16em]">
-            {t('allPlatforms')}
+            {t("allPlatforms")}
           </span>
           <span className="flex-1 h-px bg-neutral-800" />
         </div>
@@ -116,7 +179,14 @@ export default function DownloadView() {
                 className="flex items-center gap-4 px-5 py-4 bg-neutral-900 hover:bg-neutral-850 transition-colors duration-150 group"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.logo} alt="" width={22} height={22} className="shrink-0 opacity-90" aria-hidden />
+                <img
+                  src={p.logo}
+                  alt=""
+                  width={22}
+                  height={22}
+                  className="shrink-0 opacity-90"
+                  aria-hidden
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="text-[14px] text-neutral-100 font-medium">
                     {t(p.labelKey as Parameters<typeof t>[0])}
@@ -142,46 +212,70 @@ export default function DownloadView() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[13px] text-neutral-50 border-b border-neutral-800 pb-1 hover:border-neutral-100 hover:text-neutral-100 transition-colors duration-150"
           >
-            {t('viewAllReleases')}
+            {t("viewAllReleases")}
             <ArrowRight size={13} aria-hidden />
           </a>
         </div>
 
         <p className="mt-6 text-center font-mono text-[11px] text-dimmer leading-relaxed">
-          {t('latestNote')}
+          {t("latestNote")}
         </p>
       </div>
 
       {/* About + requirements + install — helpful content (also gives crawlers real text to index) */}
       <div className="relative max-w-3xl mx-auto mt-20 space-y-14 text-left">
-        {/* What is Remnus Desktop */}
+        {/* What is Corpus Desktop */}
         <div>
           <div className="flex items-center gap-3 mb-5">
             <span className="font-mono text-[11px] text-dim uppercase tracking-[0.16em]">
-              {t('aboutHeading')}
+              {t("aboutHeading")}
             </span>
             <span className="flex-1 h-px bg-neutral-800" />
           </div>
-          <p className="text-[15px] leading-[1.7] text-neutral-50">{t('aboutBody')}</p>
+          <p className="text-[15px] leading-[1.7] text-neutral-50">
+            {t("aboutBody")}
+          </p>
         </div>
 
         {/* System requirements */}
         <div>
           <div className="flex items-center gap-3 mb-5">
             <span className="font-mono text-[11px] text-dim uppercase tracking-[0.16em]">
-              {t('requirementsHeading')}
+              {t("requirementsHeading")}
             </span>
             <span className="flex-1 h-px bg-neutral-800" />
           </div>
           <div className="grid gap-px bg-neutral-800 border border-neutral-800 rounded-md overflow-hidden">
             {[
-              { logo: '/os/windows.svg', title: 'reqWindowsTitle', body: 'reqWindowsBody' },
-              { logo: '/os/apple.svg', title: 'reqMacTitle', body: 'reqMacBody' },
-              { logo: '/os/linux.svg', title: 'reqLinuxTitle', body: 'reqLinuxBody' },
+              {
+                logo: "/os/windows.svg",
+                title: "reqWindowsTitle",
+                body: "reqWindowsBody",
+              },
+              {
+                logo: "/os/apple.svg",
+                title: "reqMacTitle",
+                body: "reqMacBody",
+              },
+              {
+                logo: "/os/linux.svg",
+                title: "reqLinuxTitle",
+                body: "reqLinuxBody",
+              },
             ].map((r) => (
-              <div key={r.title} className="flex items-start gap-4 px-5 py-4 bg-neutral-900">
+              <div
+                key={r.title}
+                className="flex items-start gap-4 px-5 py-4 bg-neutral-900"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r.logo} alt="" width={22} height={22} className="shrink-0 opacity-90 mt-0.5" aria-hidden />
+                <img
+                  src={r.logo}
+                  alt=""
+                  width={22}
+                  height={22}
+                  className="shrink-0 opacity-90 mt-0.5"
+                  aria-hidden
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="text-[14px] text-neutral-100 font-medium">
                     {t(r.title as Parameters<typeof t>[0])}
@@ -199,15 +293,15 @@ export default function DownloadView() {
         <div>
           <div className="flex items-center gap-3 mb-5">
             <span className="font-mono text-[11px] text-dim uppercase tracking-[0.16em]">
-              {t('installHeading')}
+              {t("installHeading")}
             </span>
             <span className="flex-1 h-px bg-neutral-800" />
           </div>
           <div className="space-y-5">
             {[
-              { title: 'installWindowsTitle', body: 'installWindowsBody' },
-              { title: 'installMacTitle', body: 'installMacBody' },
-              { title: 'installLinuxTitle', body: 'installLinuxBody' },
+              { title: "installWindowsTitle", body: "installWindowsBody" },
+              { title: "installMacTitle", body: "installMacBody" },
+              { title: "installLinuxTitle", body: "installLinuxBody" },
             ].map((s) => (
               <div key={s.title}>
                 <h3 className="text-[14px] text-neutral-100 font-medium mb-1">

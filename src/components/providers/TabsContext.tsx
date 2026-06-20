@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import {
   createContext,
   useCallback,
@@ -7,9 +7,9 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import type { WorkspaceItemRow } from '@/lib/actions/workspace';
+} from "react";
+import { useRouter, usePathname } from "next/navigation";
+import type { WorkspaceItemRow } from "@/lib/actions/workspace";
 
 export type TabMeta = {
   title: string;
@@ -43,14 +43,15 @@ export function useTabs(): TabsContextValue | null {
 }
 
 function newId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
+    return crypto.randomUUID();
   return `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
 /** Strip query/hash; usePathname already omits them, but be defensive. */
 function normalizePath(p: string): string {
-  let s = (p || '').split('?')[0].split('#')[0];
-  if (s.length > 1 && s.endsWith('/')) s = s.slice(0, -1);
+  let s = (p || "").split("?")[0].split("#")[0];
+  if (s.length > 1 && s.endsWith("/")) s = s.slice(0, -1);
   return s;
 }
 
@@ -66,43 +67,48 @@ function isRowPath(norm: string): boolean {
 /** Internal link that should be hijacked into a tab (ctrl/middle-click). */
 function isInternalTabbable(href: string | null | undefined): href is string {
   if (!href) return false;
-  if (!href.startsWith('/') || href.startsWith('//') || href.startsWith('/\\')) return false;
+  if (!href.startsWith("/") || href.startsWith("//") || href.startsWith("/\\"))
+    return false;
   return isTabbable(normalizePath(href));
 }
 
 function cleanDocTitle(): string {
-  const raw = typeof document !== 'undefined' ? document.title : '';
-  return raw.replace(/\s*\|\s*Remnus\s*$/, '').trim();
+  const raw = typeof document !== "undefined" ? document.title : "";
+  return raw.replace(/\s*\|\s*Corpus\s*$/, "").trim();
 }
 
- 
-// Temporary diagnostic logger — gated on `localStorage.remnus_tabs_debug === '1'`
-// or the global `__remnus_tabs_debug` flag. Set either to '1' in DevTools to enable.
+// Temporary diagnostic logger — gated on `localStorage.corpus_tabs_debug === '1'`
+// or the global `__corpus_tabs_debug` flag. Set either to '1' in DevTools to enable.
 // REMOVE once the disappearing-tabs bug is fully diagnosed.
 function tlog(...args: any[]) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   const enabled =
-    (window as any).__remnus_tabs_debug === '1' ||
-    (() => { try { return localStorage.getItem('remnus_tabs_debug') === '1'; } catch { return false; } })();
-  if (enabled) console.log('[tabs]', ...args);
+    (window as any).__corpus_tabs_debug === "1" ||
+    (() => {
+      try {
+        return localStorage.getItem("corpus_tabs_debug") === "1";
+      } catch {
+        return false;
+      }
+    })();
+  if (enabled) console.log("[tabs]", ...args);
 }
- 
 
 // Single GLOBAL storage key — the tab strip is not per-workspace. Navigating
-// to a page in another workspace causes the server to flip `remnus_workspace_id`,
+// to a page in another workspace causes the server to flip `corpus_workspace_id`,
 // which would otherwise rebuild a per-workspace key and load a different bucket
 // of tabs (root cause of the "tabs replaced by other tabs" bug).
-const TABS_STORAGE_KEY = 'remnus_tabs';
-const LEGACY_KEY_PREFIX = 'remnus_tabs_';
+const TABS_STORAGE_KEY = "corpus_tabs";
+const LEGACY_KEY_PREFIX = "corpus_tabs_";
 
 /**
- * One-shot migration: previous versions kept tabs in `remnus_tabs_<workspaceId>`
+ * One-shot migration: previous versions kept tabs in `corpus_tabs_<workspaceId>`
  * buckets. On first mount we merge any leftover per-workspace entries into the
  * global key (preserving order, de-duped by href so opening multiple workspaces
  * doesn't show the same page twice) and delete the old keys.
  */
 function migrateLegacyTabs(globalKey: string): Tab[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === "undefined") return [];
   try {
     const merged: Tab[] = [];
     const seenHrefs = new Set<string>();
@@ -112,29 +118,46 @@ function migrateLegacyTabs(globalKey: string): Tab[] {
       try {
         const parsed = JSON.parse(existingRaw) as { tabs?: Tab[] };
         for (const t of parsed.tabs ?? []) {
-          if (t && typeof t.href === 'string' && typeof t.id === 'string' && !seenHrefs.has(t.href)) {
+          if (
+            t &&
+            typeof t.href === "string" &&
+            typeof t.id === "string" &&
+            !seenHrefs.has(t.href)
+          ) {
             merged.push(t);
             seenHrefs.add(t.href);
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     // Then pull in every legacy per-workspace bucket.
     const legacyKeys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(LEGACY_KEY_PREFIX) && k !== globalKey) legacyKeys.push(k);
+      if (k && k.startsWith(LEGACY_KEY_PREFIX) && k !== globalKey)
+        legacyKeys.push(k);
     }
     for (const k of legacyKeys) {
       try {
-        const parsed = JSON.parse(localStorage.getItem(k) ?? '') as { tabs?: Tab[] };
+        const parsed = JSON.parse(localStorage.getItem(k) ?? "") as {
+          tabs?: Tab[];
+        };
         for (const t of parsed.tabs ?? []) {
-          if (t && typeof t.href === 'string' && typeof t.id === 'string' && !seenHrefs.has(t.href)) {
+          if (
+            t &&
+            typeof t.href === "string" &&
+            typeof t.id === "string" &&
+            !seenHrefs.has(t.href)
+          ) {
             merged.push(t);
             seenHrefs.add(t.href);
           }
         }
-      } catch { /* ignore corrupt entry */ }
+      } catch {
+        /* ignore corrupt entry */
+      }
       localStorage.removeItem(k);
     }
     return merged;
@@ -156,8 +179,8 @@ export function TabsProvider({
 
   // Diagnostic: track provider mount/unmount cycles to catch unexpected remounts.
   useEffect(() => {
-    tlog('PROVIDER mount', { storageKey });
-    return () => tlog('PROVIDER unmount', { storageKey });
+    tlog("PROVIDER mount", { storageKey });
+    return () => tlog("PROVIDER unmount", { storageKey });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -179,13 +202,23 @@ export function TabsProvider({
   const resolveMeta = useCallback(
     (href: string): TabMeta | null => {
       const norm = normalizePath(href);
-      const parts = norm.split('/').filter(Boolean); // e.g. ['db','id','pageId']
-      if (parts[0] === 'page' && parts[1]) {
+      const parts = norm.split("/").filter(Boolean); // e.g. ['db','id','pageId']
+      if (parts[0] === "page" && parts[1]) {
         const item = items.find((i) => i.id === parts[1]);
-        if (item) return { title: item.title, icon: item.icon, iconColor: item.iconColor };
-      } else if (parts[0] === 'db' && parts[1] && !parts[2]) {
+        if (item)
+          return {
+            title: item.title,
+            icon: item.icon,
+            iconColor: item.iconColor,
+          };
+      } else if (parts[0] === "db" && parts[1] && !parts[2]) {
         const item = items.find((i) => i.databaseId === parts[1]);
-        if (item) return { title: item.title, icon: item.icon, iconColor: item.iconColor };
+        if (item)
+          return {
+            title: item.title,
+            icon: item.icon,
+            iconColor: item.iconColor,
+          };
       }
       // DB row pages (/db/x/y) have no workspace item — caller falls back to the tab snapshot.
       return null;
@@ -196,7 +229,8 @@ export function TabsProvider({
   // Effective active id: the explicit state when it still points at a live tab,
   // otherwise fall back to the first tab matching the current path (robust to drift).
   const activeId = useMemo(() => {
-    if (activeIdState && tabs.some((t) => t.id === activeIdState)) return activeIdState;
+    if (activeIdState && tabs.some((t) => t.id === activeIdState))
+      return activeIdState;
     const norm = normalizePath(pathname);
     return tabs.find((t) => normalizePath(t.href) === norm)?.id ?? null;
   }, [activeIdState, tabs, pathname]);
@@ -206,7 +240,10 @@ export function TabsProvider({
       const meta = isTabbable(norm) ? resolveMeta(norm) : null;
       // Only DB rows fall back to document.title; non-tabbable placeholders (e.g. /app
       // before its redirect resolves) get an empty title to avoid showing a stale one.
-      const title = meta?.title ?? metaHint?.title ?? (isRowPath(norm) ? cleanDocTitle() : '');
+      const title =
+        meta?.title ??
+        metaHint?.title ??
+        (isRowPath(norm) ? cleanDocTitle() : "");
       return {
         id,
         href: norm,
@@ -231,18 +268,26 @@ export function TabsProvider({
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw) as { activeId?: string | null };
-        if (parsed.activeId && typeof parsed.activeId === 'string') {
+        if (parsed.activeId && typeof parsed.activeId === "string") {
           storedActiveId = parsed.activeId;
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
-    tlog('HYDRATE', { storageKey, acceptedLen: merged.length, pathname, storedActive: storedActiveId });
+    tlog("HYDRATE", {
+      storageKey,
+      acceptedLen: merged.length,
+      pathname,
+      storedActive: storedActiveId,
+    });
     setTabs(merged);
     const norm = normalizePath(pathname);
     const match = merged.find((t) => normalizePath(t.href) === norm);
     if (match) setActiveIdState(match.id);
-    else if (storedActiveId && merged.some((t) => t.id === storedActiveId)) setActiveIdState(storedActiveId);
+    else if (storedActiveId && merged.some((t) => t.id === storedActiveId))
+      setActiveIdState(storedActiveId);
 
     setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,19 +301,22 @@ export function TabsProvider({
     if (!hydrated || items.length === 0) return;
     setTabs((prev) => {
       const dropIds = new Set<string>();
-      tlog('PRUNE check', { itemsLen: items.length, tabsLen: prev.length });
+      tlog("PRUNE check", { itemsLen: items.length, tabsLen: prev.length });
       for (const t of prev) {
         const norm = normalizePath(t.href);
         if (isRowPath(norm)) continue;
-        const parts = norm.split('/').filter(Boolean);
-        if (parts[0] === 'page' && parts[1]) {
+        const parts = norm.split("/").filter(Boolean);
+        if (parts[0] === "page" && parts[1]) {
           if (!items.some((i) => i.id === parts[1])) dropIds.add(t.id);
-        } else if (parts[0] === 'db' && parts[1]) {
+        } else if (parts[0] === "db" && parts[1]) {
           if (!items.some((i) => i.databaseId === parts[1])) dropIds.add(t.id);
         }
       }
       if (dropIds.size === 0) return prev;
-      tlog('PRUNE drop', { droppedIds: Array.from(dropIds), keptLen: prev.length - dropIds.size });
+      tlog("PRUNE drop", {
+        droppedIds: Array.from(dropIds),
+        keptLen: prev.length - dropIds.size,
+      });
       return prev.filter((t) => !dropIds.has(t.id));
     });
   }, [items, hydrated]);
@@ -277,8 +325,11 @@ export function TabsProvider({
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ tabs, activeId: activeIdState }));
-      tlog('PERSIST', { storageKey, tabsLen: tabs.length, activeIdState });
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ tabs, activeId: activeIdState }),
+      );
+      tlog("PERSIST", { storageKey, tabsLen: tabs.length, activeIdState });
     } catch {
       /* ignore quota errors */
     }
@@ -293,24 +344,39 @@ export function TabsProvider({
     if (!hydrated) return;
     const norm = normalizePath(pathname);
     if (!isTabbable(norm)) {
-      tlog('RECONCILE skip (not tabbable)', { pathname });
+      tlog("RECONCILE skip (not tabbable)", { pathname });
       return;
     }
 
     const cur = tabsRef.current;
     const activeTab = cur.find((t) => t.id === activeIdRef.current);
-    tlog('RECONCILE', { pathname, activeIdRef: activeIdRef.current, activeTabFound: !!activeTab, tabsLen: cur.length });
+    tlog("RECONCILE", {
+      pathname,
+      activeIdRef: activeIdRef.current,
+      activeTabFound: !!activeTab,
+      tabsLen: cur.length,
+    });
 
     if (activeTab) {
       if (normalizePath(activeTab.href) === norm) return; // already showing this path
       // Navigate the active tab in place.
       const meta = resolveMeta(norm);
       const id = activeTab.id;
-      tlog('RECONCILE navigate-in-place', { from: activeTab.href, to: norm, id });
+      tlog("RECONCILE navigate-in-place", {
+        from: activeTab.href,
+        to: norm,
+        id,
+      });
       setTabs((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, href: norm, title: meta?.title ?? cleanDocTitle() ?? t.title, icon: meta?.icon ?? null, iconColor: meta?.iconColor ?? null }
+            ? {
+                ...t,
+                href: norm,
+                title: meta?.title ?? cleanDocTitle() ?? t.title,
+                icon: meta?.icon ?? null,
+                iconColor: meta?.iconColor ?? null,
+              }
             : t,
         ),
       );
@@ -320,22 +386,23 @@ export function TabsProvider({
     // No valid active tab → switch to an existing match, or auto-create one.
     const match = cur.find((t) => normalizePath(t.href) === norm);
     if (match) {
-      tlog('RECONCILE activate match', { matchId: match.id });
+      tlog("RECONCILE activate match", { matchId: match.id });
       setActiveIdState(match.id);
       return;
     }
     const autoId = `auto:${norm}`;
     const tab = makeTab(norm, autoId);
-    tlog('RECONCILE auto-create', { autoId, href: norm });
-    setTabs((prev) => (prev.some((t) => normalizePath(t.href) === norm) ? prev : [...prev, tab]));
+    tlog("RECONCILE auto-create", { autoId, href: norm });
+    setTabs((prev) =>
+      prev.some((t) => normalizePath(t.href) === norm) ? prev : [...prev, tab],
+    );
     setActiveIdState(autoId);
-
   }, [pathname, hydrated, resolveMeta, makeTab]);
 
   // ── Keep DB-row tab titles in sync with document.title ────────────────────
   useEffect(() => {
     if (!hydrated) return;
-    const titleEl = document.querySelector('title');
+    const titleEl = document.querySelector("title");
     if (!titleEl) return;
 
     const sync = () => {
@@ -344,7 +411,11 @@ export function TabsProvider({
       const fresh = cleanDocTitle();
       if (!fresh) return;
       setTabs((prev) =>
-        prev.map((t) => (normalizePath(t.href) === norm && t.title !== fresh ? { ...t, title: fresh } : t)),
+        prev.map((t) =>
+          normalizePath(t.href) === norm && t.title !== fresh
+            ? { ...t, title: fresh }
+            : t,
+        ),
       );
     };
 
@@ -360,7 +431,7 @@ export function TabsProvider({
     (href: string, metaHint?: Partial<TabMeta>) => {
       const norm = normalizePath(href);
       const tab = makeTab(norm, newId(), metaHint);
-      tlog('ACTION openInNewTab', { href: norm, newId: tab.id });
+      tlog("ACTION openInNewTab", { href: norm, newId: tab.id });
       setTabs((prev) => [...prev, tab]);
       setActiveIdState(tab.id);
       router.push(href);
@@ -372,7 +443,7 @@ export function TabsProvider({
     (id: string) => {
       const tab = tabsRef.current.find((t) => t.id === id);
       if (!tab) return;
-      tlog('ACTION activateTab', { id, href: tab.href });
+      tlog("ACTION activateTab", { id, href: tab.href });
       setActiveIdState(id);
       router.push(tab.href);
     },
@@ -384,13 +455,16 @@ export function TabsProvider({
       const cur = tabsRef.current;
       const idx = cur.findIndex((t) => t.id === id);
       if (idx === -1) return;
-      tlog('ACTION closeTab', { id, idx, tabsLenBefore: cur.length });
+      tlog("ACTION closeTab", { id, idx, tabsLenBefore: cur.length });
 
       const rawActive = activeIdRef.current;
       const effActive =
         rawActive && cur.some((t) => t.id === rawActive)
           ? rawActive
-          : cur.find((t) => normalizePath(t.href) === normalizePath(pathnameRef.current))?.id ?? null;
+          : (cur.find(
+              (t) =>
+                normalizePath(t.href) === normalizePath(pathnameRef.current),
+            )?.id ?? null);
 
       const next = cur.filter((t) => t.id !== id);
       setTabs(next);
@@ -402,7 +476,7 @@ export function TabsProvider({
           router.push(neighbor.href);
         } else {
           setActiveIdState(null);
-          router.push('/app');
+          router.push("/app");
         }
       }
     },
@@ -413,19 +487,26 @@ export function TabsProvider({
     (id: string) => {
       const keep = tabsRef.current.find((t) => t.id === id);
       if (!keep) return;
-      tlog('ACTION closeOthers', { keepId: id, droppedLen: tabsRef.current.length - 1, stack: new Error().stack?.split('\n').slice(1, 5) });
+      tlog("ACTION closeOthers", {
+        keepId: id,
+        droppedLen: tabsRef.current.length - 1,
+        stack: new Error().stack?.split("\n").slice(1, 5),
+      });
       setTabs([keep]);
       setActiveIdState(keep.id);
-      if (normalizePath(keep.href) !== normalizePath(pathnameRef.current)) router.push(keep.href);
+      if (normalizePath(keep.href) !== normalizePath(pathnameRef.current))
+        router.push(keep.href);
     },
     [router],
   );
 
   const closeAll = useCallback(() => {
-    tlog('ACTION closeAll', { stack: new Error().stack?.split('\n').slice(1, 5) });
+    tlog("ACTION closeAll", {
+      stack: new Error().stack?.split("\n").slice(1, 5),
+    });
     setTabs([]);
     setActiveIdState(null);
-    router.push('/app');
+    router.push("/app");
   }, [router]);
 
   const reorderTabs = useCallback((fromId: string, toId: string) => {
@@ -446,8 +527,8 @@ export function TabsProvider({
   useEffect(() => {
     const onAux = (e: MouseEvent) => {
       if (e.button !== 1) return;
-      const a = (e.target as HTMLElement | null)?.closest('a');
-      const href = a?.getAttribute('href');
+      const a = (e.target as HTMLElement | null)?.closest("a");
+      const href = a?.getAttribute("href");
       if (isInternalTabbable(href)) {
         e.preventDefault();
         e.stopPropagation();
@@ -456,19 +537,19 @@ export function TabsProvider({
     };
     const onClick = (e: MouseEvent) => {
       if (e.button !== 0 || !(e.metaKey || e.ctrlKey)) return;
-      const a = (e.target as HTMLElement | null)?.closest('a');
-      const href = a?.getAttribute('href');
+      const a = (e.target as HTMLElement | null)?.closest("a");
+      const href = a?.getAttribute("href");
       if (isInternalTabbable(href)) {
         e.preventDefault();
         e.stopPropagation();
         openInNewTab(href);
       }
     };
-    document.addEventListener('auxclick', onAux, true);
-    document.addEventListener('click', onClick, true);
+    document.addEventListener("auxclick", onAux, true);
+    document.addEventListener("click", onClick, true);
     return () => {
-      document.removeEventListener('auxclick', onAux, true);
-      document.removeEventListener('click', onClick, true);
+      document.removeEventListener("auxclick", onAux, true);
+      document.removeEventListener("click", onClick, true);
     };
   }, [openInNewTab]);
 
@@ -484,7 +565,17 @@ export function TabsProvider({
       closeAll,
       reorderTabs,
     }),
-    [tabs, activeId, resolveMeta, openInNewTab, activateTab, closeTab, closeOthers, closeAll, reorderTabs],
+    [
+      tabs,
+      activeId,
+      resolveMeta,
+      openInNewTab,
+      activateTab,
+      closeTab,
+      closeOthers,
+      closeAll,
+      reorderTabs,
+    ],
   );
 
   return <TabsContext.Provider value={value}>{children}</TabsContext.Provider>;

@@ -1,6 +1,6 @@
 {
-  "name": "Remnus",
-  "short_name": "Remnus",
+  "name": "Corpus",
+  "short_name": "Corpus",
   "description": "Customizable databases and pages",
   "start_url": "/",
   "display": "standalone",

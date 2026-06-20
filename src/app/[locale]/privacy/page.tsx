@@ -1,53 +1,60 @@
-import type { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
-import MarketingShell from '@/components/marketing/MarketingShell';
-import { Shield, Eye, Lock, Mail } from 'lucide-react';
-import { METADATA_BASE_URL, DEFAULT_OG_IMAGE, DEFAULT_TWITTER_IMAGE } from '@/lib/metadata';
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import MarketingShell from "@/components/marketing/MarketingShell";
+import { Shield, Eye, Lock, Mail } from "lucide-react";
+import {
+  METADATA_BASE_URL,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TWITTER_IMAGE,
+} from "@/lib/metadata";
 
 export const metadata: Metadata = {
   metadataBase: new URL(METADATA_BASE_URL),
-  title: 'Privacy Policy',
-  description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
-  alternates: { canonical: 'https://remnus.com/privacy' },
+  title: "Privacy Policy",
+  description:
+    "Corpus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.",
+  alternates: { canonical: "https://corpus.com/privacy" },
   openGraph: {
-    title: 'Privacy Policy | Remnus',
-    description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
-    url: 'https://remnus.com/privacy',
-    siteName: 'Remnus',
+    title: "Privacy Policy | Corpus",
+    description:
+      "Corpus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.",
+    url: "https://corpus.com/privacy",
+    siteName: "Corpus",
     images: [DEFAULT_OG_IMAGE],
-    type: 'website',
+    type: "website",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Privacy Policy | Remnus',
-    description: 'Remnus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.',
+    card: "summary_large_image",
+    title: "Privacy Policy | Corpus",
+    description:
+      "Corpus privacy policy — how we collect, use, and protect your data in the MCP-Native workspace for vibe coders.",
     images: [DEFAULT_TWITTER_IMAGE],
   },
 };
 
 export default async function PrivacyPage() {
-  const t = await getTranslations('Privacy');
+  const t = await getTranslations("Privacy");
 
   const sections = [
     {
       icon: Eye,
-      title: t('sec1Title'),
-      body: t('sec1Body'),
+      title: t("sec1Title"),
+      body: t("sec1Body"),
     },
     {
       icon: Shield,
-      title: t('sec2Title'),
-      body: t('sec2Body'),
+      title: t("sec2Title"),
+      body: t("sec2Body"),
     },
     {
       icon: Lock,
-      title: t('sec3Title'),
-      body: t('sec3Body'),
+      title: t("sec3Title"),
+      body: t("sec3Body"),
     },
     {
       icon: Mail,
-      title: t('sec4Title'),
-      body: t('sec4Body'),
+      title: t("sec4Title"),
+      body: t("sec4Body"),
     },
   ];
 
@@ -58,14 +65,14 @@ export default async function PrivacyPage() {
           {/* Header */}
           <div className="text-center mb-16">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-100 mb-4 tracking-tight">
-              {t('title')}
+              {t("title")}
             </h1>
             <p className="font-mono text-[11px] uppercase tracking-widest text-neutral-500">
-              {t('lastUpdated')}
+              {t("lastUpdated")}
             </p>
             <div className="h-px bg-neutral-800 my-8 max-w-xs mx-auto" />
             <p className="text-neutral-300 text-[14.5px] leading-relaxed max-w-2xl mx-auto">
-              {t('intro')}
+              {t("intro")}
             </p>
           </div>
 

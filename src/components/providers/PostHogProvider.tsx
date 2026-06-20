@@ -16,15 +16,22 @@ interface Props {
 // posthog.init must run exactly once per page load. We init on first client
 // render (not module load) so we can gate it on the server-resolved geo/consent
 // props — otherwise we'd write cookies / capture before the user can decide.
+export const IS_POSTHOG_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN,
+);
+
 let initialized = false;
 
 function ensureInit(consentRequired: boolean, initialConsent: ConsentValue | null) {
   if (typeof window === 'undefined' || initialized) return;
+  const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  if (!token) return;
+
   initialized = true;
 
   const shouldCapture = !consentRequired || initialConsent === 'accepted';
 
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {
+  posthog.init(token, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
     person_profiles: 'identified_only', // KVKK / GDPR: only identified users get profiles
     capture_pageview: false,            // Next.js App Router manual tracking
@@ -36,5 +43,7 @@ function ensureInit(consentRequired: boolean, initialConsent: ConsentValue | nul
 
 export function PostHogProvider({ children, consentRequired = false, initialConsent = null }: Props) {
   ensureInit(consentRequired, initialConsent);
+  if (!IS_POSTHOG_CONFIGURED) return <>{children}</>;
+
   return <PHProvider client={posthog}>{children}</PHProvider>;
 }

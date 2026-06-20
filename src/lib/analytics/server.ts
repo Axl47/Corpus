@@ -14,41 +14,41 @@
  *
  * Admins and demo users are never captured (mirrors `PostHogIdentify`).
  */
-import 'server-only';
-import { PostHog } from 'posthog-node';
-import { randomUUID } from 'crypto';
-import { cookies, headers } from 'next/headers';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { CONSENT_COOKIE, isConsentRequired, parseConsent } from '@/lib/consent';
+import "server-only";
+import { PostHog } from "posthog-node";
+import { randomUUID } from "crypto";
+import { cookies, headers } from "next/headers";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { CONSENT_COOKIE, isConsentRequired, parseConsent } from "@/lib/consent";
 
 const KEY = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
-const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
 
 // posthog-node is a long-lived client; reuse one instance across hot-reloads and
 // serverless warm invocations. `flushAt: 1` + `flushInterval: 0` => each event is
 // sent on the next `flush()`, which we always await — serverless functions freeze
 // between invocations, so we can't rely on a background flush timer.
 declare global {
-  var __remnusPosthog: PostHog | null | undefined;
+  var __corpusPosthog: PostHog | null | undefined;
 }
 
 function client(): PostHog | null {
   if (!KEY) return null;
-  if (globalThis.__remnusPosthog === undefined) {
-    globalThis.__remnusPosthog = new PostHog(KEY, {
+  if (globalThis.__corpusPosthog === undefined) {
+    globalThis.__corpusPosthog = new PostHog(KEY, {
       host: HOST,
       flushAt: 1,
       flushInterval: 0,
     });
   }
-  return globalThis.__remnusPosthog ?? null;
+  return globalThis.__corpusPosthog ?? null;
 }
 
-export type FunnelEvent = 'signup' | 'mcp_token_created' | 'agent_call';
+export type FunnelEvent = "signup" | "mcp_token_created" | "agent_call";
 
-const PII_KEYS = new Set(['email', 'name', 'image']);
+const PII_KEYS = new Set(["email", "name", "image"]);
 
 function stripPii(props?: Record<string, unknown>): Record<string, unknown> {
   if (!props) return {};
@@ -78,7 +78,7 @@ export async function captureServer(opts: {
 }): Promise<void> {
   const ph = client();
   if (!ph) return;
-  if (opts.role === 'admin' || opts.role === 'demo') return;
+  if (opts.role === "admin" || opts.role === "demo") return;
 
   try {
     if (opts.allowed) {
@@ -115,9 +115,9 @@ export async function captureServer(opts: {
 export async function isCaptureAllowedFromRequest(): Promise<boolean> {
   try {
     const [h, c] = await Promise.all([headers(), cookies()]);
-    const required = isConsentRequired(h.get('x-vercel-ip-country'));
+    const required = isConsentRequired(h.get("x-vercel-ip-country"));
     if (!required) return true;
-    return parseConsent(c.get(CONSENT_COOKIE)?.value) === 'accepted';
+    return parseConsent(c.get(CONSENT_COOKIE)?.value) === "accepted";
   } catch {
     return false;
   }
@@ -142,7 +142,7 @@ export async function isCaptureAllowedForUser(
       .where(eq(users.id, userId))
       .limit(1);
     if (!u) return { allowed: false, role: null };
-    return { allowed: u.consent === 'granted', role: u.role };
+    return { allowed: u.consent === "granted", role: u.role };
   } catch {
     return { allowed: false, role: null };
   }
@@ -159,7 +159,7 @@ export async function captureAgentCall(
 ): Promise<void> {
   const { allowed, role } = await isCaptureAllowedForUser(ownerUserId);
   await captureServer({
-    event: 'agent_call',
+    event: "agent_call",
     userId: ownerUserId,
     allowed,
     role,

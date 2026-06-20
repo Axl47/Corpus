@@ -1,11 +1,11 @@
-'use client';
-import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
-import TauriTitlebar from './features/TauriTitlebar';
-import ZoomProvider from './providers/ZoomProvider';
-import { TabsProvider } from './providers/TabsContext';
-import { useIsTauri } from '@/lib/hooks/useIsTauri';
-import type { WorkspaceItemRow } from '@/lib/actions/workspace';
+"use client";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import TauriTitlebar from "./features/TauriTitlebar";
+import ZoomProvider from "./providers/ZoomProvider";
+import { TabsProvider } from "./providers/TabsContext";
+import { useIsTauri } from "@/lib/hooks/useIsTauri";
+import type { WorkspaceItemRow } from "@/lib/actions/workspace";
 
 export default function AppShell({
   sidebar,
@@ -24,8 +24,16 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const isTauri = useIsTauri();
-  const MARKETING_PATHS = new Set(['/', '/pricing', '/contact', '/download', '/privacy', '/security']);
-  const isMarketing = MARKETING_PATHS.has(pathname) || pathname.startsWith('/oauth/');
+  const MARKETING_PATHS = new Set([
+    "/",
+    "/pricing",
+    "/contact",
+    "/download",
+    "/privacy",
+    "/security",
+  ]);
+  const isMarketing =
+    MARKETING_PATHS.has(pathname) || pathname.startsWith("/oauth/");
 
   if (isMarketing) {
     return <>{children}</>;
@@ -36,7 +44,7 @@ export default function AppShell({
     return (
       <ZoomProvider>
         {/* Tabs are a GLOBAL, browser-style strip — never per-workspace. The
-            server-side layout flips `remnus_workspace_id` whenever the user
+            server-side layout flips `corpus_workspace_id` whenever the user
             navigates to a page in a different workspace, so keying the provider
             on `activeWorkspaceId` would unmount/remount it mid-session and load
             a different localStorage bucket — that's how 12 user-opened tabs were

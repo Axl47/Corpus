@@ -1,18 +1,18 @@
-'use server';
-import { db } from '@/db';
-import { users, workspaces, workspaceMembers } from '@/db/schema';
-import { eq, ne, and, lt } from 'drizzle-orm';
-import { encode } from '@auth/core/jwt';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
-import { createDemoSeedData } from '@/lib/seed';
+"use server";
+import { db } from "@/db";
+import { users, workspaces, workspaceMembers } from "@/db/schema";
+import { eq, ne, and, lt } from "drizzle-orm";
+import { encode } from "@auth/core/jwt";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { createDemoSeedData } from "@/lib/seed";
 
 // Each "Try the demo" click provisions its OWN throwaway demo account
-// (`demo+<uuid>@remnus.com`, role 'demo') with a freshly seeded workspace.
+// (`demo+<uuid>@corpus.com`, role 'demo') with a freshly seeded workspace.
 // Visitors never share data, so concurrent demos can't reset or overwrite each
 // other. Stale demo accounts are reaped opportunistically on later logins.
-const DEMO_EMAIL_DOMAIN = 'remnus.com';
+const DEMO_EMAIL_DOMAIN = "corpus.com";
 
 // How long a demo account lives before it's eligible for cleanup.
 const DEMO_USER_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -42,7 +42,7 @@ async function cleanupStaleDemoUsers(exceptUserId?: string) {
   const stale = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.role, 'demo'), lt(users.createdAt, cutoff)))
+    .where(and(eq(users.role, "demo"), lt(users.createdAt, cutoff)))
     .limit(DEMO_CLEANUP_LIMIT);
 
   for (const { id } of stale) {
@@ -55,29 +55,34 @@ async function cleanupStaleDemoUsers(exceptUserId?: string) {
   }
 }
 
-export async function loginAsDemo(_prevState: unknown, _formData: FormData): Promise<{ error: string } | null> {
+export async function loginAsDemo(
+  _prevState: unknown,
+  _formData: FormData,
+): Promise<{ error: string } | null> {
   // If the visitor already holds a live demo session with a workspace, just send
   // them back into it — don't mint a new account or reseed on every click/refresh.
   // (Raw auth() instead of getCurrentUser() so an absent session doesn't redirect.)
   const session = await auth();
-  if (session?.user?.id && session.user.role === 'demo') {
+  if (session?.user?.id && session.user.role === "demo") {
     const existing = await db
       .select({ id: workspaceMembers.workspaceId })
       .from(workspaceMembers)
       .where(eq(workspaceMembers.userId, session.user.id))
       .limit(1);
-    if (existing.length > 0) redirect('/app');
+    if (existing.length > 0) redirect("/app");
   }
 
   // Require at least one real (non-demo) user to exist before enabling demo mode
   const realUsers = await db
     .select({ id: users.id })
     .from(users)
-    .where(ne(users.role, 'demo'))
+    .where(ne(users.role, "demo"))
     .limit(1);
 
   if (realUsers.length === 0) {
-    return { error: 'Demo mode is not available yet. Please create an account first.' };
+    return {
+      error: "Demo mode is not available yet. Please create an account first.",
+    };
   }
 
   // Reap expired demo accounts so the table doesn't grow unbounded.
@@ -85,12 +90,12 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
 
   // Provision a fresh, isolated demo account for this visitor.
   const demoUserId = crypto.randomUUID();
-  const demoName = 'Demo User';
+  const demoName = "Demo User";
   await db.insert(users).values({
     id: demoUserId,
     name: demoName,
     email: `demo+${demoUserId}@${DEMO_EMAIL_DOMAIN}`,
-    role: 'demo',
+    role: "demo",
     createdAt: new Date(),
   });
 
@@ -100,8 +105,10 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
   // Create a session JWT directly — bypasses Auth.js HTTP route and its CSRF check.
   // Calling signIn() from a server action makes an internal POST to /api/auth/signin
   // which requires a CSRF token that isn't present in server-side contexts.
-  const isProd = process.env.NODE_ENV === 'production';
-  const cookieName = isProd ? '__Secure-authjs.session-token' : 'authjs.session-token';
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieName = isProd
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
   const secret = process.env.AUTH_SECRET!;
 
   const sessionToken = await encode({
@@ -110,7 +117,7 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
       name: demoName,
       email: `demo+${demoUserId}@${DEMO_EMAIL_DOMAIN}`,
       id: demoUserId,
-      role: 'demo',
+      role: "demo",
     },
     secret,
     salt: cookieName,
@@ -120,10 +127,10 @@ export async function loginAsDemo(_prevState: unknown, _formData: FormData): Pro
   cookieStore.set(cookieName, sessionToken, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
-    path: '/',
+    sameSite: "lax",
+    path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect('/app');
+  redirect("/app");
 }

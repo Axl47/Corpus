@@ -39,6 +39,7 @@ const PATHS: Partial<Record<AIMarkName, string>> = {
 export default function AIMark({ name, size = 22 }: AIMarkProps) {
   const color = COLORS[name];
   const path = PATHS[name];
+  const antigravityHeight = Math.round((size * 80) / 94);
 
   if (path) {
     return (
@@ -77,7 +78,7 @@ export default function AIMark({ name, size = 22 }: AIMarkProps) {
       src="/logos/antigravity.svg"
       alt="antigravity"
       width={size}
-      height={size}
+      height={antigravityHeight}
       style={{ flexShrink: 0 }}
     />
   );

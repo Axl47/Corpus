@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * In-app debug console + global error reporting.
@@ -11,7 +11,7 @@ import { useEffect } from 'react';
  *
  * Enabling (any of):
  *   - URL param `?debug=1`  (and `?debug=0` to turn it off) — survives reloads
- *   - localStorage `remnus-debug` = '1'
+ *   - localStorage `corpus-debug` = '1'
  *   - keyboard toggle Ctrl/Cmd + Shift + D (desktop/web)
  *
  * When on, it lazy-loads `eruda` (a floating console overlay — console / network /
@@ -22,21 +22,21 @@ import { useEffect } from 'react';
  * PostHog (best-effort) so remote crashes are still recorded.
  */
 
-const STORAGE_KEY = 'remnus-debug';
+const STORAGE_KEY = "corpus-debug";
 
 function readDebugFlag(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   try {
-    const param = new URL(window.location.href).searchParams.get('debug');
-    if (param === '1' || param === 'true') {
-      localStorage.setItem(STORAGE_KEY, '1');
+    const param = new URL(window.location.href).searchParams.get("debug");
+    if (param === "1" || param === "true") {
+      localStorage.setItem(STORAGE_KEY, "1");
       return true;
     }
-    if (param === '0' || param === 'false') {
+    if (param === "0" || param === "false") {
       localStorage.removeItem(STORAGE_KEY);
       return false;
     }
-    return localStorage.getItem(STORAGE_KEY) === '1';
+    return localStorage.getItem(STORAGE_KEY) === "1";
   } catch {
     return false;
   }
@@ -45,7 +45,7 @@ function readDebugFlag(): boolean {
 function reportError(error: unknown, source: string) {
   // Never throw from inside an error handler.
   try {
-    void import('posthog-js')
+    void import("posthog-js")
       .then(({ default: posthog }) => {
         // posthog is only initialized under the locale layout; guard for safety.
         if (!posthog.__loaded) return;
@@ -57,13 +57,20 @@ function reportError(error: unknown, source: string) {
         // infinite loop. Keep the binding and `.catch` the promise so a failure
         // here can never feed itself back through the error listeners.
         const ph = posthog as unknown as {
-          captureException?: (e: Error, props?: Record<string, unknown>) => void;
+          captureException?: (
+            e: Error,
+            props?: Record<string, unknown>,
+          ) => void;
           capture: (event: string, props?: Record<string, unknown>) => void;
         };
-        if (typeof ph.captureException === 'function') {
+        if (typeof ph.captureException === "function") {
           ph.captureException(err, { source });
         } else {
-          posthog.capture('client_error', { message: err.message, stack: err.stack, source });
+          posthog.capture("client_error", {
+            message: err.message,
+            stack: err.stack,
+            source,
+          });
         }
       })
       .catch(() => {
@@ -82,7 +89,7 @@ export default function DebugConsole() {
       if (active) return;
       active = true;
       try {
-        const eruda = (await import('eruda')).default;
+        const eruda = (await import("eruda")).default;
         if (!eruda.get()) eruda.init();
       } catch {
         active = false;
@@ -92,39 +99,45 @@ export default function DebugConsole() {
     async function hideEruda() {
       active = false;
       try {
-        const eruda = (await import('eruda')).default;
+        const eruda = (await import("eruda")).default;
         if (eruda.get()) eruda.destroy();
       } catch {
         /* swallow */
       }
     }
 
-    const onError = (e: ErrorEvent) => reportError(e.error ?? e.message, 'window.onerror');
-    const onRejection = (e: PromiseRejectionEvent) => reportError(e.reason, 'unhandledrejection');
+    const onError = (e: ErrorEvent) =>
+      reportError(e.error ?? e.message, "window.onerror");
+    const onRejection = (e: PromiseRejectionEvent) =>
+      reportError(e.reason, "unhandledrejection");
 
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        (e.key === "D" || e.key === "d")
+      ) {
         e.preventDefault();
-        if (localStorage.getItem(STORAGE_KEY) === '1') {
+        if (localStorage.getItem(STORAGE_KEY) === "1") {
           localStorage.removeItem(STORAGE_KEY);
           void hideEruda();
         } else {
-          localStorage.setItem(STORAGE_KEY, '1');
+          localStorage.setItem(STORAGE_KEY, "1");
           void showEruda();
         }
       }
     };
 
-    window.addEventListener('error', onError);
-    window.addEventListener('unhandledrejection', onRejection);
-    window.addEventListener('keydown', onKey);
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("keydown", onKey);
 
     if (readDebugFlag()) void showEruda();
 
     return () => {
-      window.removeEventListener('error', onError);
-      window.removeEventListener('unhandledrejection', onRejection);
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("keydown", onKey);
     };
   }, []);
 

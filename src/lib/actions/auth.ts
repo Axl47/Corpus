@@ -1,35 +1,44 @@
-'use server';
-import { signOut } from '@/auth';
-import { auth } from '@/auth';
-import { db } from '@/db';
-import { users, workspaces, workspaceMembers, workspaceInvites, accounts, sessions, userSessions, agentTokens } from '@/db/schema';
-import { eq, and, sql, isNull } from 'drizzle-orm';
-import { randomBytes } from 'crypto';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { getTranslations } from 'next-intl/server';
-import { checkCanAddSeatForEmail } from '@/lib/services/billing';
+"use server";
+import { signOut } from "@/auth";
+import { auth } from "@/auth";
+import { db } from "@/db";
+import {
+  users,
+  workspaces,
+  workspaceMembers,
+  workspaceInvites,
+  accounts,
+  sessions,
+  userSessions,
+  agentTokens,
+} from "@/db/schema";
+import { eq, and, sql, isNull } from "drizzle-orm";
+import { randomBytes } from "crypto";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import { checkCanAddSeatForEmail } from "@/lib/services/billing";
 
 export async function logout() {
   // Clear the persisted workspace selection so the next account doesn't inherit it
   const cookieStore = await cookies();
-  cookieStore.delete('remnus_workspace_id');
-  await signOut({ redirectTo: '/login' });
+  cookieStore.delete("corpus_workspace_id");
+  await signOut({ redirectTo: "/login" });
 }
 
 export async function inviteToWorkspace(
   workspaceId: string,
   email: string,
-  role: 'member' | 'viewer' = 'member',
+  role: "member" | "viewer" = "member",
 ) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
+  if (!session?.user?.id) redirect("/login");
 
-  const t = await getTranslations('Errors');
+  const t = await getTranslations("Errors");
 
   // Only owners and admins can invite
-  const isAdmin = session.user.role === 'admin';
+  const isAdmin = session.user.role === "admin";
   if (!isAdmin) {
     const membership = await db
       .select()
@@ -41,8 +50,8 @@ export async function inviteToWorkspace(
         ),
       )
       .limit(1);
-    if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: t('ownerOnlyInvite') };
+    if (!membership[0] || membership[0].role !== "owner") {
+      return { error: t("ownerOnlyInvite") };
     }
   }
 
@@ -56,7 +65,11 @@ export async function inviteToWorkspace(
 
   // Seat limit (the billing owner's plan caps distinct people; admins bypass).
   if (!isAdmin) {
-    const code = await checkCanAddSeatForEmail(workspaceId, normalizedEmail, targetUser?.id ?? null);
+    const code = await checkCanAddSeatForEmail(
+      workspaceId,
+      normalizedEmail,
+      targetUser?.id ?? null,
+    );
     if (code) return { error: t(code) };
   }
 
@@ -64,9 +77,14 @@ export async function inviteToWorkspace(
     const existing = await db
       .select()
       .from(workspaceMembers)
-      .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, targetUser.id)))
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, workspaceId),
+          eq(workspaceMembers.userId, targetUser.id),
+        ),
+      )
       .limit(1);
-    if (existing[0]) return { error: t('alreadyMember') };
+    if (existing[0]) return { error: t("alreadyMember") };
 
     await db.insert(workspaceMembers).values({
       workspaceId,
@@ -75,25 +93,27 @@ export async function inviteToWorkspace(
       createdAt: new Date(),
     });
 
-    revalidatePath('/');
+    revalidatePath("/");
     return { success: true };
   }
 
   // No account yet → create (or reuse) a pending invite and return a shareable link.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const [pending] = await db
     .select({ token: workspaceInvites.token })
     .from(workspaceInvites)
-    .where(and(
-      eq(workspaceInvites.workspaceId, workspaceId),
-      eq(workspaceInvites.email, normalizedEmail),
-      isNull(workspaceInvites.acceptedAt),
-    ))
+    .where(
+      and(
+        eq(workspaceInvites.workspaceId, workspaceId),
+        eq(workspaceInvites.email, normalizedEmail),
+        isNull(workspaceInvites.acceptedAt),
+      ),
+    )
     .limit(1);
 
   let token = pending?.token;
   if (!token) {
-    token = randomBytes(24).toString('hex');
+    token = randomBytes(24).toString("hex");
     await db.insert(workspaceInvites).values({
       workspaceId,
       email: normalizedEmail,
@@ -104,16 +124,16 @@ export async function inviteToWorkspace(
     });
   }
 
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true, inviteLink: `${appUrl}/invite/${token}` };
 }
 
 export async function removeFromWorkspace(workspaceId: string, userId: string) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
-  const t = await getTranslations('Errors');
+  if (!session?.user?.id) redirect("/login");
+  const t = await getTranslations("Errors");
 
-  const isAdmin = session.user.role === 'admin';
+  const isAdmin = session.user.role === "admin";
   if (!isAdmin) {
     const membership = await db
       .select()
@@ -125,8 +145,8 @@ export async function removeFromWorkspace(workspaceId: string, userId: string) {
         ),
       )
       .limit(1);
-    if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: t('ownerOnlyRemove') };
+    if (!membership[0] || membership[0].role !== "owner") {
+      return { error: t("ownerOnlyRemove") };
     }
   }
 
@@ -139,13 +159,13 @@ export async function removeFromWorkspace(workspaceId: string, userId: string) {
       ),
     );
 
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true };
 }
 
 export async function getWorkspaceMembers(workspaceId: string) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
+  if (!session?.user?.id) redirect("/login");
 
   return db
     .select({
@@ -162,22 +182,26 @@ export async function getWorkspaceMembers(workspaceId: string) {
 
 export async function getAllUsers() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== 'admin') {
-    const t = await getTranslations('Errors');
-    return { error: t('adminRequired') };
+  if (!session?.user?.id || session.user.role !== "admin") {
+    const t = await getTranslations("Errors");
+    return { error: t("adminRequired") };
   }
 
-  const userRows = await db.select({
-    id: users.id,
-    name: users.name,
-    email: users.email,
-    image: users.image,
-    role: users.role,
-    createdAt: users.createdAt,
-    hasPassword: sql<number>`case when ${users.passwordHash} is not null then 1 else 0 end`,
-  }).from(users);
+  const userRows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      image: users.image,
+      role: users.role,
+      createdAt: users.createdAt,
+      hasPassword: sql<number>`case when ${users.passwordHash} is not null then 1 else 0 end`,
+    })
+    .from(users);
 
-  const accountRows = await db.select({ userId: accounts.userId, provider: accounts.provider }).from(accounts);
+  const accountRows = await db
+    .select({ userId: accounts.userId, provider: accounts.provider })
+    .from(accounts);
   const providerMap = new Map<string, string[]>();
   for (const acc of accountRows) {
     if (!providerMap.has(acc.userId)) providerMap.set(acc.userId, []);
@@ -191,30 +215,34 @@ export async function getAllUsers() {
     image: u.image,
     role: u.role,
     createdAt: u.createdAt,
-    authType: providerMap.get(u.id)?.includes('google')
-      ? ('google' as const)
-      : providerMap.get(u.id)?.includes('github')
-        ? ('github' as const)
+    authType: providerMap.get(u.id)?.includes("google")
+      ? ("google" as const)
+      : providerMap.get(u.id)?.includes("github")
+        ? ("github" as const)
         : u.hasPassword
-          ? ('email' as const)
-          : ('unknown' as const),
+          ? ("email" as const)
+          : ("unknown" as const),
   }));
 }
 
 export async function adminDeleteUser(userId: string) {
   const session = await auth();
-  const t = await getTranslations('Errors');
-  if (!session?.user?.id || session.user.role !== 'admin') {
-    return { error: t('adminRequired') };
+  const t = await getTranslations("Errors");
+  if (!session?.user?.id || session.user.role !== "admin") {
+    return { error: t("adminRequired") };
   }
   if (session.user.id === userId) {
-    return { error: t('cannotDeleteSelf') };
+    return { error: t("cannotDeleteSelf") };
   }
   // Protect the shared demo account — deleting it would wipe its session history
   // and force loginAsDemo to create a new UUID, losing all engagement tracking.
-  const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
-  if (target?.role === 'demo') {
-    return { error: t('cannotDeleteDemoUser') };
+  const [target] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (target?.role === "demo") {
+    return { error: t("cannotDeleteDemoUser") };
   }
   // Delete dependent rows explicitly. ON DELETE CASCADE only fires when
   // PRAGMA foreign_keys=ON, which we don't enable on the serverless/Turso
@@ -226,33 +254,36 @@ export async function adminDeleteUser(userId: string) {
   await db.delete(userSessions).where(eq(userSessions.userId, userId));
   // agent_tokens.created_by references user(id) with no cascade — null it out
   // so the token (which belongs to the workspace, not the user) survives.
-  await db.update(agentTokens).set({ createdBy: null }).where(eq(agentTokens.createdBy, userId));
+  await db
+    .update(agentTokens)
+    .set({ createdBy: null })
+    .where(eq(agentTokens.createdBy, userId));
   await db.delete(users).where(eq(users.id, userId));
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true };
 }
 
-export async function setUserRole(userId: string, role: 'user' | 'admin') {
+export async function setUserRole(userId: string, role: "user" | "admin") {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== 'admin') {
-    const t = await getTranslations('Errors');
-    return { error: t('adminRequired') };
+  if (!session?.user?.id || session.user.role !== "admin") {
+    const t = await getTranslations("Errors");
+    return { error: t("adminRequired") };
   }
   await db.update(users).set({ role }).where(eq(users.id, userId));
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true };
 }
 
 export async function updateWorkspaceMemberRole(
   workspaceId: string,
   userId: string,
-  role: 'member' | 'viewer',
+  role: "member" | "viewer",
 ) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
-  const t = await getTranslations('Errors');
+  if (!session?.user?.id) redirect("/login");
+  const t = await getTranslations("Errors");
 
-  const isAdmin = session.user.role === 'admin';
+  const isAdmin = session.user.role === "admin";
   if (!isAdmin) {
     const membership = await db
       .select()
@@ -264,8 +295,8 @@ export async function updateWorkspaceMemberRole(
         ),
       )
       .limit(1);
-    if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: t('ownerOnlyUpdateRole') };
+    if (!membership[0] || membership[0].role !== "owner") {
+      return { error: t("ownerOnlyUpdateRole") };
     }
   }
 
@@ -282,11 +313,11 @@ export async function updateWorkspaceMemberRole(
     .limit(1);
 
   if (!targetMember) {
-    return { error: t('memberNotFound') };
+    return { error: t("memberNotFound") };
   }
 
-  if (targetMember.role === 'owner') {
-    return { error: t('cannotChangeOwnerRole') };
+  if (targetMember.role === "owner") {
+    return { error: t("cannotChangeOwnerRole") };
   }
 
   await db
@@ -294,7 +325,7 @@ export async function updateWorkspaceMemberRole(
     .set({ role })
     .where(eq(workspaceMembers.id, targetMember.id));
 
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -303,10 +334,10 @@ export async function transferWorkspaceOwnership(
   newOwnerUserId: string,
 ) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
-  const t = await getTranslations('Errors');
+  if (!session?.user?.id) redirect("/login");
+  const t = await getTranslations("Errors");
 
-  const isAdmin = session.user.role === 'admin';
+  const isAdmin = session.user.role === "admin";
   if (!isAdmin) {
     const membership = await db
       .select()
@@ -318,8 +349,8 @@ export async function transferWorkspaceOwnership(
         ),
       )
       .limit(1);
-    if (!membership[0] || membership[0].role !== 'owner') {
-      return { error: t('ownerOnlyTransfer') };
+    if (!membership[0] || membership[0].role !== "owner") {
+      return { error: t("ownerOnlyTransfer") };
     }
   }
 
@@ -336,11 +367,11 @@ export async function transferWorkspaceOwnership(
     .limit(1);
 
   if (!targetMember) {
-    return { error: t('memberNotFound') };
+    return { error: t("memberNotFound") };
   }
 
-  if (targetMember.role === 'owner') {
-    return { error: t('alreadyOwner') };
+  if (targetMember.role === "owner") {
+    return { error: t("alreadyOwner") };
   }
 
   // Find all current owners of this workspace
@@ -350,7 +381,7 @@ export async function transferWorkspaceOwnership(
     .where(
       and(
         eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.role, 'owner'),
+        eq(workspaceMembers.role, "owner"),
       ),
     );
 
@@ -358,14 +389,14 @@ export async function transferWorkspaceOwnership(
   for (const owner of currentOwners) {
     await db
       .update(workspaceMembers)
-      .set({ role: 'member' })
+      .set({ role: "member" })
       .where(eq(workspaceMembers.id, owner.id));
   }
 
   // Upgrade target user to 'owner'
   await db
     .update(workspaceMembers)
-    .set({ role: 'owner' })
+    .set({ role: "owner" })
     .where(eq(workspaceMembers.id, targetMember.id));
 
   // Billing follows ownership: the workspace moves into the new owner's seat pool
@@ -375,7 +406,6 @@ export async function transferWorkspaceOwnership(
     .set({ billingOwnerId: newOwnerUserId })
     .where(eq(workspaces.id, workspaceId));
 
-  revalidatePath('/');
+  revalidatePath("/");
   return { success: true };
 }
-

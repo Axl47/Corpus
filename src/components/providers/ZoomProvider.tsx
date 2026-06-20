@@ -1,11 +1,11 @@
-'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
+"use client";
+import { createContext, useContext, useState, useEffect } from "react";
 
-const ZOOM_KEY = 'remnus_desktop_zoom';
+const ZOOM_KEY = "corpus_desktop_zoom";
 
 function readZoom(): number {
   try {
-    const v = parseFloat(localStorage.getItem(ZOOM_KEY) || '');
+    const v = parseFloat(localStorage.getItem(ZOOM_KEY) || "");
     if (!isNaN(v) && v >= 0.5 && v <= 2.0) return v;
   } catch {}
   return 1;
@@ -23,20 +23,24 @@ export function useZoom(): number {
   return useContext(ZoomContext);
 }
 
-export default function ZoomProvider({ children }: { children: React.ReactNode }) {
+export default function ZoomProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     setZoom(readZoom());
     // Clear any CSS zoom applied by Tauri initialization_script before React mounted
-    document.documentElement.style.zoom = '';
-    document.documentElement.style.width = '';
-    document.documentElement.style.height = '';
-    document.documentElement.style.overflow = '';
+    document.documentElement.style.zoom = "";
+    document.documentElement.style.width = "";
+    document.documentElement.style.height = "";
+    document.documentElement.style.overflow = "";
 
     const handler = () => setZoom(readZoom());
-    window.addEventListener('remnus-zoom-changed', handler);
-    return () => window.removeEventListener('remnus-zoom-changed', handler);
+    window.addEventListener("corpus-zoom-changed", handler);
+    return () => window.removeEventListener("corpus-zoom-changed", handler);
   }, []);
 
   if (zoom === 1) {
@@ -54,10 +58,10 @@ export default function ZoomProvider({ children }: { children: React.ReactNode }
         <div
           style={{
             transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
+            transformOrigin: "top left",
             width: inv,
             height: inv,
-            overflow: 'hidden',
+            overflow: "hidden",
           }}
         >
           {children}
