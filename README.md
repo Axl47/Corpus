@@ -8,6 +8,10 @@ Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can re
 
 ---
 
+## Fork
+
+This fork is meant as a personal Notion substitution for working with AI Agents, not meant nor tested in deployed or public scenarios.
+
 ## What is Corpus?
 
 Corpus is a Notion-like workspace built around the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Every page, database, and kanban board in your workspace is accessible to AI agents via a first-class MCP server — using a simple bearer token, with no OAuth dance required.
@@ -113,10 +117,6 @@ Or add manually to your MCP client config:
 - **Styling:** Tailwind CSS + Lucide icons
 - **Desktop:** Tauri v2 (Rust)
 - **Mobile:** Capacitor v8
-
-## Fork
-
-This fork is meant as a personal Notion substitution for working with AI Agents, not meant nor tested in deployed or public scenarios.
 
 ## License
 
