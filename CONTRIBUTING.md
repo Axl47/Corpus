@@ -1,12 +1,12 @@
-# Contributing to Remnus
+# Contributing to Corpus
 
 Thank you for your interest in contributing! Here's how to get started.
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/Ranork/remnus-app.git
-cd remnus-app
+git clone https://github.com/Ranork/corpus-app.git
+cd corpus-app
 npm install
 cp .env.example .env   # fill in AUTH_SECRET + OAuth credentials
 npm run db:migrate

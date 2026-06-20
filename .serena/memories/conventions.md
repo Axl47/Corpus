@@ -47,7 +47,7 @@
 - TanStack Query: installed via `QueryProvider` — use for client mutation hooks
 
 ## MCP / Agent Token Conventions
-- Token format: `<MCP_TOKEN_PREFIX>_<prefix8>_<secret>` (env var `MCP_TOKEN_PREFIX=rmns`)
+- Token format: `<MCP_TOKEN_PREFIX>_<prefix8>_<secret>` (env var `MCP_TOKEN_PREFIX=crps`)
 - Verification: look up by `tokenPrefix`, then `bcrypt.compare(secret, tokenHash)` — never iterate all tokens
 - `/api/mcp` is whitelisted in `auth.config.ts` (`isMcpRoute`) so middleware never redirects MCP requests
 - `export const runtime = 'nodejs'` required on MCP route (bcryptjs not Edge-compatible)

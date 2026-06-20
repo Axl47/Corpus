@@ -6,7 +6,7 @@ MIT is the right choice for a lot of software. Libraries, CLI tools, developer u
 
 This is not hypothetical. It happened repeatedly in the early 2010s with databases and messaging systems. Companies that built genuinely useful open source infrastructure watched hyperscalers absorb their work, out-market them with integrations and enterprise support, and hollow out the contributor base in the process.
 
-For a workspace tool like Remnus, the same dynamic applies. If we published under MIT, a motivated competitor could fork the repo today, rebrand it, and launch a competing SaaS by next month — without contributing a single bug fix or translation. We are a small team. We cannot win a resource war against a well-funded fork.
+For a workspace tool like Corpus, the same dynamic applies. If we published under MIT, a motivated competitor could fork the repo today, rebrand it, and launch a competing SaaS by next month — without contributing a single bug fix or translation. We are a small team. We cannot win a resource war against a well-funded fork.
 
 ## Why Not BSL or SSPL?
 
@@ -22,7 +22,7 @@ Neither felt right. We wanted a license that the OSI recognizes as genuine open 
 
 The GNU Affero General Public License (AGPL-3.0) is a copyleft license with one important addition to GPL: the **network use provision**. Under GPL, you can run modified software on a server without publishing your changes, because the user never receives a copy of the binary. AGPL closes that gap — if you make your modified version accessible over a network (i.e., run it as a service), you must make your source available under the same terms.
 
-For Remnus this means:
+For Corpus this means:
 
 - **Anyone can self-host** the official codebase for free, personal or commercial use.
 - **Anyone can modify** and self-host their modified version, as long as they publish those modifications under AGPL.
@@ -40,12 +40,12 @@ A few clarifications on scope:
 
 **No Contributor License Agreement (CLA) right now.** CLAs let companies relicense contributed code later (e.g., to move to a proprietary license). We have no current plan to do that, and requiring a CLA before accepting a pull request creates unnecessary friction for first-time contributors. We may revisit this if the project scales to a point where it becomes relevant.
 
-**AGPL does not apply to things you build *with* Remnus.** If you use Remnus as a tool to run your business — write documents, manage databases, store notes — that is not a derivative work. AGPL only affects people who distribute or host *Remnus itself* in modified form.
+**AGPL does not apply to things you build *with* Corpus.** If you use Corpus as a tool to run your business — write documents, manage databases, store notes — that is not a derivative work. AGPL only affects people who distribute or host *Corpus itself* in modified form.
 
 ## The Bottom Line
 
-We want Remnus to be genuinely open. Not open-as-a-marketing-claim, not source-available with commercial restrictions wrapped in careful language. Real open source, OSI-certified, forkable, self-hostable.
+We want Corpus to be genuinely open. Not open-as-a-marketing-claim, not source-available with commercial restrictions wrapped in careful language. Real open source, OSI-certified, forkable, self-hostable.
 
-AGPL lets us do that while also protecting the thing that makes it possible to keep working on the project: the ability to run `remnus.com` as a sustainable product. The license says: if you improve Remnus and offer it to others, share those improvements. That seems fair.
+AGPL lets us do that while also protecting the thing that makes it possible to keep working on the project: the ability to run `corpus.com` as a sustainable product. The license says: if you improve Corpus and offer it to others, share those improvements. That seems fair.
 
-If you have questions about what the license means for your specific use case, [open an issue](https://github.com/Ranork/remnus-app/issues) or reach out directly. We would rather answer the question than have you guess.
+If you have questions about what the license means for your specific use case, [open an issue](https://github.com/Ranork/corpus-app/issues) or reach out directly. We would rather answer the question than have you guess.

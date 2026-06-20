@@ -5,7 +5,7 @@
 All MCP requests must include a valid token in the `Authorization` header:
 
 ```
-Authorization: Bearer rmns_xxxxxxxxxxxxxxxx
+Authorization: Bearer crps_xxxxxxxxxxxxxxxx
 ```
 
 Tokens are workspace-scoped — one token can only access a single workspace. Create tokens in **Settings → Tokens**.

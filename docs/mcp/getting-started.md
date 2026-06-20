@@ -1,10 +1,10 @@
 # Getting Started
 
-This guide walks you through generating an MCP token and connecting your first AI client to Remnus.
+This guide walks you through generating an MCP token and connecting your first AI client to Corpus.
 
 ## Step 1 — Generate a token
 
-1. Open your workspace in Remnus
+1. Open your workspace in Corpus
 2. Click the **⋯** menu next to the workspace name in the sidebar, then open **Settings**
 3. Navigate to the **Tokens** tab
 4. Click **New Token**
@@ -20,9 +20,9 @@ Add the following to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "remnus": {
+    "corpus": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://remnus.com/api/mcp"],
+      "args": ["-y", "mcp-remote", "https://corpus.com/api/mcp"],
       "env": {
         "MCP_BEARER_TOKEN": "YOUR_TOKEN_HERE"
       }
@@ -45,8 +45,8 @@ In Cursor go to **Settings → MCP** and add:
 
 ```json
 {
-  "remnus": {
-    "url": "https://remnus.com/api/mcp",
+  "corpus": {
+    "url": "https://corpus.com/api/mcp",
     "headers": {
       "Authorization": "Bearer YOUR_TOKEN_HERE"
     }
@@ -60,7 +60,7 @@ Or use the one-click **Open in Cursor** deeplink available in the **Tokens** tab
 
 Ask your AI client:
 
-> "Use the remnus MCP to list all items in my workspace."
+> "Use the corpus MCP to list all items in my workspace."
 
 A successful response returns a JSON list of your pages and databases.
 

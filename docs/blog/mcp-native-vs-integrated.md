@@ -14,7 +14,7 @@ Notion is not a knock here. They built an excellent human-facing product. MCP wa
 
 An MCP-native product treats agent access as a first-class concern from day one. The architecture is designed so that a human using the product and an agent using the product have access to the same capabilities through consistent interfaces.
 
-For Remnus, this meant a few specific decisions:
+For Corpus, this meant a few specific decisions:
 
 **The MCP server is part of the application, not a sidecar.** Our MCP endpoint lives at `/api/mcp` alongside the Next.js routes that power the web interface. The same database queries, the same permission checks, the same business logic — no separate sync process, no eventually-consistent shadow store.
 
@@ -35,28 +35,28 @@ Suppose you want an agent to triage a backlog: read all open tickets, update the
 4. Create a separate comment or page edit (different endpoint, different auth)
 5. Handle rate limits independently from your other API usage
 
-**In Remnus**, the same workflow maps directly to MCP tools:
+**In Corpus**, the same workflow maps directly to MCP tools:
 1. `query_database` with filters — cursor-based pagination built in
 2. `bulk_update` — sends all property changes in one call
 3. `update_page` on the summary page — same tool, consistent interface
 
-The difference is not "Remnus is faster." It is that the MCP surface was designed for *this kind of workflow* rather than retrofitted onto a surface designed for human clicks.
+The difference is not "Corpus is faster." It is that the MCP surface was designed for *this kind of workflow* rather than retrofitted onto a surface designed for human clicks.
 
 ## What This Does Not Mean
 
-MCP-native is not a claim of superiority on every axis. Notion has a decade of refinement in its human-facing interface, a mobile app, a desktop app, and integrations that Remnus does not have yet. For a team that primarily uses Notion as a human tool and occasionally wants an AI assistant to read from it, the MCP-integrated path works fine.
+MCP-native is not a claim of superiority on every axis. Notion has a decade of refinement in its human-facing interface, a mobile app, a desktop app, and integrations that Corpus does not have yet. For a team that primarily uses Notion as a human tool and occasionally wants an AI assistant to read from it, the MCP-integrated path works fine.
 
 The distinction matters most when your use case is *primarily* agent-driven — when the agent is doing most of the work and the human reviews results, rather than the human doing most of the work and occasionally delegating to an agent. For those workflows, the seams in an MCP-integrated architecture accumulate.
 
 ## AppFlowy and the Trajectory
 
-AppFlowy is the closest open source comparison to Remnus — a Notion-like workspace, self-hostable, with a strong community. Their MCP support, at the time of writing, comes through the community rather than the core team and wraps their existing API surface. It works. But the pattern is MCP-integrated.
+AppFlowy is the closest open source comparison to Corpus — a Notion-like workspace, self-hostable, with a strong community. Their MCP support, at the time of writing, comes through the community rather than the core team and wraps their existing API surface. It works. But the pattern is MCP-integrated.
 
-The difference in trajectory is: as Remnus grows, MCP capabilities grow with the data model. New column types get corresponding filter support in `query_database`. New block types get corresponding read/write coverage in the page tools. There is no separate "MCP team" keeping a wrapper in sync — it is the same codebase.
+The difference in trajectory is: as Corpus grows, MCP capabilities grow with the data model. New column types get corresponding filter support in `query_database`. New block types get corresponding read/write coverage in the page tools. There is no separate "MCP team" keeping a wrapper in sync — it is the same codebase.
 
 ## Why We Talk About This
 
-We use the term "MCP-native" in our documentation and marketing because we want people evaluating Remnus to understand what they are getting. If your workflow is primarily human-driven with occasional AI assistance, the label does not change much for you. If your workflow involves agents running autonomously against a workspace — reading, writing, triaging, generating — the architectural foundation matters.
+We use the term "MCP-native" in our documentation and marketing because we want people evaluating Corpus to understand what they are getting. If your workflow is primarily human-driven with occasional AI assistance, the label does not change much for you. If your workflow involves agents running autonomously against a workspace — reading, writing, triaging, generating — the architectural foundation matters.
 
 The MCP ecosystem is still young. The patterns are still being established. We think "native first" is the right bet: it is easier to make a machine-friendly interface human-friendly than the other way around.
 

@@ -1,20 +1,20 @@
-# Remnus
+# Corpus
 
 **Open-source MCP-native workspace for humans and AI agents.**
 
 Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP — alongside you.
 
-[![GitHub Stars](https://img.shields.io/github/stars/Ranork/remnus-app?style=flat-square)](https://github.com/Ranork/remnus-app/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/Ranork/corpus-app?style=flat-square)](https://github.com/Ranork/corpus-app/stargazers)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Deploy with Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/remnus-app)
+[![Deploy with Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/corpus-app)
 
 ---
 
-## What is Remnus?
+## What is Corpus?
 
-Remnus is a Notion-like workspace built around the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Every page, database, and kanban board in your workspace is accessible to AI agents via a first-class MCP server — using a simple bearer token, with no OAuth dance required.
+Corpus is a Notion-like workspace built around the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Every page, database, and kanban board in your workspace is accessible to AI agents via a first-class MCP server — using a simple bearer token, with no OAuth dance required.
 
-**Unlike Notion's MCP integration**, Remnus is designed for headless, CI/CD, and coding agent workflows from day one.
+**Unlike Notion's MCP integration**, Corpus is designed for headless, CI/CD, and coding agent workflows from day one.
 
 ## Features
 
@@ -23,7 +23,7 @@ Remnus is a Notion-like workspace built around the [Model Context Protocol (MCP)
 - **MCP Server** — 15 tools + 4 resources + 5 prompts, Streamable HTTP + SSE dual transport
 - **Multi-workspace** — Invite members, role-based access (owner / member / viewer)
 - **Desktop app** — Tauri v2 shell for Windows, macOS, Linux
-- **Mobile** — Capacitor v8 for iOS and Android (loads remnus.com)
+- **Mobile** — Capacitor v8 for iOS and Android (loads corpus.com)
 - **i18n** — English, Türkçe, Español, Français, Deutsch, हिन्दी
 
 ## Quick Start — Self-host
@@ -31,8 +31,8 @@ Remnus is a Notion-like workspace built around the [Model Context Protocol (MCP)
 ### Local Development
 
 ```bash
-git clone https://github.com/Ranork/remnus-app.git
-cd remnus-app
+git clone https://github.com/Ranork/corpus-app.git
+cd corpus-app
 cp .env.example .env          # fill in AUTH_SECRET + OAuth credentials
 npm install
 npm run db:migrate
@@ -43,12 +43,12 @@ Open [http://localhost:3000](http://localhost:3000). The first user to sign up i
 
 ### Docker Compose (5-minute setup)
 
-If you prefer to run Remnus using Docker:
+If you prefer to run Corpus using Docker:
 
 1. Clone the repository and navigate into it:
    ```bash
-   git clone https://github.com/Ranork/remnus-app.git
-   cd remnus-app
+   git clone https://github.com/Ranork/corpus-app.git
+   cd corpus-app
    ```
 2. Copy the environment template and fill in the required variables (especially `AUTH_SECRET` and OAuth credentials):
    ```bash
@@ -58,12 +58,12 @@ If you prefer to run Remnus using Docker:
    ```bash
    docker compose up -d
    ```
-4. Access Remnus at `http://localhost:3000`. The SQLite database will be persisted automatically using a Docker volume.
+4. Access Corpus at `http://localhost:3000`. The SQLite database will be persisted automatically using a Docker volume.
 
 ### Deploy
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/remnus-app)
-[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Ranork/remnus-app)
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/corpus-app)
+[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Ranork/corpus-app)
 
 ### Add MCP to your editor
 
@@ -77,7 +77,7 @@ Or add manually to your MCP client config:
 ```json
 {
   "mcpServers": {
-    "remnus": {
+    "corpus": {
       "type": "http",
       "url": "https://your-instance.com/api/mcp",
       "headers": {

@@ -1,6 +1,6 @@
-# Remnus MCP
+# Corpus MCP
 
-Remnus MCP is a [Model Context Protocol](https://modelcontextprotocol.io) server built into every Remnus workspace. It lets AI agents — Claude, Cursor, Windsurf, and any MCP-compatible client — read and write your workspace data over a standard HTTP API.
+Corpus MCP is a [Model Context Protocol](https://modelcontextprotocol.io) server built into every Corpus workspace. It lets AI agents — Claude, Cursor, Windsurf, and any MCP-compatible client — read and write your workspace data over a standard HTTP API.
 
 ## What you can do
 
@@ -12,7 +12,7 @@ Remnus MCP is a [Model Context Protocol](https://modelcontextprotocol.io) server
 ## Endpoint
 
 ```
-https://remnus.com/api/mcp
+https://corpus.com/api/mcp
 ```
 
 Supports both **Streamable HTTP** (stateless, one request per call) and **SSE** (stateful, persistent connection).
@@ -21,7 +21,7 @@ Supports both **Streamable HTTP** (stateless, one request per call) and **SSE** 
 
 1. Open your workspace → **⋯ menu** → **Settings** → **Tokens** tab
 2. Click **New Token**, choose a name and scope
-3. Copy the token and configure your AI client — see [Getting Started](https://remnus.com/share/docs/mcp/getting-started)
+3. Copy the token and configure your AI client — see [Getting Started](https://corpus.com/share/docs/mcp/getting-started)
 
 ## Documentation
 
