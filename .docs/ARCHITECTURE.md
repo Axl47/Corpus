@@ -1,4 +1,4 @@
-## Architecture & Conventions
+# Architecture & Conventions
 
 ### Database Tables
 
@@ -268,3 +268,107 @@ We use the **JSON Column Pattern** (not EAV) for dynamic user-defined properties
 - `src/db/` — Drizzle `schema.ts`, `index.ts` (WAL + PRAGMAs on startup), migrations.
 - `src/lib/metadata.ts` — Shared OG/Twitter metadata constants (`METADATA_BASE_URL`, `DEFAULT_OG_IMAGE`, `DEFAULT_TWITTER_IMAGE`). Imported by all public page metadata exports to keep OG image URL consistent.
 - `messages/` — Translation files (`en.json` source of truth, 26 namespaces, 6 locales).
+
+### Cross-Platform Architecture
+
+**Strategy:** Cloud-first. All three platforms (web, desktop, mobile) load `corpus.com`. No separate API or local server required.
+
+```
+ corpus.com (Vercel)
+       │
+ ┌─────┼───────┐
+ │     │       │
+Web  Tauri  Capacitor
+     Shell   Shell
+    (Rust)  (iOS/Android)
+```
+
+**PWA** — `public/manifest.json` + Workbox service worker. Enables "Install App" in browsers and is the foundation for offline support. Disabled in `development` mode (`NODE_ENV`).
+
+**Claude Desktop (`.mcpb` bundle)** (`mcpb/`) — one-click MCP install for Claude Desktop. `.mcpb` only packages a **local stdio** server, but Corpus's MCP is **remote HTTP** — so the bundle ships a thin launcher (`mcpb/server/index.js`) that runs the bundled [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) proxy against `${user_config.server_url}` (default `https://www.corpus.com/api/mcp` — **must be the `www` canonical host**: the apex `corpus.com` 307-redirects to `www`, so the OAuth protected-resource metadata reports `www`, and `mcp-remote` fatally rejects a resource-indicator mismatch if handed the apex). `mcp-remote` bridges stdio ⇆ the remote Streamable-HTTP server and runs the **OAuth 2.1 + PKCE** browser flow on the first 401 (dynamic client registration against `/api/oauth/*`; the register endpoint already allows `localhost` redirect URIs). The launcher passes `--static-oauth-client-metadata '{"client_name":"Claude"}'` so the registered client is named "Claude" (mcp-remote otherwise registers a generic "MCP CLI Proxy") — this makes the connection show the Claude brand icon in `AgentsModal` out of the box. **No token to paste — real one-click + OAuth sign-in.**
+- Files: `mcpb/manifest.json` (`manifest_version 0.3`, `server.type: "node"`, `user_config.server_url` for self-hosters), `mcpb/server/{index.js,package.json}` (deps: `mcp-remote`), `mcpb/icon.png` (from `public/logo-square-dark.png`), `mcpb/.mcpbignore`.
+- Build: `npm run mcpb:build` (= `mcpb:install` + `mcpb:pack` via `npx @anthropic-ai/mcpb`) → `mcpb-build/corpus.mcpb` (~1.5 MB; `mcp-remote` + deps bundled so it's self-contained, no `npx` at runtime). Build outputs + `mcpb/server/node_modules/` + `*.pem` are git-ignored.
+- **Signing:** `mcpb sign --self-signed` produces a valid PKCS#7 trailer but Claude Desktop still shows an **"unverified publisher"** warning for self-signed (and local `mcpb verify` can't validate it — node-forge pkcs7 verify + self-signed not in the OS trust store). **Production trust needs a CA-issued code-signing certificate** (`mcpb sign --cert cert.pem --key key.pem`), best run in release CI (Linux). Tracked as follow-up.
+- **Distribution (follow-up):** not yet surfaced in the UI — wire a "Download for Claude Desktop" link (e.g. `/download` or `AgentsModal`) + attach `corpus.mcpb` to the GitHub release once signing is finalized.
+- **Install test is manual** (needs the Claude Desktop GUI): double-click / drag `corpus.mcpb` into Settings → Extensions → sign in via OAuth → run the test prompt.
+
+**Tauri** (`src-tauri/`) — Rust shell wrapping a system WebView.
+- Dev: `build.devUrl = "http://localhost:3000"` signals CLI to wait; `setup()` hook navigates to `localhost:3000/tauri-app` via `window.eval` (`#[cfg(debug_assertions)]`).
+- Prod: loads `https://corpus.com/tauri-app` (set via `app.windows[0].url`).
+- Entry point `/tauri-app` sets `localStorage.platform=tauri` and detects OS locale before redirecting to `/app`.
+- Features: system tray (single icon, built programmatically — **no** `trayIcon` config in `tauri.conf.json`), global shortcuts, notifications, deep-link (`corpus://` scheme).
+- **Single instance:** `tauri-plugin-single-instance` (with `deep-link` feature) is registered **as the first plugin** in `lib.rs`. Because the app hides to tray instead of quitting, re-launching the binary would otherwise spawn duplicate processes/windows. The plugin's callback runs in the already-running primary instance — it focuses the existing window (`focus_main_window`) and the second process exits. On Windows/Linux the second instance receives `corpus://` deep-link URLs via `argv`, which the callback forwards to `handle_deep_link_url` (shared with the macOS `on_open_url` handler). Deep-link navigation uses the typed `WebviewWindow::navigate(Url)` API (never `eval` string interpolation) to avoid JS code injection from a crafted token.
+- **Close to tray:** `CloseRequested` event is intercepted in `lib.rs`; window hides instead of quitting. Tray left-click or "Show Window" menu item restores it; "Quit Corpus" exits.
+- **Desktop OAuth flow (polling / device-authorization):** Tauri login view generates a UUID `device_id` → opens `corpus.com/client-login?device_id=<uuid>` in the system browser via `@tauri-apps/plugin-opener` → user logs in (Google or GitHub) → browser POSTs to `/api/auth/client-bridge?device_id=<uuid>` which stores a 5-min JWT → browser shows "Close this tab" page → Tauri WebView polls `/api/auth/client-poll?device_id=<uuid>` every 2 s → on `{ ready: true, token }`, WebView navigates to `/api/auth/client-activate?token=…` → session cookie set → redirect to `/app`.
+- Release CI: `.github/workflows/tauri-release.yml` — triggers on `v*` tags, builds Windows (`.msi`), macOS (`.dmg`, both Intel + Apple Silicon), Linux (`.deb`, `.AppImage`)
+- **Requires:** Rust stable + Visual C++ Build Tools (Windows) / Xcode CLT (macOS)
+- Icons: generated from `public/logo-square-dark.png` via `npm run tauri:icon` (after Rust install)
+
+**Capacitor** (`capacitor.config.ts`, `android/`) — native WebView wrapper for iOS and Android.
+- Loads `https://corpus.com` via `server.url` — no static export needed
+- Plugins active: `SplashScreen`, `StatusBar`, `PushNotifications`, `Haptics`, `App`, `Keyboard`
+- Dark theme colors (`#1d1f23`) set in `android/app/src/main/res/values/colors.xml`
+- `android/` is committed to git (native project); `ios/` added on macOS via `npx cap add ios`
+- **Requires:** Android Studio (Android) / Xcode on macOS (iOS)
+
+# Conventions
+
+## i18n (CRITICAL)
+- All user-facing strings via next-intl — NO hardcoded strings, not even `|| 'Untitled'`
+- Client components: `useTranslations('Namespace')`
+- Server components/layouts: `await getTranslations('Namespace')`
+- Server actions: `getTranslations('Errors')` for error messages
+- Add keys to ALL 6 files (en/tr/hi/es/fr/de) — missing keys cause runtime warnings
+- 26 namespaces: Layout, Home, Auth, Workspace, WorkspaceSettings, Templates, Database, Editor, Page, IconPicker, Admin, Errors, LanguageSwitcher, MobileNav, Landing, Billing, Pricing, Contact, Download, Privacy, Updater, Sharing, UserSettings, OAuthAuthorize, Security, Consent
+- `Layout` namespace also has browser-tab strings (Tauri-only TabBar): `tabNewTooltip`, `tabClose`, `tabCloseOthers`, `tabCloseAll`, `tabUntitled` (besides demoMode/demoChangesNote/createFreeAccount)
+- `Consent` namespace: drives `CookieConsentBanner` (geo-aware cookie consent) — title/descriptionRequired/descriptionInformational/learnMore/accept/reject/gotIt keys
+- `Billing` namespace: drives BillingModal + WorkspaceSettings Billing tab + MembersTab seat meter (tier_*/status_*/seats/agents/storage/unlimited/upgradeTo/manageBilling/seatsUsage/seatLimitHint etc). Billing limit error keys live in `Errors` (seatLimitReached/agentLimitReached/storageLimitReached/workspaceLimitReached/billingUnavailable/billingInvalidTier/billingNoCustomer)
+- `Sharing` namespace keys include: tabSharing, shareButton, shareModalTitle/Hint, permissionLabel/Read/Write, slugLabel/Placeholder/Hint/Taken/Invalid, createShare, copyLink/linkCopied, revokeShare/Confirm, sharedAt, deleteWorkspaceSharedWarning, notFound, readOnlyBadge/writeBadge, saving/saveError, includeChildren/Hint, childrenShared, widthLabel/Narrow/Wide/Full, editShare, saveChanges, addToSitemap
+- `Workspace` namespace includes `deleteConfirm` (interpolated with `{title}`) and `deleteCancel` keys for item-deletion confirmation modal
+- `MobileNav` namespace keys: `menu`, `home`, `new`, `close`, `workspace`, `user`, `signOut` — used by `MobileNavWrapper`
+- `Landing` namespace: drives `MarketingHeader`, `MarketingFooter`, `HeroSection`, `FeaturesSection` (navHome/navPricing/navContact/navSignIn/navGetStarted/hero*/feature*Title/Desc/footer* keys)
+- `Pricing` namespace: drives `PricingSection` (free/pro tier content)
+- `Contact` namespace: drives `ContactSection` (github/email/community channel cards)
+- `Download` namespace: drives `DownloadView` (/download page) — title/subtitle/detecting/downloadFor/os*/file* keys for the desktop installer download grid
+
+## Auth
+- NEVER call `auth()` directly in server actions/components — use `getCurrentUser()` from `src/lib/auth/session.ts` (React.cache wrapped)
+- All workspace actions → `assertWorkspaceAccess(workspaceId)`
+- All database/page actions → `assertDatabaseAccess(databaseId)`
+- Unauthenticated → `redirect('/login')`; unauthorized → throws
+
+## Server Actions
+- `useActionState`-compatible signature: `(_prevState, formData)` for form actions
+- Revalidate with `revalidatePath('/')` ONLY for structural sidebar mutations (create/delete items); NOT for content edits
+
+## UI / Design
+- Flat, shadowless, `rounded-none` everywhere in workspace (no cards, no shadows)
+- 3-tier bg: `bg-neutral-950` (outermost body), `bg-neutral-900` (sidebars/panels), `bg-neutral-850` (content/canvas)
+- Borders: `border-neutral-800` single lines; no chunky cards
+- Auth pages exception: `rounded-xl` card, `rounded-lg` inputs (deliberate contrast)
+- All colors via `@theme` tokens in `globals.css` — use Tailwind tokens, not hex
+
+## Data Patterns
+- JSON column pattern for dynamic properties (no EAV, no extra tables)
+- `SelectOption`: `{ value: string; color?: SelectOptionColor }` — `normalizeOption` for backward compat with plain strings
+- Date formatting: `formatDateValue()` from `properties.ts`; never hardcode `'en-US'`
+
+## Component Patterns
+- Optimistic mutations: apply locally first, revalidate in background
+- Editor: `key={page.id}` to remount `BlockEditor` on page switch
+- `ChildBlock` markdown serialization: `<div data-cb-id="...">` (NOT custom elements — `marked` only parses standard HTML block elements)
+- TanStack Query: installed via `QueryProvider` — use for client mutation hooks
+
+## MCP / Agent Token Conventions
+- Token format: `<MCP_TOKEN_PREFIX>_<prefix8>_<secret>` (env var `MCP_TOKEN_PREFIX=crps`)
+- Verification: look up by `tokenPrefix`, then `bcrypt.compare(secret, tokenHash)` — never iterate all tokens
+- `/api/mcp` is whitelisted in `auth.config.ts` (`isMcpRoute`) so middleware never redirects MCP requests
+- `export const runtime = 'nodejs'` required on MCP route (bcryptjs not Edge-compatible)
+- Write tools must check `ctx.scope !== 'write'` and return an error — never execute the mutation
+- Audit logs in `agent_activity` are best-effort (`.catch(() => {})` — tool response must not depend on audit success)
+- New migrations: `when` value must be greater than all existing — next migration `when > 1781500000000` (last reserved: 0029_user_consent → 1781400000000)
+- Many recent migrations (0017–0029) are NOT in `_journal.json` — applied manually via `src/db/apply-00xx-*.ts` scripts (libsql `batch()` silently no-ops DDL). Apply each to BOTH local (`DATABASE_URL="file:local.db" npx tsx ...`) and Turso (plain `npx tsx ...` reads `.env`)
+
+## Performance
+- `Promise.all` for independent fetches (no waterfalls in layouts)
+- Loading skeletons in `loading.tsx` files for each route

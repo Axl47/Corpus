@@ -14,6 +14,10 @@ If you skip this step, future agents will work from a stale map and make mistake
 
 ---
 
+# ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as described in `.docs/PLANS.md`) from design to implementation. New plans should be standalone `.html` files in `.docs/exec/`.
+
 # Project Details: Corpus
 
 **Corpus** is a Notion-like application built around a **workspace** model. Users can create standalone pages (title + markdown) and customizable databases (dynamic columns, table/kanban/calendar views) — both living side by side in a unified sidebar. Each database row is also a page with markdown content.
@@ -114,46 +118,28 @@ If you have any questions of the codebase or why certain decisions were made, yo
 - **Android run:** `npm run cap:android`
 - **iOS open (macOS only):** `npm run cap:open:ios`
 - **Sync Capacitor:** `npm run cap:sync` — call after changing `capacitor.config.ts`
-- **Build Claude Desktop bundle:** `npm run mcpb:build` — installs the bundled proxy + packs `mcpb-build/corpus.mcpb` (see **Claude Desktop (.mcpb bundle)**)
 
-### Cross-Platform Architecture
+## Task Completion Checklist
 
-**Strategy:** Cloud-first. All three platforms (web, desktop, mobile) load `corpus.com`. No separate API or local server required.
+Run these after any coding task:
 
-```
- corpus.com (Vercel)
-       │
- ┌─────┼───────┐
- │     │       │
-Web  Tauri  Capacitor
-     Shell   Shell
-    (Rust)  (iOS/Android)
-```
+1. **Type check** — TypeScript strict mode; check for `@ts-ignore` added (only acceptable for Tiptap's `renderMarkdown` field)
+   ```sh
+   npx tsc --noEmit
+   ```
 
-**PWA** — `public/manifest.json` + Workbox service worker. Enables "Install App" in browsers and is the foundation for offline support. Disabled in `development` mode (`NODE_ENV`).
+2. **Lint**
+   ```sh
+   npm run lint
+   ```
 
-**Claude Desktop (`.mcpb` bundle)** (`mcpb/`) — one-click MCP install for Claude Desktop. `.mcpb` only packages a **local stdio** server, but Corpus's MCP is **remote HTTP** — so the bundle ships a thin launcher (`mcpb/server/index.js`) that runs the bundled [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) proxy against `${user_config.server_url}` (default `https://www.corpus.com/api/mcp` — **must be the `www` canonical host**: the apex `corpus.com` 307-redirects to `www`, so the OAuth protected-resource metadata reports `www`, and `mcp-remote` fatally rejects a resource-indicator mismatch if handed the apex). `mcp-remote` bridges stdio ⇆ the remote Streamable-HTTP server and runs the **OAuth 2.1 + PKCE** browser flow on the first 401 (dynamic client registration against `/api/oauth/*`; the register endpoint already allows `localhost` redirect URIs). The launcher passes `--static-oauth-client-metadata '{"client_name":"Claude"}'` so the registered client is named "Claude" (mcp-remote otherwise registers a generic "MCP CLI Proxy") — this makes the connection show the Claude brand icon in `AgentsModal` out of the box. **No token to paste — real one-click + OAuth sign-in.**
-- Files: `mcpb/manifest.json` (`manifest_version 0.3`, `server.type: "node"`, `user_config.server_url` for self-hosters), `mcpb/server/{index.js,package.json}` (deps: `mcp-remote`), `mcpb/icon.png` (from `public/logo-square-dark.png`), `mcpb/.mcpbignore`.
-- Build: `npm run mcpb:build` (= `mcpb:install` + `mcpb:pack` via `npx @anthropic-ai/mcpb`) → `mcpb-build/corpus.mcpb` (~1.5 MB; `mcp-remote` + deps bundled so it's self-contained, no `npx` at runtime). Build outputs + `mcpb/server/node_modules/` + `*.pem` are git-ignored.
-- **Signing:** `mcpb sign --self-signed` produces a valid PKCS#7 trailer but Claude Desktop still shows an **"unverified publisher"** warning for self-signed (and local `mcpb verify` can't validate it — node-forge pkcs7 verify + self-signed not in the OS trust store). **Production trust needs a CA-issued code-signing certificate** (`mcpb sign --cert cert.pem --key key.pem`), best run in release CI (Linux). Tracked as follow-up.
-- **Distribution (follow-up):** not yet surfaced in the UI — wire a "Download for Claude Desktop" link (e.g. `/download` or `AgentsModal`) + attach `corpus.mcpb` to the GitHub release once signing is finalized.
-- **Install test is manual** (needs the Claude Desktop GUI): double-click / drag `corpus.mcpb` into Settings → Extensions → sign in via OAuth → run the test prompt.
+3. **i18n keys** — if any new user-facing string was added:
+   - Verify key exists in all 6 `messages/*.json` files
+   - No hardcoded strings remain in components
 
-**Tauri** (`src-tauri/`) — Rust shell wrapping a system WebView.
-- Dev: `build.devUrl = "http://localhost:3000"` signals CLI to wait; `setup()` hook navigates to `localhost:3000/tauri-app` via `window.eval` (`#[cfg(debug_assertions)]`).
-- Prod: loads `https://corpus.com/tauri-app` (set via `app.windows[0].url`).
-- Entry point `/tauri-app` sets `localStorage.platform=tauri` and detects OS locale before redirecting to `/app`.
-- Features: system tray (single icon, built programmatically — **no** `trayIcon` config in `tauri.conf.json`), global shortcuts, notifications, deep-link (`corpus://` scheme).
-- **Single instance:** `tauri-plugin-single-instance` (with `deep-link` feature) is registered **as the first plugin** in `lib.rs`. Because the app hides to tray instead of quitting, re-launching the binary would otherwise spawn duplicate processes/windows. The plugin's callback runs in the already-running primary instance — it focuses the existing window (`focus_main_window`) and the second process exits. On Windows/Linux the second instance receives `corpus://` deep-link URLs via `argv`, which the callback forwards to `handle_deep_link_url` (shared with the macOS `on_open_url` handler). Deep-link navigation uses the typed `WebviewWindow::navigate(Url)` API (never `eval` string interpolation) to avoid JS code injection from a crafted token.
-- **Close to tray:** `CloseRequested` event is intercepted in `lib.rs`; window hides instead of quitting. Tray left-click or "Show Window" menu item restores it; "Quit Corpus" exits.
-- **Desktop OAuth flow (polling / device-authorization):** Tauri login view generates a UUID `device_id` → opens `corpus.com/client-login?device_id=<uuid>` in the system browser via `@tauri-apps/plugin-opener` → user logs in (Google or GitHub) → browser POSTs to `/api/auth/client-bridge?device_id=<uuid>` which stores a 5-min JWT → browser shows "Close this tab" page → Tauri WebView polls `/api/auth/client-poll?device_id=<uuid>` every 2 s → on `{ ready: true, token }`, WebView navigates to `/api/auth/client-activate?token=…` → session cookie set → redirect to `/app`.
-- Release CI: `.github/workflows/tauri-release.yml` — triggers on `v*` tags, builds Windows (`.msi`), macOS (`.dmg`, both Intel + Apple Silicon), Linux (`.deb`, `.AppImage`)
-- **Requires:** Rust stable + Visual C++ Build Tools (Windows) / Xcode CLT (macOS)
-- Icons: generated from `public/logo-square-dark.png` via `npm run tauri:icon` (after Rust install)
-
-**Capacitor** (`capacitor.config.ts`, `android/`) — native WebView wrapper for iOS and Android.
-- Loads `https://corpus.com` via `server.url` — no static export needed
-- Plugins active: `SplashScreen`, `StatusBar`, `PushNotifications`, `Haptics`, `App`, `Keyboard`
-- Dark theme colors (`#1d1f23`) set in `android/app/src/main/res/values/colors.xml`
-- `android/` is committed to git (native project); `ios/` added on macOS via `npx cap add ios`
-- **Requires:** Android Studio (Android) / Xcode on macOS (iOS)
+4. **Migration** — if `src/db/schema.ts` was changed:
+   ```sh
+   npx drizzle-kit generate
+   npx tsx src/db/migrate.ts
+   ```
+   Ensure new migration `when` value is greater than all existing (next: > `1781500000000`). NOTE: libsql `batch()` no-ops DDL, so recent migrations use manual `src/db/apply-00xx-*.ts` scripts — apply to local.

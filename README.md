@@ -4,9 +4,7 @@
 
 Kanban boards, databases, and pages that Claude, Cursor, and any AI agent can read and write via MCP — alongside you.
 
-[![GitHub Stars](https://img.shields.io/github/stars/Ranork/corpus-app?style=flat-square)](https://github.com/Ranork/corpus-app/stargazers)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Deploy with Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/corpus-app)
 
 ---
 
@@ -47,7 +45,7 @@ If you prefer to run Corpus using Docker:
 
 1. Clone the repository and navigate into it:
    ```bash
-   git clone https://github.com/Ranork/corpus-app.git
+   git clone https://github.com/Axl47/Corpus.git
    cd corpus-app
    ```
 2. Copy the environment template and fill in the required variables (especially `AUTH_SECRET` and OAuth credentials):
@@ -62,8 +60,8 @@ If you prefer to run Corpus using Docker:
 
 ### Deploy
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Ranork/corpus-app)
-[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Ranork/corpus-app)
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Axl47/Corpus)
+[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/Axl47/Corpus)
 
 ### Add MCP to your editor
 
@@ -116,9 +114,9 @@ Or add manually to your MCP client config:
 - **Desktop:** Tauri v2 (Rust)
 - **Mobile:** Capacitor v8
 
-## Contributing
+## Fork
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions are welcome — bug fixes, new MCP tools, translations, and docs.
+This fork is meant as a personal Notion substitution for working with AI Agents, not meant nor tested in deployed or public scenarios.
 
 ## License
 
