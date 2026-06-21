@@ -42,7 +42,6 @@ export default async function LandingNav() {
               { key: "bridgeNavWhyCorpus", href: "/#why" },
               { key: "bridgeNavIntegrations", href: "/#integrations" },
               { key: "bridgeNavMcp", href: "/#tools" },
-              { key: "bridgeNavPricing", href: "/pricing" },
               { key: "bridgeNavDownload", href: "/download" },
               // { key: 'bridgeNavDocs',         href: '#'              },
             ].map(({ key, href }) => (

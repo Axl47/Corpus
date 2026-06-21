@@ -26,7 +26,6 @@ export default function AppShell({
   const isTauri = useIsTauri();
   const MARKETING_PATHS = new Set([
     "/",
-    "/pricing",
     "/contact",
     "/download",
     "/privacy",

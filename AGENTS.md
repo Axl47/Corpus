@@ -45,7 +45,7 @@ Corpus is fully internationalized using **next-intl v4** (App Router native). Al
 
 **Clean URLs:** `localePrefix: 'never'` — URLs stay as `/db/123`, never `/en/db/123`. All pages live under `src/app/[locale]/`.
 
-**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **26 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Billing`, `Pricing`, `Contact`, `Download`, `Privacy`, `Updater`, `Sharing`, `UserSettings`, `OAuthAuthorize`, `Security`, `Consent`.
+**Translation files:** `messages/{locale}.json` — `en.json` is the source of truth. **24 namespaces:** `Layout`, `Home`, `Auth`, `Workspace`, `WorkspaceSettings`, `Templates`, `Database`, `Editor`, `Page`, `IconPicker`, `Admin`, `Errors`, `LanguageSwitcher`, `MobileNav`, `Landing`, `Contact`, `Download`, `Privacy`, `Updater`, `Sharing`, `UserSettings`, `OAuthAuthorize`, `Security`, `Consent`.
 
 ### Rules for All Future Development
 
@@ -98,6 +98,7 @@ Tokens defined via `@theme` overrides in `src/app/globals.css`.
 - **ORM & Driver:** Drizzle ORM + `@libsql/client`.
 - **Image Uploads:** Cloudinary (`cloudinary` npm). Upload API at `POST /api/upload`. Env vars: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. Images stored in `corpus/icons/` folder, auto-resized to 256×256.
 - **Auth:** Auth.js v5 (`next-auth@beta`) + `@auth/drizzle-adapter` + `bcryptjs`.
+- **Distribution model:** Local-first; payment and entitlement management are not part of the app.
 - **Desktop:** Tauri v2 (Rust shell, loads `corpus.com` in system WebView).
 - **Mobile:** Capacitor v8 (iOS + Android, loads `corpus.com` via `server.url`).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox service worker, `public/manifest.json`).

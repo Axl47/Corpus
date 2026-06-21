@@ -21,7 +21,6 @@ import CookieConsentBanner from "@/components/features/CookieConsentBanner";
 import { CONSENT_COOKIE, isConsentRequired, parseConsent } from "@/lib/consent";
 import UpdateBanner from "@/components/features/UpdateBanner";
 import ActivityTracker from "@/components/providers/ActivityTracker";
-import BillingSuccessModal from "@/components/features/BillingSuccessModal";
 import {
   METADATA_BASE_URL,
   DEFAULT_OG_IMAGE,
@@ -182,7 +181,6 @@ export default async function LocaleLayout({
           userRole={currentUser.role}
         >
           <ActivityTracker />
-          <BillingSuccessModal />
           <UpdateBanner />
           <QueryProvider>
             <AppShell

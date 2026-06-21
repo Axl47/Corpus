@@ -5,7 +5,6 @@ import { workspaceMembers } from "@/db/schema";
 import { cloudinary } from "@/lib/cloudinary";
 import { getCurrentUser } from "@/lib/auth/session";
 import { recordAsset } from "@/lib/services/assets";
-import { checkWithinStorage } from "@/lib/services/billing";
 
 // Validate actual magic bytes — never trust file.type alone (client-controlled).
 // SVG intentionally excluded: it can carry inline <script> tags.
@@ -103,15 +102,6 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-
-  // Pooled storage quota — counts against the workspace billing owner's plan.
-  // Only enforced when the upload is attributed to a workspace; admins bypass.
-  if (workspaceId && user.role !== "admin") {
-    const code = await checkWithinStorage(workspaceId, buffer.length);
-    if (code) {
-      return NextResponse.json({ error: code }, { status: 413 });
-    }
-  }
 
   if (kind === "file") {
     if (buffer.length > FILE_MAX) {

@@ -2,8 +2,7 @@
  * Migration 0028 — workspace email invitations
  *
  * Adds `workspace_invites` for inviting people who don't have a Corpus account
- * yet. The invite carries a bearer `token` used in /invite/[token]; pending
- * invites reserve a seat in the billing owner's pool.
+ * yet. The invite carries a bearer `token` used in /invite/[token].
  *
  * Idempotent (CREATE TABLE IF NOT EXISTS). Apply to BOTH local and Turso:
  *   npx tsx src/db/apply-0028-invites.ts                              (Turso)

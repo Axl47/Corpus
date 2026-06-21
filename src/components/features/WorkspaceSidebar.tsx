@@ -6,26 +6,21 @@ import { useTranslations } from "next-intl";
 import ShareModal from "@/components/share/ShareModal";
 import {
   Plus,
-  X,
   ChevronDown,
   ChevronRight,
-  Check,
   Trash,
   Edit3,
-  Briefcase,
   MoreHorizontal,
   Copy,
   LogOut,
   Shield,
   Settings,
-  Layers,
   ArrowLeft,
   Monitor,
   Bot,
   Globe,
   Eye,
   EyeOff,
-  CreditCard,
   ArrowUpRight,
   Link2,
 } from "lucide-react";
@@ -53,37 +48,8 @@ import WorkspaceSettingsModal from "./WorkspaceSettingsModal";
 import DesktopSettingsModal, { initDesktopZoom } from "./DesktopSettingsModal";
 import LanguageSwitcher from "@/components/features/LanguageSwitcher";
 import AgentsModal from "./AgentsModal";
-import BillingModal from "./BillingModal";
 import UserSettingsModal from "./UserSettingsModal";
 import { getUserAgentTokenCount } from "@/lib/actions/agentToken";
-import { getMyTier } from "@/lib/actions/billing";
-import type { PlanTier } from "@/lib/billing/plans";
-
-const TIER_BADGE: Record<
-  PlanTier,
-  { color: string; background: string; borderColor: string }
-> = {
-  free: {
-    color: "var(--color-neutral-50)",
-    background: "rgba(127,195,109,0.10)",
-    borderColor: "rgba(127,195,109,0.30)",
-  },
-  startup: {
-    color: "#fff",
-    background: "var(--color-blue-500)",
-    borderColor: "transparent",
-  },
-  professional: {
-    color: "var(--color-accent-strong)",
-    background: "rgba(68,92,149,0.12)",
-    borderColor: "rgba(68,92,149,0.40)",
-  },
-  enterprise: {
-    color: "var(--color-amber-500)",
-    background: "rgba(204,125,69,0.12)",
-    borderColor: "rgba(204,125,69,0.40)",
-  },
-};
 import { useWorkspaceEvents } from "@/hooks/useWorkspaceEvents";
 
 function isDescendant(
@@ -130,7 +96,6 @@ export default function WorkspaceSidebar({
 }) {
   const t = useTranslations("Workspace");
   const tSharing = useTranslations("Sharing");
-  const tBilling = useTranslations("Billing");
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -258,11 +223,9 @@ export default function WorkspaceSidebar({
   } | null>(null);
   const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false);
   const [agentsModalOpen, setAgentsModalOpen] = useState(false);
-  const [billingModalOpen, setBillingModalOpen] = useState(false);
   const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   // null = not yet loaded (avoids a false "no agents" warning flash on first render)
   const [agentTokenCount, setAgentTokenCount] = useState<number | null>(null);
-  const [planTier, setPlanTier] = useState<PlanTier | null>(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState<
     "general" | "members" | "tokens" | "sharing"
   >("general");
@@ -383,13 +346,10 @@ export default function WorkspaceSidebar({
   // Subscribe to real-time events from other users / MCP agents
   useWorkspaceEvents(currentUser.id, isAnyModalOrPickerOpen);
 
-  // Load agent token count + current plan tier for the sidebar badges
+  // Load agent token count for the sidebar badge.
   useEffect(() => {
     getUserAgentTokenCount()
       .then(setAgentTokenCount)
-      .catch(() => {});
-    getMyTier()
-      .then(setPlanTier)
       .catch(() => {});
   }, []);
 
@@ -597,7 +557,6 @@ export default function WorkspaceSidebar({
   const handleItemDragOver = (
     e: React.DragEvent,
     id: string,
-    workspaceId: string,
   ) => {
     if (!draggedItemId || draggedItemId === id) return;
     if (isDescendant(localItems, id, draggedItemId)) return;
@@ -921,10 +880,6 @@ export default function WorkspaceSidebar({
     setWorkspaceCreateError(null);
     startTransition(async () => {
       const res = await createWorkspace(name);
-      if ("error" in res && res.error) {
-        setWorkspaceCreateError(res.error);
-        return;
-      }
       setIsCreatingWorkspace(false);
       setNewWorkspaceName("");
       if (res.id)
@@ -1376,9 +1331,7 @@ export default function WorkspaceSidebar({
                               onDragStart={(e) =>
                                 handleItemDragStart(e, item.id)
                               }
-                              onDragOver={(e) =>
-                                handleItemDragOver(e, item.id, w.id)
-                              }
+                              onDragOver={(e) => handleItemDragOver(e, item.id)}
                               onDragEnd={handleItemDragEnd}
                               onDrop={(e) => handleItemDrop(e, item.id, w.id)}
                               onContextMenu={(e) => openMenuFor(e, item, w.id)}
@@ -1818,11 +1771,6 @@ export default function WorkspaceSidebar({
             setSettingsInitialTab("general");
             setAgentsModalOpen(true);
           }}
-          onOpenBilling={() => {
-            setSettingsModalWorkspace(null);
-            setSettingsInitialTab("general");
-            setBillingModalOpen(true);
-          }}
         />
       )}
 
@@ -1843,17 +1791,6 @@ export default function WorkspaceSidebar({
             setAgentsModalOpen(false);
             getUserAgentTokenCount()
               .then(setAgentTokenCount)
-              .catch(() => {});
-          }}
-        />
-      )}
-
-      {billingModalOpen && (
-        <BillingModal
-          onClose={() => {
-            setBillingModalOpen(false);
-            getMyTier()
-              .then(setPlanTier)
               .catch(() => {});
           }}
         />
@@ -1920,25 +1857,6 @@ export default function WorkspaceSidebar({
               {t("agentsConnectNudge")}
             </span>
           ) : null}
-        </button>
-      </div>
-
-      {/* Plan / Billing button */}
-      <div className="shrink-0 px-2">
-        <button
-          onClick={() => setBillingModalOpen(true)}
-          className="w-full flex items-center gap-1.5 min-w-0 px-2 py-1.5 rounded-md text-sm text-neutral-300 hover:bg-neutral-800 hover:text-neutral-50 transition-all duration-200"
-        >
-          <CreditCard size={14} className="shrink-0 text-neutral-400" />
-          <span className="truncate">{t("planBilling")}</span>
-          {planTier && (
-            <span
-              className="ml-auto shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none border"
-              style={TIER_BADGE[planTier]}
-            >
-              {tBilling(`tier_${planTier}` as "tier_free")}
-            </span>
-          )}
         </button>
       </div>
 

@@ -2,16 +2,12 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  X, Shield, Globe, Mail, Calendar, Clock, Activity, Layers, FileText, Database, HardDrive, CreditCard, Sparkles,
+  X, Shield, Globe, Mail, Calendar, Clock, Activity, Layers, FileText, Database, HardDrive,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { getUserDetail, type UserDetail } from '@/lib/actions/analytics';
 import { setUserRole } from '@/lib/actions/auth';
-import { adminSetUserPlan } from '@/lib/actions/billing';
-import type { PlanTier } from '@/lib/billing/plans';
 import { formatDate, formatDuration, formatRelative, formatBytes } from './format';
-
-const PLAN_TIERS: PlanTier[] = ['free', 'startup', 'professional', 'enterprise'];
 
 function ItemIcon({ icon, type }: { icon: string | null; type: 'page' | 'database' }) {
   const isEmoji = icon && [...icon].length <= 2;
@@ -36,8 +32,6 @@ export default function AdminUserDetailModal({
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [planPending, startPlanTransition] = useTransition();
-  const [planError, setPlanError] = useState<string | null>(null);
 
   useEffect(() => {
     // Modal mounts fresh per open (keyed by userId in the parent), so the
@@ -69,32 +63,6 @@ export default function AdminUserDetailModal({
     startTransition(async () => {
       await setUserRole(userId, next);
       setDetail((d) => (d ? { ...d, account: { ...d.account, role: next } } : d));
-      router.refresh();
-    });
-  };
-
-  const changePlan = (tier: PlanTier) => {
-    if (!detail || detail.subscription.tier === tier || detail.subscription.source === 'stripe') return;
-    setPlanError(null);
-    startPlanTransition(async () => {
-      const res = await adminSetUserPlan(userId, tier);
-      if (res.error) {
-        setPlanError(res.error);
-        return;
-      }
-      setDetail((d) =>
-        d
-          ? {
-              ...d,
-              subscription: {
-                ...d.subscription,
-                tier,
-                status: 'active',
-                source: tier === 'free' ? 'none' : 'manual',
-              },
-            }
-          : d,
-      );
       router.refresh();
     });
   };
@@ -194,58 +162,6 @@ export default function AdminUserDetailModal({
                 </div>
               </section>
 
-              {/* Subscription / plan */}
-              <section>
-                <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">{t('subscriptionPlan')}</h3>
-                <div className="rounded-md border border-neutral-800 bg-neutral-900/40 p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <CreditCard size={14} className="text-neutral-500 shrink-0" />
-                      <span className="text-sm font-semibold text-neutral-100">{t(`planTier_${detail.subscription.tier}`)}</span>
-                      <SourceBadge source={detail.subscription.source} t={t} />
-                    </div>
-                    {detail.subscription.currentPeriodEnd && (
-                      <span className="text-[10px] text-neutral-500">
-                        {t('planRenews')} {formatDate(detail.subscription.currentPeriodEnd, locale)}
-                      </span>
-                    )}
-                  </div>
-
-                  {detail.subscription.source === 'stripe' ? (
-                    <p className="text-xs text-neutral-500 flex items-start gap-1.5">
-                      <Sparkles size={12} className="text-blue-400 mt-0.5 shrink-0" />
-                      {t('planManagedByStripe')}
-                    </p>
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[10px] uppercase tracking-wider text-neutral-600">{t('setPlanManually')}</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {PLAN_TIERS.map((tier) => {
-                            const active = detail.subscription.tier === tier;
-                            return (
-                              <button
-                                key={tier}
-                                onClick={() => changePlan(tier)}
-                                disabled={planPending || active}
-                                className={`text-xs px-2.5 py-1 rounded border transition-colors disabled:cursor-default ${
-                                  active
-                                    ? 'border-blue-500/60 bg-blue-500/15 text-blue-300 font-medium'
-                                    : 'border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800/50 disabled:opacity-50'
-                                }`}
-                              >
-                                {t(`planTier_${tier}`)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {planError && <p className="text-[11px] text-red-400">{planError}</p>}
-                    </>
-                  )}
-                </div>
-              </section>
-
               {/* Workspaces */}
               <section>
                 <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">
@@ -294,16 +210,6 @@ export default function AdminUserDetailModal({
       </div>
     </div>
   );
-}
-
-function SourceBadge({ source, t }: { source: 'stripe' | 'manual' | 'none'; t: (k: string) => string }) {
-  if (source === 'stripe') {
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 font-medium">{t('planSourceStripe')}</span>;
-  }
-  if (source === 'manual') {
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500/90 font-medium">{t('planSourceManual')}</span>;
-  }
-  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-500">{t('planSourceNone')}</span>;
 }
 
 function Field({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

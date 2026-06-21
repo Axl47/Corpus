@@ -8,7 +8,7 @@ import { acceptInvite } from '@/lib/actions/invites';
 
 // Auto-accepts the invite for an already-logged-in user, then sends them to the app.
 export default function InviteAcceptClient({ token }: { token: string }) {
-  const t = useTranslations('Billing');
+  const t = useTranslations('Auth');
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 

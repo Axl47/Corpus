@@ -14,9 +14,6 @@ export const workspaces = sqliteTable("workspaces", {
   icon: text("icon"),
   iconColor: text("icon_color"),
   sortOrder: integer("sort_order").notNull().default(0),
-  // The paying user whose plan governs this workspace's limits (seats/agents/storage).
-  // Nullable for orphaned/admin-claimed workspaces. Migration 0027.
-  billingOwnerId: text("billing_owner_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -304,7 +301,7 @@ export const userSessions = sqliteTable(
 // ── Uploaded assets (Cloudinary) ──────────────────────────────────────────────
 // One row per file uploaded through /api/upload. Powers (a) reliable Cloudinary
 // cleanup on delete — we keep the exact public_id + resource_type — and (b)
-// storage-usage accounting per user and per workspace (future plan limits).
+// storage-usage accounting per user and per workspace.
 
 export const uploadedAssets = sqliteTable(
   "uploaded_assets",
@@ -464,31 +461,5 @@ export const agentActivity = sqliteTable(
   (table) => [
     index("agent_activity_workspace_id_idx").on(table.workspaceId),
     index("agent_activity_token_id_idx").on(table.tokenId),
-  ],
-);
-
-// Subscription — bound to the paying user (billing owner), NOT a workspace.
-// Covers all workspaces where `workspaces.billing_owner_id = owner_user_id`.
-// No row = implicit Free plan. Migration 0027.
-export const subscriptions = sqliteTable(
-  "subscriptions",
-  {
-    ownerUserId: text("owner_user_id")
-      .primaryKey()
-      .references(() => users.id, { onDelete: "cascade" }),
-    tier: text("tier").notNull().default("free"), // free | startup | professional | enterprise
-    status: text("status").notNull().default("active"), // active | past_due | canceled
-    stripeCustomerId: text("stripe_customer_id"),
-    stripeSubscriptionId: text("stripe_subscription_id"),
-    currentPeriodEnd: integer("current_period_end", { mode: "timestamp" }),
-    // Enterprise/custom overrides — null = use PLAN_LIMITS[tier].
-    seatLimitOverride: integer("seat_limit_override"),
-    agentLimitOverride: integer("agent_limit_override"),
-    storageBytesOverride: integer("storage_bytes_override"),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-  },
-  (table) => [
-    index("subscriptions_stripe_customer_idx").on(table.stripeCustomerId),
   ],
 );

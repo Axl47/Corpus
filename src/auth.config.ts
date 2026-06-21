@@ -31,18 +31,17 @@ export const authConfig: NextAuthConfig = {
       const isApiAuth = cleanPath.startsWith('/api/auth');
       const isPublicAsset = /\.(png|ico|svg|jpg|jpeg|webp|woff2?)$/.test(path);
       const isRootRoute = cleanPath === '/' || cleanPath === '/share';
-      const isPublicMarketingRoute = cleanPath.startsWith('/pricing') || cleanPath.startsWith('/contact') || cleanPath.startsWith('/download') || cleanPath.startsWith('/share/') || cleanPath.startsWith('/security');
+      const isPublicMarketingRoute = cleanPath.startsWith('/contact') || cleanPath.startsWith('/download') || cleanPath.startsWith('/share/') || cleanPath.startsWith('/security');
       const isMcpRoute = cleanPath.startsWith('/api/mcp');
       const isTauriEntry = cleanPath.startsWith('/tauri-app');
       const isClientActivate = cleanPath.startsWith('/api/auth/client-activate');
       const isOAuthApi = cleanPath.startsWith('/api/oauth');
       const isWellKnown = cleanPath.startsWith('/.well-known');
       const isOAuthPage = cleanPath.startsWith('/oauth/');
-      const isStripeWebhook = cleanPath.startsWith('/api/webhooks/stripe');
       const isInvite = cleanPath.startsWith('/invite/');
-      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown || isOAuthPage || isStripeWebhook || isInvite) return true;
+      if (isApiAuth || isMcpRoute || isPublicAsset || isTauriEntry || isClientActivate || isOAuthApi || isWellKnown || isOAuthPage || isInvite) return true;
 
-      // Public marketing pages (pricing, contact) are always accessible
+      // Public marketing pages are always accessible
       if (isPublicMarketingRoute) return true;
 
       // Root URL: always public — logged-in users can visit the landing page

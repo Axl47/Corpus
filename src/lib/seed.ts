@@ -753,7 +753,6 @@ async function createRichWorkspaceData(userId: string, workspaceName: string) {
       id: ws1,
       name: workspaceName,
       sortOrder: 0,
-      billingOwnerId: userId,
       createdAt: new Date(),
     }),
     db.insert(workspaceMembers).values({

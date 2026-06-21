@@ -233,11 +233,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: "owner",
             createdAt: new Date(),
           });
-          // Claim billing ownership too so the workspace is governed by this user's plan.
-          await db
-            .update(workspaces)
-            .set({ billingOwnerId: user.id })
-            .where(eq(workspaces.id, ws.id));
         }
       }
     },

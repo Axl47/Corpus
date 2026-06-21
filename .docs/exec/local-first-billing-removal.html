@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ExecPlan: Local-First Billing Removal</title>
+  <style>
+    body { margin: 0; font: 14px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1d1f23; color: #d7dae0; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 24px 48px; }
+    h1, h2 { color: #f4f4f5; line-height: 1.15; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 28px 0 10px; font-size: 18px; }
+    p { margin: 8px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 18px 0; }
+    .card { border: 1px solid #383b41; background: #21252b; padding: 12px; }
+    .label { color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+    code, pre { background: #111318; color: #e5e7eb; }
+    code { padding: 1px 4px; }
+    pre { padding: 12px; overflow: auto; border: 1px solid #383b41; }
+    li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Local-First Billing Removal</h1>
+  <p><strong>Status:</strong> implemented, 2026-06-21. Owner: Codex. Outcome: Corpus no longer exposes Stripe, billing, pricing, subscriptions, or plan-management surfaces in active runtime code. Runtime quota checks now allow local-first use with the former Enterprise/unlimited behavior.</p>
+
+  <div class="grid">
+    <section class="card"><div class="label">Current Risk</div><p>Billing logic is used as a quota gate inside invites, uploads, workspace creation, and agent-token/OAuth flows. Removing UI alone would leave hidden limits.</p></section>
+    <section class="card"><div class="label">Decision</div><p>Delete payment surfaces and make quota checks no-op/unlimited. Keep legacy DB artifacts only when dropping them would require a risky migration from partial Drizzle history.</p></section>
+    <section class="card"><div class="label">Validation</div><p><code>npx tsc --noEmit</code> passes. Reference scans are clean. <code>npm run lint</code> remains blocked by existing repo-wide React compiler/script lint failures unrelated to payment removal.</p></section>
+  </div>
+
+  <h2>Context</h2>
+  <p>Stripe support currently spans <code>src/lib/stripe.ts</code>, <code>src/lib/billing/*</code>, <code>src/lib/actions/billing.ts</code>, <code>src/app/api/webhooks/stripe/route.ts</code>, the <code>stripe</code> npm dependency, and environment variables. User-facing plan and billing surfaces appear in workspace navigation, mobile account actions, user settings, admin user detail, workspace settings, landing pricing, sitemap, auth public-route allowlists, and translations.</p>
+  <p>The generated Drizzle migration history only covers through <code>src/db/migrations/0018_user_sessions.sql</code>; later changes, including billing, are manual scripts. For this pass, active schema exports were cleaned up, but no destructive data migration was generated.</p>
+
+  <h2>Phases</h2>
+  <ol>
+    <li>Remove Stripe and billing entrypoints: delete webhook route and payment helpers, uninstall <code>stripe</code>, remove Stripe env examples.</li>
+    <li>Convert quota gates: replace billing service imports with local-first limits helpers that always return allowed and expose only non-payment people helpers where needed.</li>
+    <li>Remove UI surfaces: delete billing/pricing components and remove associated buttons, tabs, modals, route links, success query handling, and admin plan controls.</li>
+    <li>Clean translations and docs: remove unused Billing/Pricing namespaces and plan/billing copy; update <code>AGENTS.md</code> to reflect the local-first model.</li>
+    <li>Validate with TypeScript, lint, and targeted searches.</li>
+  </ol>
+
+  <h2>Recovery</h2>
+  <p>All edits are file-level and non-destructive to user data. Deleted source files can be restored from git if needed. No database migration is planned in this pass, so existing local data remains intact.</p>
+
+  <h2>Progress Log</h2>
+  <ul>
+    <li>2026-06-21: Repository scan found payment routes, billing actions/services, pricing landing components, sidebar/mobile billing actions, admin plan controls, and Stripe dependency.</li>
+    <li>2026-06-21: Read Next.js route-handler/server-function/project-structure docs and Stripe billing guidance before implementation.</li>
+    <li>2026-06-21: Deleted Stripe/payment helpers, webhook route, pricing route/components, billing modals/tabs, admin plan controls, subscription schema exports, and plan/billing translation namespaces.</li>
+    <li>2026-06-21: Removed quota gates from workspace creation, invites, uploads, agent tokens, OAuth tokens, and membership transfer flows.</li>
+    <li>2026-06-21: Validation: TypeScript passed, active payment reference scans passed, Stripe package is absent. Lint still fails on existing repo-wide issues.</li>
+  </ul>
+</main>
+</body>
+</html>

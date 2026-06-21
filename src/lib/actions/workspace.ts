@@ -19,7 +19,6 @@ import type { DatabaseView } from "@/lib/types/views";
 import { getTranslations } from "next-intl/server";
 import { publish } from "@/lib/realtime/publish";
 import { isCloudinaryUrl, deleteCloudinaryImage } from "@/lib/cloudinary";
-import { checkCanCreateWorkspace } from "@/lib/services/billing";
 
 export interface CreateDatabaseOptions {
   schema?: SchemaColumn[];
@@ -72,7 +71,7 @@ export async function getActiveWorkspaceId(): Promise<string | null> {
   const user = await getCurrentUser();
 
   const cookieStore = await cookies();
-  let workspaceId = cookieStore.get("corpus_workspace_id")?.value;
+  const workspaceId = cookieStore.get("corpus_workspace_id")?.value;
 
   if (workspaceId) {
     // Verify user is a member of the stored workspace
@@ -136,22 +135,11 @@ export async function getWorkspaces() {
 
 export async function createWorkspace(name: string) {
   const user = await getCurrentUser();
-
-  // Workspace cap — the caller's plan limits how many workspaces they may own.
-  if (user.role !== "admin") {
-    const code = await checkCanCreateWorkspace(user.id);
-    if (code) {
-      const t = await getTranslations("Errors");
-      return { error: t(code) };
-    }
-  }
-
   const id = crypto.randomUUID();
 
   await db.insert(workspaces).values({
     id,
     name: name.trim() || "Untitled",
-    billingOwnerId: user.id,
     createdAt: new Date(),
   });
 
@@ -273,8 +261,7 @@ export async function switchWorkspace(workspaceId: string) {
   return { success: true };
 }
 
-// Total bytes of assets uploaded into this workspace. Used by the settings
-// panel to surface storage usage (foundation for future plan limits).
+// Total bytes of assets uploaded into this workspace. Used by settings.
 export async function getWorkspaceStorageUsage(
   workspaceId: string,
 ): Promise<number> {

@@ -8,11 +8,7 @@ import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 
-export default async function AppRedirectPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ billing?: string }>;
-}) {
+export default async function AppRedirectPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -25,10 +21,6 @@ export default async function AppRedirectPage({
     redirect(`/invite/${pendingInvite}`);
   }
 
-  // Preserve the post-checkout flag through the redirect so the success modal can show.
-  const sp = await searchParams;
-  const suffix = sp?.billing === "success" ? "?billing=success" : "";
-
   const activeWorkspaceId = await getActiveWorkspaceId();
 
   let hasWorkspace = false;
@@ -40,9 +32,9 @@ export default async function AppRedirectPage({
     if (items.length > 0) {
       const first = items[0];
       if (first.type === "database" && first.databaseId) {
-        redirect(`/db/${first.databaseId}${suffix}`);
+        redirect(`/db/${first.databaseId}`);
       } else {
-        redirect(`/page/${first.id}${suffix}`);
+        redirect(`/page/${first.id}`);
       }
     }
   }

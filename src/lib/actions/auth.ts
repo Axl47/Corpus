@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import {
   users,
-  workspaces,
   workspaceMembers,
   workspaceInvites,
   accounts,
@@ -18,7 +17,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
-import { checkCanAddSeatForEmail } from "@/lib/services/billing";
 
 export async function logout() {
   // Clear the persisted workspace selection so the next account doesn't inherit it
@@ -62,16 +60,6 @@ export async function inviteToWorkspace(
     .from(users)
     .where(eq(users.email, normalizedEmail))
     .limit(1);
-
-  // Seat limit (the billing owner's plan caps distinct people; admins bypass).
-  if (!isAdmin) {
-    const code = await checkCanAddSeatForEmail(
-      workspaceId,
-      normalizedEmail,
-      targetUser?.id ?? null,
-    );
-    if (code) return { error: t(code) };
-  }
 
   if (targetUser) {
     const existing = await db
@@ -398,13 +386,6 @@ export async function transferWorkspaceOwnership(
     .update(workspaceMembers)
     .set({ role: "owner" })
     .where(eq(workspaceMembers.id, targetMember.id));
-
-  // Billing follows ownership: the workspace moves into the new owner's seat pool
-  // and is governed by their plan.
-  await db
-    .update(workspaces)
-    .set({ billingOwnerId: newOwnerUserId })
-    .where(eq(workspaces.id, workspaceId));
 
   revalidatePath("/");
   return { success: true };

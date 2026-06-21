@@ -1,13 +1,12 @@
 ﻿'use client';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Zap, Settings, Users, Share2, CreditCard } from 'lucide-react';
+import { X, Zap, Settings, Users, Share2 } from 'lucide-react';
 import { getWorkspaceMembers } from '@/lib/actions/auth';
 import GeneralTab from './workspace-settings/GeneralTab';
 import MembersTab from './workspace-settings/MembersTab';
 import TokensTab from './workspace-settings/TokensTab';
 import SharingTab from './workspace-settings/SharingTab';
-import BillingTab from './workspace-settings/BillingTab';
 import type { CurrentUser, WorkspaceMember } from './workspace-settings/types';
 
 interface WorkspaceSettingsModalProps {
@@ -16,18 +15,16 @@ interface WorkspaceSettingsModalProps {
   workspaceIcon?: string | null;
   workspaceIconColor?: string | null;
   currentUser: CurrentUser;
-  initialTab?: 'general' | 'members' | 'tokens' | 'sharing' | 'billing';
+  initialTab?: 'general' | 'members' | 'tokens' | 'sharing';
   onClose: () => void;
   onRenamed: (newName: string) => void;
   onIconChanged?: (icon: string | null, iconColor: string | null) => void;
   onDeleted: () => void;
   /** Closes this modal and opens the AI Agents control center (from the Tokens tab). */
   onOpenAgents: () => void;
-  /** Closes this modal and opens the global Billing center (from the Billing tab). */
-  onOpenBilling: () => void;
 }
 
-type Tab = 'general' | 'members' | 'tokens' | 'sharing' | 'billing';
+type Tab = 'general' | 'members' | 'tokens' | 'sharing';
 
 export default function WorkspaceSettingsModal({
   workspaceId,
@@ -41,11 +38,9 @@ export default function WorkspaceSettingsModal({
   onIconChanged,
   onDeleted,
   onOpenAgents,
-  onOpenBilling,
 }: WorkspaceSettingsModalProps) {
   const t = useTranslations('WorkspaceSettings');
   const tSharing = useTranslations('Sharing');
-  const tBilling = useTranslations('Billing');
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'general');
 
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -79,7 +74,6 @@ export default function WorkspaceSettingsModal({
     { id: 'tokens',   label: t('tabTokens'),           icon: <Zap size={13} />,   accent: 'amber' },
     { id: 'members',  label: t('tabMembers'),          icon: <Users size={13} /> },
     { id: 'sharing',  label: tSharing('tabSharing'),   icon: <Share2 size={13} />, accent: 'green' },
-    { id: 'billing',  label: tBilling('tab'),          icon: <CreditCard size={13} /> },
   ];
 
   return (
@@ -195,9 +189,6 @@ export default function WorkspaceSettingsModal({
             )}
             {activeTab === 'tokens' && (
               <TokensTab onOpenAgents={onOpenAgents} />
-            )}
-            {activeTab === 'billing' && (
-              <BillingTab onOpenBilling={onOpenBilling} />
             )}
             {activeTab === 'sharing' && (
               <SharingTab

@@ -7,7 +7,6 @@ import {
   User,
   Download,
   HardDrive,
-  Crown,
   SlidersHorizontal,
 } from "lucide-react";
 import ImportTab from "./workspace-settings/ImportTab";
@@ -357,26 +356,6 @@ export default function UserSettingsModal({
                 <div className="border-t border-neutral-800" />
 
                 <div className="border-t border-neutral-800 pt-5 space-y-4">
-                  <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
-                    {t("planTitle")}
-                  </p>
-                  <div className="flex items-center justify-between py-3 border-b border-neutral-800">
-                    <div className="flex items-center gap-2.5">
-                      <Crown size={14} className="text-amber-400 shrink-0" />
-                      <div>
-                        <p className="text-xs font-semibold text-neutral-200">
-                          {t("planFree")}
-                        </p>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">
-                          {t("planFreeHint")}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 bg-neutral-800 text-neutral-500 border border-neutral-700 shrink-0">
-                      {t("planCurrentBadge")}
-                    </span>
-                  </div>
-
                   <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider pt-1">
                     {t("storageTitle")}
                   </p>

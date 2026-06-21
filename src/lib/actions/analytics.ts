@@ -1,12 +1,11 @@
 'use server';
 import { db } from '@/db';
 import {
-  users, accounts, userSessions, workspaceMembers, workspaces, workspaceItems, uploadedAssets, subscriptions,
+  users, accounts, userSessions, workspaceMembers, workspaces, workspaceItems, uploadedAssets,
 } from '@/db/schema';
 import { eq, inArray, asc, sql } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getTranslations } from 'next-intl/server';
-import { isPlanTier, type PlanTier } from '@/lib/billing/plans';
 
 async function assertAdmin() {
   const user = await getCurrentUser();
@@ -161,15 +160,6 @@ export type UserDetailWorkspace = {
   items: { id: string; type: 'page' | 'database'; title: string; icon: string | null }[];
 };
 
-export type UserSubscription = {
-  tier: PlanTier;
-  status: string; // active | past_due | canceled
-  // 'stripe' = paid via Stripe (don't override manually); 'manual' = admin-activated;
-  // 'none' = no paid plan (implicit Free).
-  source: 'stripe' | 'manual' | 'none';
-  currentPeriodEnd: number | null; // epoch ms
-};
-
 export type UserDetail = {
   account: {
     id: string;
@@ -182,7 +172,6 @@ export type UserDetail = {
   };
   activity: PerUserActivity;
   storageBytes: number; // total bytes this user has uploaded
-  subscription: UserSubscription;
   workspaces: UserDetailWorkspace[];
 };
 
@@ -267,21 +256,6 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
     .from(uploadedAssets)
     .where(eq(uploadedAssets.userId, userId));
 
-  // Subscription / plan — belongs to the user as a billing owner. No row → implicit Free.
-  const [sub] = await db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.ownerUserId, userId))
-    .limit(1);
-
-  const subTier: PlanTier = sub && isPlanTier(sub.tier) ? sub.tier : 'free';
-  const subscription: UserSubscription = {
-    tier: subTier,
-    status: sub?.status ?? 'active',
-    source: sub?.stripeSubscriptionId ? 'stripe' : subTier !== 'free' ? 'manual' : 'none',
-    currentPeriodEnd: sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() : null,
-  };
-
   const wsStorageRows = wsIds.length
     ? await db
         .select({ workspaceId: uploadedAssets.workspaceId, total: sql<number>`coalesce(sum(${uploadedAssets.bytes}), 0)` })
@@ -319,7 +293,6 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
       storageBytes: Number(userStorage?.total ?? 0),
     },
     storageBytes: Number(userStorage?.total ?? 0),
-    subscription,
     workspaces: workspacesDetail,
   };
 }

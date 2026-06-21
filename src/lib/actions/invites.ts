@@ -7,7 +7,6 @@ import { auth } from '@/auth';
 import { getTranslations } from 'next-intl/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { checkCanAddSeatForEmail } from '@/lib/services/billing';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
@@ -94,11 +93,6 @@ export async function acceptInvite(token: string): Promise<{ ok?: boolean; works
     .limit(1);
 
   if (!existing) {
-    if (session.user.role !== 'admin') {
-      // The invite already reserved a seat for this email, so this normally passes.
-      const code = await checkCanAddSeatForEmail(inv.workspaceId, inv.email, session.user.id);
-      if (code) return { error: t(code) };
-    }
     await db.insert(workspaceMembers).values({
       workspaceId: inv.workspaceId,
       userId: session.user.id,

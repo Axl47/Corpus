@@ -228,16 +228,6 @@
 [data-theme="catppuccin"] ::-webkit-scrollbar-thumb { background: #c1cad6; border-radius: 4px; }
 [data-theme="catppuccin"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* ── Landing pricing: featured ("most popular") card ──────────────────────────
-   Dark-first design used a hardcoded dark gradient base; on the light theme that
-   left dark text on a dark card (unreadable). Base is theme-aware now. */
-.pricing-card-featured {
-  background: linear-gradient(160deg, rgba(68,92,149,0.14) 0%, rgba(28,30,38,1) 55%);
-}
-[data-theme="catppuccin"] .pricing-card-featured {
-  background: linear-gradient(160deg, rgba(68,92,149,0.12) 0%, var(--color-neutral-850) 55%);
-}
-
 /* ── Landing hero: hover dim over the workspace screenshot ─────────────────────
    Dark wash on dark themes; light wash on catppuccin so it doesn't muddy the
    bright screenshot — keeps the "Try the demo" button popping in both. */
@@ -972,4 +962,3 @@ body.block-marquee-active * {
   8%, 28%   { opacity: 0.9; transform: translateY(0); }
   31%, 100% { opacity: 0; transform: translateY(-2px); }
 }
-
