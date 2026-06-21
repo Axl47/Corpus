@@ -336,6 +336,7 @@
     "connectRecommended": "अनुशंसित",
     "connectRunCommand": "इसे अपने टर्मिनल में चलाएँ",
     "connectClaudeOAuthHint": "कमांड चलाएँ, फिर खुलने वाली ब्राउज़र विंडो में एक्सेस को स्वीकृत करें।",
+    "connectCodexOAuthHint": "दोनों कमांड चलाएँ, फिर Codex द्वारा खोली गई ब्राउज़र विंडो में एक्सेस को स्वीकृत करें।",
     "connectOpenIn": "{tool} में खोलें",
     "connectCursorOAuthWarn": "यदि कोई साइन-इन संकेत न दिखे, तो Cursor → Settings → MCP खोलें और corpus सर्वर पर authenticate पर क्लिक करें।",
     "connectAddToFile": "इसे अपनी कॉन्फ़िग फ़ाइल में जोड़ें",

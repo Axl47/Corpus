@@ -7,8 +7,8 @@ import { VscodeMark } from '@/components/features/agents/AgentMark';
 import { mintAgentToken } from '@/lib/actions/agentToken';
 import {
   EDITORS, OAUTH_READY, CONFIG_PATHS, TEST_PROMPT,
-  buildCursorUrl, buildVscodeUrl, buildClaudeCmd, buildJsonConfig,
-  type EditorId, type OS,
+  buildCursorUrl, buildVscodeUrl, buildClaudeCmd, buildCodexCmd, buildJsonConfig,
+  type EditorId, type JsonEditorId, type OS,
 } from '@/lib/mcp/deeplinks';
 
 /** Workspaces the user can mint a PAT in (passed down through ConnectModal from AgentsModal). */
@@ -49,7 +49,7 @@ function CodeBlock({
       </div>
       <div className="relative">
         {isCmd ? (
-          <code className="block bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-[11px] text-sky-400 font-mono break-all leading-relaxed pr-20">
+          <code className="block bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-[11px] text-sky-400 font-mono whitespace-pre-wrap break-all leading-relaxed pr-20">
             {code}
           </code>
         ) : (
@@ -166,13 +166,14 @@ function StepConnect({
   // ── OAuth-mode artifact (token-less) ──
   const renderOAuth = () => {
     if (meta.kind === 'command') {
-      // Claude Code — run command, OAuth auto-triggers on first 401
+      const command = editor === 'codex' ? buildCodexCmd(mcpUrl) : buildClaudeCmd(mcpUrl);
+      const hint = editor === 'codex' ? t('connectCodexOAuthHint') : t('connectClaudeOAuthHint');
       return (
         <>
-          <CodeBlock code={buildClaudeCmd(mcpUrl)} isCmd hint={t('connectRunCommand')} t={t} />
+          <CodeBlock code={command} isCmd hint={t('connectRunCommand')} t={t} />
           <p className="text-[11px] text-neutral-400 flex items-start gap-1.5">
             <Globe size={12} className="text-blue-400 shrink-0 mt-0.5" />
-            {t('connectClaudeOAuthHint')}
+            {hint}
           </p>
         </>
       );
@@ -202,7 +203,7 @@ function StepConnect({
       <CodeBlock
         code={buildJsonConfig(editor, mcpUrl)}
         isCmd={false}
-        filePath={CONFIG_PATHS[editor as Exclude<EditorId, 'claude' | 'vscode'>][os]}
+        filePath={CONFIG_PATHS[editor as JsonEditorId][os]}
         hint={t('connectAddToFile')}
         t={t}
       />
@@ -225,13 +226,16 @@ function StepConnect({
       );
     }
     if (meta.kind === 'command') {
-      return <CodeBlock code={buildClaudeCmd(mcpUrl, token)} isCmd hint={t('connectRunCommand')} t={t} />;
+      const command = editor === 'codex'
+        ? buildCodexCmd(mcpUrl, token)
+        : buildClaudeCmd(mcpUrl, token);
+      return <CodeBlock code={command} isCmd hint={t('connectRunCommand')} t={t} />;
     }
     return (
       <CodeBlock
         code={buildJsonConfig(editor, mcpUrl, token)}
         isCmd={false}
-        filePath={CONFIG_PATHS[editor as Exclude<EditorId, 'claude' | 'vscode'>][os]}
+        filePath={CONFIG_PATHS[editor as JsonEditorId][os]}
         hint={t('connectAddToFile')}
         t={t}
       />

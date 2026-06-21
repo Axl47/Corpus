@@ -336,6 +336,7 @@
     "connectRecommended": "Empfohlen",
     "connectRunCommand": "Führe dies in deinem Terminal aus",
     "connectClaudeOAuthHint": "Führe den Befehl aus und genehmige dann den Zugriff im sich öffnenden Browserfenster.",
+    "connectCodexOAuthHint": "Führe beide Befehle aus und genehmige dann den Zugriff im von Codex geöffneten Browserfenster.",
     "connectOpenIn": "In {tool} öffnen",
     "connectCursorOAuthWarn": "Wenn keine Anmeldeaufforderung erscheint, öffne Cursor → Einstellungen → MCP und klicke beim corpus-Server auf Authentifizieren.",
     "connectAddToFile": "Füge dies zu deiner Konfigurationsdatei hinzu",

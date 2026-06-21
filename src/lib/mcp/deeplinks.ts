@@ -11,24 +11,34 @@
 
 export type EditorId =
   | "claude"
+  | "codex"
   | "cursor"
   | "vscode"
   | "windsurf"
   | "continue"
   | "antigravity";
+export type JsonEditorId = Exclude<EditorId, "claude" | "codex" | "vscode">;
 export type OS = "mac" | "linux" | "windows";
 
 export interface EditorMeta {
   id: EditorId;
   label: string;
   /** AIMark icon name, or null when the editor needs a custom inline SVG */
-  aiMark: "claude" | "cursor" | "windsurf" | "continue" | "antigravity" | null;
+  aiMark:
+    | "claude"
+    | "cursor"
+    | "windsurf"
+    | "continue"
+    | "antigravity"
+    | "chatgpt"
+    | null;
   /** How the user connects: a shell command, a one-click deeplink, or a JSON file edit */
   kind: "command" | "deeplink" | "json";
 }
 
 export const EDITORS: EditorMeta[] = [
   { id: "claude", label: "Claude Code", aiMark: "claude", kind: "command" },
+  { id: "codex", label: "Codex", aiMark: "chatgpt", kind: "command" },
   { id: "cursor", label: "Cursor", aiMark: "cursor", kind: "deeplink" },
   { id: "vscode", label: "VS Code", aiMark: null, kind: "deeplink" },
   { id: "windsurf", label: "Windsurf", aiMark: "windsurf", kind: "json" },
@@ -44,6 +54,7 @@ export const EDITORS: EditorMeta[] = [
 /** Editors that genuinely support a token-less OAuth flow on first connect. */
 export const OAUTH_READY: Record<EditorId, boolean> = {
   claude: true,
+  codex: true,
   vscode: true,
   cursor: true, // works, but may prompt for manual approval — see ConnectFlow warning
   windsurf: false,
@@ -51,10 +62,7 @@ export const OAUTH_READY: Record<EditorId, boolean> = {
   antigravity: false,
 };
 
-export const CONFIG_PATHS: Record<
-  Exclude<EditorId, "claude" | "vscode">,
-  Record<OS, string>
-> = {
+export const CONFIG_PATHS: Record<JsonEditorId, Record<OS, string>> = {
   cursor: {
     mac: "~/.cursor/mcp.json",
     linux: "~/.cursor/mcp.json",
@@ -106,6 +114,20 @@ export function buildVscodeUrl(mcpUrl: string, token?: string): string {
 export function buildClaudeCmd(mcpUrl: string, token?: string): string {
   const base = `claude mcp add --transport http --scope user corpus ${mcpUrl}`;
   return token ? `${base} --header "Authorization: Bearer ${token}"` : base;
+}
+
+// ── Codex — CLI command ──────────────────────────────────────────────────────
+export function buildCodexCmd(mcpUrl: string, token?: string): string {
+  if (token) {
+    return [
+      `export CORPUS_MCP_TOKEN="${token}"`,
+      `codex mcp add corpus --url ${mcpUrl} --bearer-token-env-var CORPUS_MCP_TOKEN`,
+    ].join("\n");
+  }
+  return [
+    `codex mcp add corpus --url ${mcpUrl}`,
+    "codex mcp login corpus",
+  ].join("\n");
 }
 
 // ── JSON config snippet (Cursor file edit, Windsurf, Continue, Antigravity) ──

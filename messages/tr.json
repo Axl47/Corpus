@@ -336,6 +336,7 @@
     "connectRecommended": "Önerilen",
     "connectRunCommand": "Bunu terminalinde çalıştır",
     "connectClaudeOAuthHint": "Komutu çalıştır, ardından açılan tarayıcı penceresinde erişimi onayla.",
+    "connectCodexOAuthHint": "İki komutu da çalıştır, ardından Codex'in açtığı tarayıcı penceresinde erişimi onayla.",
     "connectOpenIn": "{tool} ile aç",
     "connectCursorOAuthWarn": "Giriş istemi görünmezse Cursor → Ayarlar → MCP'yi aç ve corpus sunucusunda kimlik doğrula'ya bas.",
     "connectAddToFile": "Bunu yapılandırma dosyana ekle",
