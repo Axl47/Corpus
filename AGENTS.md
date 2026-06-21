@@ -144,3 +144,25 @@ Run these after any coding task:
    npx tsx src/db/migrate.ts
    ```
    Ensure new migration `when` value is greater than all existing (next: > `1781500000000`). NOTE: libsql `batch()` no-ops DDL, so recent migrations use manual `src/db/apply-00xx-*.ts` scripts — apply to local.
+
+## Final Output
+
+When asking the user to verify implemented changes, output a checklist they can fill to make sure everything works as intended. Describe what they should see, how it should work, and what they need to manually test. The user will then fill in the checklist and provide feedback on any issues they encounter, which can be used to further refine the implementation.
+
+If the user asked for multiple changes and only some were implemented, make sure to clearly indicate which ones were completed, which ones were not fully realized, and which ones are still pending. For example:
+
+```txt
+- [x] Implement app scaffold (completed with basic layout and navigation)
+- [~] Implement feature A (stub implementation completed)
+- [ ] Implement feature B (pending due to X reason)
+```
+
+Include a commit message after each implementation or fix, following the Conventional Commits specifications. If it's a large change, follow this format:
+
+```txt
+feat(update): add startup update prompt choices and sectioned changelog pipeline
+- feat(update): gate startup updates behind user choice (Yes/No/Remind Later)
+- refactor(update): split updater flow into eligibility check and install phases
+- fix(navigation): clamp bottom navbar sizing to prevent tiny rendering on some phones
+- docs(implementation): document updater prompt behavior and changelog contract
+```
