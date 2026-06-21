@@ -11,7 +11,7 @@ import {
 import {
   GripVertical, MoreVertical, ArrowUp, ArrowDown, ChevronsDownUp, Trash2, Copy, CopyPlus, Scissors, Check, ChevronRight,
   Pilcrow, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Code2,
-  Link2, Image as ImageIcon, SquarePlay, File as FileIcon,
+  Link2, Image as ImageIcon, SquarePlay, File as FileIcon, Plus,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
@@ -410,6 +410,13 @@ export default function BlockDragHandle({ editor }: Props) {
         if (!found) return;
         tgt = { kind: 'block', pos: found.pos };
         pos = found.pos;
+
+        const node = state.doc.nodeAt(found.pos);
+        const coords = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+        if (node?.type.name === 'table' && coords) {
+          const resolved = state.doc.resolve(Math.max(0, Math.min(coords.pos, state.doc.content.size)));
+          editor.view.dispatch(state.tr.setSelection(TextSelection.near(resolved)));
+        }
       }
       e.preventDefault();
       const z = zoomRef.current;
@@ -617,6 +624,10 @@ export default function BlockDragHandle({ editor }: Props) {
   const doCut = () => { const t = currentTarget(); copyTarget(t); if (deleteTarget(t)) closeMenu(); };
   const doDuplicate = () => { duplicateTarget(currentTarget()); closeMenu(); };
   const doDelete = () => { if (deleteTarget(currentTarget())) closeMenu(); };
+  const doAddTableColumn = () => { editor.chain().focus().addColumnAfter().run(); closeMenu(); };
+  const doAddTableRow = () => { editor.chain().focus().addRowAfter().run(); closeMenu(); };
+  const doDeleteTableColumn = () => { editor.chain().focus().deleteColumn().run(); closeMenu(); };
+  const doDeleteTableRow = () => { editor.chain().focus().deleteRow().run(); closeMenu(); };
 
   // Touch reorder: swap the block with its previous/next sibling (HTML5 DnD
   // doesn't fire on touch, so the menu provides Move up / Move down instead).
@@ -715,6 +726,11 @@ export default function BlockDragHandle({ editor }: Props) {
         active: type === activeType, apply: () => turnInto(type),
       }));
   const targetKind = target?.kind ?? 'block';
+  const currentBlockTarget = currentTarget();
+  const currentBlockNode = currentBlockTarget.kind === 'block'
+    ? editor.state.doc.nodeAt(currentBlockTarget.pos)
+    : null;
+  const showTableActions = currentBlockNode?.type.name === 'table';
   // "Turn into" is block-level — for a multi-block marquee it's offered by the
   // floating block toolbar instead, so the right-click menu hides it there.
   const showTurnInto = (isMedia || !hovNode?.isAtom) && targetKind !== 'blocks';
@@ -842,6 +858,41 @@ export default function BlockDragHandle({ editor }: Props) {
             <Trash2 size={14} className="text-neutral-600" />
             <span className="text-sm">{t('blockDelete')}</span>
           </button>
+
+          {showTableActions && <div className="my-1 h-px bg-neutral-800" />}
+
+          {showTableActions && (
+            <>
+              <button
+                onClick={doAddTableColumn}
+                className="w-full flex items-center gap-3 px-3 py-2 text-left text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60 transition-colors"
+              >
+                <Plus size={14} className="text-neutral-600" />
+                <span className="text-sm">{t('tableAddColumn')}</span>
+              </button>
+              <button
+                onClick={doAddTableRow}
+                className="w-full flex items-center gap-3 px-3 py-2 text-left text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60 transition-colors"
+              >
+                <Plus size={14} className="text-neutral-600" />
+                <span className="text-sm">{t('tableAddRow')}</span>
+              </button>
+              <button
+                onClick={doDeleteTableColumn}
+                className="w-full flex items-center gap-3 px-3 py-2 text-left text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors"
+              >
+                <Trash2 size={14} className="text-neutral-600" />
+                <span className="text-sm">{t('tableDeleteColumn')}</span>
+              </button>
+              <button
+                onClick={doDeleteTableRow}
+                className="w-full flex items-center gap-3 px-3 py-2 text-left text-neutral-400 hover:text-red-400 hover:bg-neutral-800/60 transition-colors"
+              >
+                <Trash2 size={14} className="text-neutral-600" />
+                <span className="text-sm">{t('tableDeleteRow')}</span>
+              </button>
+            </>
+          )}
 
           {showTurnInto && <div className="my-1 h-px bg-neutral-800" />}
 
