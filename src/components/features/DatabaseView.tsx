@@ -19,7 +19,7 @@ import {
   reorderPages,
   updatePageProperties,
 } from "@/lib/actions/page";
-import { updateDatabaseViews } from "@/lib/actions/database";
+import { updateDatabaseSchema, updateDatabaseViews } from "@/lib/actions/database";
 import {
   updateWorkspaceItemIcon,
   updateWorkspaceItemTitle,
@@ -306,7 +306,14 @@ export default function DatabaseView({
   const t = useTranslations("Database");
   const tPage = useTranslations("Page");
   const tWs = useTranslations("Workspace");
-  const schema: any[] = database.schema ?? [];
+  const [schemaOverride, setSchemaOverride] = useState<{ databaseId: string; schema: any[] } | null>(null);
+  const schema: any[] = schemaOverride && schemaOverride.databaseId === database.id
+    ? schemaOverride.schema
+    : (database.schema ?? []);
+  const databaseWithSchema = useMemo(
+    () => ({ ...database, schema }),
+    [database, schema],
+  );
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -533,7 +540,7 @@ export default function DatabaseView({
     }
   };
 
-  const handleAddRow = (initialProperties?: Record<string, any>) => {
+  const handleAddRow = (initialProperties?: Record<string, any>, afterPageId?: string) => {
     const filterProps = getDefaultPropertiesFromFilters(
       config.filters || [],
       schema || [],
@@ -563,7 +570,19 @@ export default function DatabaseView({
       updatedAt: now,
     };
 
-    setLocalPages((prev) => [...prev, optimisticPage]);
+    const insertAfterIndex = afterPageId
+      ? localPages.findIndex((p) => p.id === afterPageId)
+      : -1;
+    const optimisticPages =
+      insertAfterIndex === -1
+        ? [...localPages, optimisticPage]
+        : [
+            ...localPages.slice(0, insertAfterIndex + 1),
+            optimisticPage,
+            ...localPages.slice(insertAfterIndex + 1),
+          ];
+
+    setLocalPages(optimisticPages);
     setPendingPageIds((prev) => new Set(prev).add(tempId));
 
     startTransition(async () => {
@@ -578,6 +597,12 @@ export default function DatabaseView({
         setLocalPages((prev) =>
           prev.map((p) => (p.id === tempId ? { ...p, id: realId } : p)),
         );
+        if (afterPageId && (config.sorts?.length ?? 0) === 0) {
+          await reorderPages(
+            database.id,
+            optimisticPages.map((p) => (p.id === tempId ? realId : p.id)),
+          );
+        }
       } catch {
         setLocalPages((prev) => prev.filter((p) => p.id !== tempId));
       } finally {
@@ -612,6 +637,102 @@ export default function DatabaseView({
     });
     setLocalPages(reordered);
     await reorderPages(database.id, orderedIds);
+  };
+
+  const handleAddColumn = async (afterColId?: string) => {
+    const newColumn = {
+      id: `col_${crypto.randomUUID().slice(0, 8)}`,
+      name: t("newColumn"),
+      type: "text",
+      options: [],
+    };
+    const afterIndex = afterColId
+      ? schema.findIndex((col) => col.id === afterColId)
+      : -1;
+    const nextSchema =
+      afterIndex === -1
+        ? [...schema, newColumn]
+        : [
+            ...schema.slice(0, afterIndex + 1),
+            newColumn,
+            ...schema.slice(afterIndex + 1),
+          ];
+
+    setSchemaOverride({ databaseId: database.id, schema: nextSchema });
+    if (tableConfig?.columnOrder?.length && afterColId) {
+      mutateConfig((cfg) => {
+        if (cfg.type !== "table") return cfg;
+        const currentOrder = cfg.columnOrder.length
+          ? cfg.columnOrder
+          : schema.map((col) => col.id);
+        const insertIndex = currentOrder.indexOf(afterColId);
+        const nextOrder =
+          insertIndex === -1
+            ? [...currentOrder, newColumn.id]
+            : [
+                ...currentOrder.slice(0, insertIndex + 1),
+                newColumn.id,
+                ...currentOrder.slice(insertIndex + 1),
+              ];
+        return { ...cfg, columnOrder: nextOrder };
+      });
+    }
+    await updateDatabaseSchema(database.id, nextSchema);
+    router.refresh();
+  };
+
+  const handleDeleteColumn = async (colId: string) => {
+    if (colId === "title") return;
+    const nextSchema = schema.filter((col) => col.id !== colId);
+    setSchemaOverride({ databaseId: database.id, schema: nextSchema });
+    mutateViews((vs) =>
+      vs.map((view) => {
+        const cfg = view.config;
+        const filters = (cfg.filters ?? []).filter((filter) => filter.columnId !== colId);
+        const sorts = (cfg.sorts ?? []).filter((sort) => sort.columnId !== colId);
+        if (cfg.type === "table") {
+          return {
+            ...view,
+            config: {
+              ...cfg,
+              columnOrder: cfg.columnOrder.filter((id) => id !== colId),
+              hiddenColumns: (cfg.hiddenColumns ?? []).filter((id) => id !== colId),
+              filters,
+              sorts,
+              rowColorCol: cfg.rowColorCol === colId ? undefined : cfg.rowColorCol,
+            },
+          };
+        }
+        if (cfg.type === "kanban") {
+          return {
+            ...view,
+            config: {
+              ...cfg,
+              filters,
+              sorts,
+              groupByCol: cfg.groupByCol === colId ? "" : cfg.groupByCol,
+              cardColorCol: cfg.cardColorCol === colId ? undefined : cfg.cardColorCol,
+              cardBgCol: cfg.cardBgCol === colId ? undefined : cfg.cardBgCol,
+              cardProperties: (cfg.cardProperties ?? []).filter((id) => id !== colId),
+            },
+          };
+        }
+        return {
+          ...view,
+          config: {
+            ...cfg,
+            filters,
+            sorts,
+            dateCol: cfg.dateCol === colId ? "" : cfg.dateCol,
+            cardColorCol: cfg.cardColorCol === colId ? undefined : cfg.cardColorCol,
+            cardBgCol: cfg.cardBgCol === colId ? undefined : cfg.cardBgCol,
+            cardProperties: (cfg.cardProperties ?? []).filter((id) => id !== colId),
+          },
+        };
+      }),
+    );
+    await updateDatabaseSchema(database.id, nextSchema);
+    router.refresh();
   };
 
   const handleCardReorder = async (
@@ -1072,7 +1193,7 @@ export default function DatabaseView({
             <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-full pr-1">
               {isTableView && tableConfig ? (
                 <TableLayout
-                  database={database}
+                  database={databaseWithSchema}
                   pages={processedPages}
                   columnOrder={tableConfig.columnOrder}
                   hiddenColumns={tableConfig.hiddenColumns}
@@ -1087,6 +1208,8 @@ export default function DatabaseView({
                   hasSorts={(config.sorts?.length ?? 0) > 0}
                   onUpdatePageProperties={handleUpdatePageProperties}
                   onCreatePage={handleAddRow}
+                  onAddColumn={handleAddColumn}
+                  onDeleteColumn={handleDeleteColumn}
                   filters={config.filters}
                   sorts={config.sorts}
                   onFiltersChange={handleFiltersChange}
@@ -1098,7 +1221,7 @@ export default function DatabaseView({
                 />
               ) : kanbanConfig ? (
                 <KanbanBoard
-                  database={database}
+                  database={databaseWithSchema}
                   pages={processedPages}
                   groupByCol={kanbanConfig.groupByCol}
                   groupOrder={kanbanConfig.groupOrder}
@@ -1126,7 +1249,7 @@ export default function DatabaseView({
                 />
               ) : calendarConfig ? (
                 <CalendarView
-                  database={database}
+                  database={databaseWithSchema}
                   pages={processedPages}
                   dateCol={calendarConfig.dateCol}
                   viewMode={calendarConfig.viewMode}
@@ -1170,7 +1293,7 @@ export default function DatabaseView({
           "
               >
                 <DatabasePropertiesSidebar
-                  database={database}
+                  database={databaseWithSchema}
                   activeView={activeView}
                   activeTab={sidebarTab}
                   setActiveTab={setSidebarTab}
@@ -1366,7 +1489,7 @@ export default function DatabaseView({
                     ) : (
                       peekPage && (
                         <PageEditor
-                          database={database}
+                          database={databaseWithSchema}
                           initialPage={peekPage}
                           isPeek={true}
                           onClose={() => setPeekPageId(null)}
@@ -1482,7 +1605,7 @@ export default function DatabaseView({
                   ) : (
                     peekPage && (
                       <PageEditor
-                        database={database}
+                        database={databaseWithSchema}
                         initialPage={peekPage}
                         isPeek={true}
                         onClose={() => setPeekPageId(null)}

@@ -83,6 +83,8 @@ export default function TableLayout({
   onFiltersChange,
   onSortsChange,
   onToggleHideColumn,
+  onAddColumn,
+  onDeleteColumn,
   defaultPageIcon,
   defaultPageIconColor,
   onPageIconChange,
@@ -101,12 +103,14 @@ export default function TableLayout({
   onDuplicatePage: (pageId: string) => void;
   hasSorts: boolean;
   onUpdatePageProperties: (pageId: string, properties: Record<string, any>) => void;
-  onCreatePage?: (initialProperties?: Record<string, any>) => void;
+  onCreatePage?: (initialProperties?: Record<string, any>, afterPageId?: string) => void;
   filters: ViewFilter[];
   sorts: ViewSort[];
   onFiltersChange: (filters: ViewFilter[]) => void;
   onSortsChange: (sorts: ViewSort[]) => void;
   onToggleHideColumn: (colId: string) => void;
+  onAddColumn?: (afterColId?: string) => void;
+  onDeleteColumn?: (colId: string) => void;
   defaultPageIcon?: string;
   defaultPageIconColor?: string;
   onPageIconChange?: (pageId: string, icon: string | null, iconColor: string | null) => void;
@@ -120,16 +124,30 @@ export default function TableLayout({
 
   const [localWidths, setLocalWidths] = useState<Record<string, number>>(() => columnWidths ?? {});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteColumnId, setConfirmDeleteColumnId] = useState<string | null>(null);
 
   // Notion-style right-click menu for rows
   const rowMenu = useContextMenu();
-  const buildRowMenu = (pageId: string): MenuItem[] => [
+  const buildRowMenu = (pageId: string, colId?: string): MenuItem[] => [
+    { id: 'add-row', label: t('addRow'), icon: Plus, onSelect: () => onCreatePage?.({}, pageId) },
+    { id: 'add-column', label: t('addColumn'), icon: Plus, onSelect: () => onAddColumn?.(colId) },
+    { kind: 'separator' },
     { id: 'open', label: t('open'), icon: ArrowUpRight, onSelect: () => onRowClick(pageId) },
     { id: 'open-full', label: t('openInFullPage'), icon: Maximize2, onSelect: () => router.push(`/db/${database.id}/${pageId}`) },
     { id: 'copy-link', label: t('copyLink'), icon: Link2, onSelect: () => { navigator.clipboard?.writeText(`${window.location.origin}/db/${database.id}/${pageId}`); } },
     { kind: 'separator' },
     { id: 'duplicate', label: t('duplicatePage'), icon: Copy, onSelect: () => onDuplicatePage(pageId) },
-    { id: 'delete', label: tPage('deletePage'), icon: Trash2, danger: true, onSelect: () => setConfirmDeleteId(pageId) },
+    { id: 'delete-row', label: t('deleteRow'), icon: Trash2, danger: true, onSelect: () => setConfirmDeleteId(pageId) },
+    {
+      id: 'delete-column',
+      label: t('deleteColumn'),
+      icon: Trash2,
+      danger: true,
+      disabled: !colId || colId === 'title',
+      onSelect: () => {
+        if (colId && colId !== 'title') setConfirmDeleteColumnId(colId);
+      },
+    },
   ];
 
   useEffect(() => {
@@ -612,6 +630,7 @@ export default function TableLayout({
                       <td
                         key={col.id}
                         onClick={handleCellClick}
+                        onContextMenu={(e) => rowMenu.open(e, buildRowMenu(page.id, col.id))}
                         className={`py-2 px-3 whitespace-nowrap overflow-hidden relative text-ellipsis group-hover:bg-neutral-800/10 transition-colors
                           ${isEditing ? 'z-30 overflow-visible' : ''}
                           ${!isLast ? 'border-r border-neutral-800/40' : ''}
@@ -757,7 +776,7 @@ export default function TableLayout({
                 <td colSpan={visibleCols.length} className="py-2 px-3 text-xs font-medium">
                   <span className="flex items-center gap-1.5 opacity-60 group-hover/newrow:opacity-100 transition-opacity">
                     <Plus size={13} className="text-neutral-500" />
-                    New
+                    {t('new')}
                   </span>
                 </td>
               </tr>
@@ -1069,11 +1088,23 @@ export default function TableLayout({
       )}
       {confirmDeleteId && (
         <ConfirmDialog
-          title={t('deletePageConfirm')}
+          title={t('deleteRowConfirm')}
           confirmLabel={t('delete')}
           cancelLabel={t('deleteCancel')}
           onConfirm={() => { onDeletePage(confirmDeleteId); setConfirmDeleteId(null); }}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {confirmDeleteColumnId && (
+        <ConfirmDialog
+          title={t('deleteColumnConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('deleteCancel')}
+          onConfirm={() => {
+            onDeleteColumn?.(confirmDeleteColumnId);
+            setConfirmDeleteColumnId(null);
+          }}
+          onCancel={() => setConfirmDeleteColumnId(null)}
         />
       )}
       {rowMenu.node}
